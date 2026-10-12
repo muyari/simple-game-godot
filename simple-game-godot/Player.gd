@@ -6,6 +6,9 @@ signal mana_changed(current_mana: int, maximum_mana: int)
 signal potion_counts_changed(health_count: int, mana_count: int, health_refill: float, mana_refill: float)
 signal inventory_changed(items: Array[ItemData])
 signal equipment_changed(equipment: Dictionary)
+signal town_portal_cast_started
+signal town_portal_cast_progress(remaining: float, duration: float)
+signal town_portal_cast_cancelled
 signal town_portal_opened
 signal died
 
@@ -30,6 +33,7 @@ const ICEBALL_COOLDOWN = 2.0
 const MAX_POTIONS = 3
 const POTION_REFILL_TIME = 10.0
 const POTION_EFFECT_TIME = 3.0
+const TOWN_PORTAL_CAST_DURATION = 3.0
 const FIREBALL_SCENE = preload("res://fireball.tscn")
 const WARRIOR_SHEET = preload("res://textures/warrior_sheet.svg")
 const WITCH_SHEET = preload("res://textures/witch_sheet.svg")
@@ -63,11 +67,14 @@ var animation_time := 0.0
 var iceball_cooldown_remaining := 0.0
 var attack_time_remaining := 0.0
 var attack_hit_applied := false
-var town_portal_open := false
+var town_portal: Portal
+var town_portal_cast_time_remaining := 0.0
+var is_casting_town_portal := false
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var sword: Node2D = $Sword
 @onready var wand: Node2D = $Wand
+@onready var portal_cast_effect: Node2D = $PortalCastEffect
 
 
 func _ready() -> void:
@@ -115,6 +122,26 @@ func _physics_process(delta: float) -> void:
 		else:
 			direction = to_destination.normalized()
 
+	if is_casting_town_portal:
+		velocity = Vector2.ZERO
+		animation_time = 0.0
+		town_portal_cast_time_remaining = maxf(
+			town_portal_cast_time_remaining - delta,
+			0.0
+		)
+		town_portal_cast_progress.emit(
+			town_portal_cast_time_remaining,
+			TOWN_PORTAL_CAST_DURATION
+		)
+		_update_sprite(false)
+		move_and_slide()
+		if town_portal_cast_time_remaining == 0.0:
+			is_casting_town_portal = false
+			portal_cast_effect.stop()
+			_spawn_town_portal()
+		return
+
+	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if direction != Vector2.ZERO:
 		velocity = velocity.move_toward(direction * SPEED, ACCELERATION * delta)
 		facing = _cardinal_direction(direction)
@@ -195,11 +222,33 @@ func _finish_mouse_move(release_position: Vector2) -> void:
 
 
 func _open_town_portal() -> void:
-	if town_portal_open:
-		return
 	var current_scene_path := get_tree().current_scene.scene_file_path
 	if current_scene_path not in ["res://main.tscn", "res://desert.tscn"]:
 		return
+	if is_casting_town_portal:
+		return
+
+	is_casting_town_portal = true
+	town_portal_cast_time_remaining = TOWN_PORTAL_CAST_DURATION
+	velocity = Vector2.ZERO
+	attack_time_remaining = 0.0
+	sword.hide()
+	wand.hide()
+	portal_cast_effect.play()
+	town_portal_cast_started.emit()
+
+
+func _spawn_town_portal() -> void:
+	var current_scene_path := get_tree().current_scene.scene_file_path
+	if current_scene_path not in ["res://main.tscn", "res://desert.tscn"]:
+		return
+
+	var current_scene := get_tree().current_scene
+	if is_instance_valid(town_portal):
+		if town_portal.get_parent() == current_scene:
+			current_scene.remove_child(town_portal)
+		town_portal.queue_free()
+		town_portal = null
 
 	var portal := PORTAL_SCENE.instantiate() as Portal
 	if portal == null:
@@ -210,10 +259,20 @@ func _open_town_portal() -> void:
 	portal.destination_position = TOWN_ARRIVAL_POSITION
 	get_tree().set_meta(TOWN_RETURN_SCENE_META, current_scene_path)
 	get_tree().set_meta(TOWN_RETURN_POSITION_META, global_position)
-	get_tree().current_scene.add_child(portal)
+	current_scene.add_child(portal)
 	portal.global_position = global_position + facing * 64.0
-	town_portal_open = true
+	town_portal = portal
 	town_portal_opened.emit()
+
+
+func _cancel_town_portal_cast() -> void:
+	if not is_casting_town_portal:
+		return
+
+	is_casting_town_portal = false
+	town_portal_cast_time_remaining = 0.0
+	portal_cast_effect.stop()
+	town_portal_cast_cancelled.emit()
 
 
 func _cast_fireball() -> void:
@@ -471,6 +530,8 @@ func take_damage(amount: int) -> void:
 		return
 
 	var reduced_damage := maxi(amount - get_damage_reduction(), 0)
+	if reduced_damage > 0:
+		_cancel_town_portal_cast()
 	health = maxi(health - reduced_damage, 0)
 	health_changed.emit(health, MAX_HEALTH)
 	if health == 0:
