@@ -7,6 +7,7 @@ const MAX_RANGE = 600.0
 
 var direction := Vector2.DOWN
 var is_ice := false
+var ice_damage := 1.0
 var distance_travelled := 0.0
 var animation_time := 0.0
 
@@ -17,7 +18,10 @@ func _process(delta: float) -> void:
 	var step_end := global_position + direction * step_distance
 	var hit_target := _find_hit_target(step_distance)
 	if hit_target != null:
-		hit_target.call("take_percentage_damage", 0.5)
+		if is_ice:
+			hit_target.call("take_damage", ice_damage)
+		else:
+			hit_target.call("take_percentage_damage", 0.5)
 		queue_free()
 		return
 

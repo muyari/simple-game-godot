@@ -29,6 +29,8 @@ const MAX_POTIONS = 3
 const POTION_REFILL_TIME = 10.0
 const POTION_EFFECT_TIME = 3.0
 const FIREBALL_SCENE = preload("res://fireball.tscn")
+const WARRIOR_SHEET = preload("res://textures/warrior_sheet.svg")
+const WITCH_SHEET = preload("res://textures/witch_sheet.svg")
 const PORTAL_SCENE = preload("res://portal.tscn")
 const TOWN_SCENE_PATH = "res://town.tscn"
 const TOWN_ARRIVAL_POSITION = Vector2(576, 350)
@@ -62,6 +64,7 @@ var town_portal_open := false
 
 func _ready() -> void:
 	selected_character = str(get_tree().get_meta("selected_character", "Warrior"))
+	sprite.texture = WITCH_SHEET if selected_character == "Witch" else WARRIOR_SHEET
 	sword.hide()
 	wand.hide()
 	inventory = GameState.get_inventory()
@@ -163,6 +166,8 @@ func _cast_projectile(is_ice: bool, mana_cost: int) -> void:
 	var fireball: Fireball = FIREBALL_SCENE.instantiate()
 	fireball.direction = facing
 	fireball.is_ice = is_ice
+	if is_ice:
+		fireball.ice_damage = _get_primary_attack_damage()
 	get_tree().current_scene.add_child(fireball)
 	fireball.global_position = global_position + facing * 20.0
 
@@ -386,7 +391,11 @@ func _damage_wolves_in_swing() -> void:
 		var enemy_node := enemy as Node2D
 		var to_enemy := enemy_node.global_position - global_position
 		if to_enemy.length() <= SWORD_REACH and to_enemy.normalized().dot(facing) >= SWORD_HIT_DOT_THRESHOLD:
-			enemy.call("take_damage", 1.0 + get_weapon_damage_bonus())
+			enemy.call("take_damage", _get_primary_attack_damage())
+
+
+func _get_primary_attack_damage() -> float:
+	return 1.0 + get_weapon_damage_bonus()
 
 
 func take_damage(amount: int) -> void:
