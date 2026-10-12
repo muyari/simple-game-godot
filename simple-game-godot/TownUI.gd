@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const MINIMUM_ITEM_PRICE = 25
+const EXPERIENCE_BAR_WIDTH = 440.0
 
 @onready var gold_label: Label = $GoldLabel
 @onready var player: Player = get_node("../Player")
@@ -12,6 +13,10 @@ const MINIMUM_ITEM_PRICE = 25
 @onready var health_potion_label: Label = $HealthPotionLabel
 @onready var mana_potion_label: Label = $ManaPotionLabel
 
+var experience_bar: ProgressBar
+var experience_level_label: Label
+var experience_tooltip: PanelContainer
+var experience_tooltip_label: Label
 var shop_panel: PanelContainer
 var shop_gold_label: Label
 var item_list: VBoxContainer
@@ -25,6 +30,7 @@ var character_overlay: Control
 var character_panel: PanelContainer
 var inventory_panel: PanelContainer
 var equipment_stats_label: Label
+var character_progression_label: Label
 var equipment_slot_labels: Dictionary = {}
 var inventory_grid: GridContainer
 var selected_item_label: Label
@@ -35,6 +41,7 @@ var selected_inventory_index := -1
 
 
 func _ready() -> void:
+	_build_experience_bar()
 	_update_gold(GameState.gold)
 	GameState.gold_changed.connect(_update_gold)
 	_restore_town_return_destination()
@@ -48,6 +55,7 @@ func _ready() -> void:
 	player.potion_counts_changed.connect(_update_potion_counts)
 	player.inventory_changed.connect(_on_inventory_changed)
 	player.equipment_changed.connect(_on_equipment_changed)
+	GameState.progression_changed.connect(_on_progression_changed)
 	vendor.shop_requested.connect(_open_dialogue)
 	waystone.connect("level_selection_requested", _open_waystone)
 	_build_shop()
@@ -56,6 +64,14 @@ func _ready() -> void:
 	_build_character_menu()
 	_on_inventory_changed(player.inventory)
 	_on_equipment_changed(player.equipment)
+	_on_progression_changed(
+		GameState.player_level,
+		GameState.experience,
+		GameState.get_xp_into_current_level(),
+		GameState.get_xp_for_next_level(),
+		GameState.passive_tree_points,
+		GameState.skill_tree_points
+	)
 
 
 func _input(event: InputEvent) -> void:
@@ -330,6 +346,11 @@ func _build_character_menu() -> void:
 	equipment_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	character_contents.add_child(equipment_stats_label)
 
+	character_progression_label = Label.new()
+	character_progression_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	character_progression_label.add_theme_color_override("font_color", Color("#f3dfae"))
+	character_contents.add_child(character_progression_label)
+
 	var equipment_grid := GridContainer.new()
 	equipment_grid.columns = 2
 	equipment_grid.add_theme_constant_override("h_separation", 10)
@@ -594,6 +615,100 @@ func _on_equipment_changed(equipment: Dictionary) -> void:
 			label.tooltip_text = ""
 			label.add_theme_color_override("font_color", Color(0.88, 0.83, 0.72, 1))
 
+
+func _on_progression_changed(
+	_level: int,
+	_experience: int,
+	xp_into_level: int,
+	xp_for_level: int,
+	_passive_points: int,
+	_skill_points: int
+) -> void:
+	character_progression_label.text = GameState.get_progression_summary()
+	experience_level_label.text = "Lv. %d" % GameState.player_level
+	if GameState.player_level >= GameState.MAX_PLAYER_LEVEL:
+		experience_bar.max_value = 1.0
+		experience_bar.value = 1.0
+		experience_tooltip_label.text = "MAX LEVEL"
+	else:
+		experience_bar.max_value = xp_for_level
+		experience_bar.value = xp_into_level
+		experience_tooltip_label.text = "%d / %d XP" % [xp_into_level, xp_for_level]
+
+
+func _on_experience_bar_mouse_entered() -> void:
+	experience_tooltip.show()
+
+
+func _on_experience_bar_mouse_exited() -> void:
+	experience_tooltip.hide()
+
+
+func _build_experience_bar() -> void:
+	experience_level_label = Label.new()
+	experience_level_label.anchor_left = 0.5
+	experience_level_label.anchor_right = 0.5
+	experience_level_label.anchor_top = 1.0
+	experience_level_label.anchor_bottom = 1.0
+	experience_level_label.offset_left = -(EXPERIENCE_BAR_WIDTH * 0.5) - 58.0
+	experience_level_label.offset_top = -26.0
+	experience_level_label.offset_right = -(EXPERIENCE_BAR_WIDTH * 0.5) - 8.0
+	experience_level_label.offset_bottom = -6.0
+	experience_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	experience_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(experience_level_label)
+
+	experience_bar = ProgressBar.new()
+	experience_bar.anchor_left = 0.5
+	experience_bar.anchor_right = 0.5
+	experience_bar.anchor_top = 1.0
+	experience_bar.anchor_bottom = 1.0
+	experience_bar.offset_left = -EXPERIENCE_BAR_WIDTH * 0.5
+	experience_bar.offset_top = -22.0
+	experience_bar.offset_right = EXPERIENCE_BAR_WIDTH * 0.5
+	experience_bar.offset_bottom = -10.0
+	experience_bar.min_value = 0.0
+	experience_bar.show_percentage = false
+	experience_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	var experience_background := StyleBoxFlat.new()
+	experience_background.bg_color = Color("#10233b")
+	experience_background.set_border_width_all(1)
+	experience_background.border_color = Color("#4875a5")
+	experience_background.set_corner_radius_all(4)
+	experience_bar.add_theme_stylebox_override("background", experience_background)
+	var experience_fill := StyleBoxFlat.new()
+	experience_fill.bg_color = Color("#2389e8")
+	experience_fill.set_corner_radius_all(4)
+	experience_bar.add_theme_stylebox_override("fill", experience_fill)
+	add_child(experience_bar)
+
+	experience_tooltip = PanelContainer.new()
+	experience_tooltip.anchor_left = 0.5
+	experience_tooltip.anchor_right = 0.5
+	experience_tooltip.anchor_top = 1.0
+	experience_tooltip.anchor_bottom = 1.0
+	experience_tooltip.offset_left = -70.0
+	experience_tooltip.offset_top = -52.0
+	experience_tooltip.offset_right = 70.0
+	experience_tooltip.offset_bottom = -28.0
+	experience_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tooltip_style := StyleBoxFlat.new()
+	tooltip_style.bg_color = Color("#10233b")
+	tooltip_style.set_border_width_all(1)
+	tooltip_style.border_color = Color("#4875a5")
+	tooltip_style.set_corner_radius_all(4)
+	tooltip_style.content_margin_left = 6.0
+	tooltip_style.content_margin_right = 6.0
+	tooltip_style.content_margin_top = 2.0
+	tooltip_style.content_margin_bottom = 2.0
+	experience_tooltip.add_theme_stylebox_override("panel", tooltip_style)
+	experience_tooltip_label = Label.new()
+	experience_tooltip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	experience_tooltip.add_child(experience_tooltip_label)
+	experience_tooltip.hide()
+	add_child(experience_tooltip)
+	experience_bar.mouse_entered.connect(_on_experience_bar_mouse_entered)
+	experience_bar.mouse_exited.connect(_on_experience_bar_mouse_exited)
 
 func _refresh_shop_items() -> void:
 	for child in item_list.get_children():

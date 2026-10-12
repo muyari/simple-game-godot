@@ -41,6 +41,8 @@ const SCENERY_CLEARANCE = 24.0
 
 @export var player_path: NodePath = NodePath("../Player")
 @export_enum("Forest", "Desert", "Ice Caves", "Futuristic AI Zone") var biome := 0
+@export_enum("Forest", "Desert") var biome := 0
+@export_range(1, 25, 1) var area_level := 1
 
 var player: Player
 var player_camera: Camera2D
@@ -497,6 +499,12 @@ func _get_spawn_distance(direction: Vector2) -> float:
 func _on_enemy_died(enemy: Wolf) -> void:
 	enemies_defeated += 1
 	progress_changed.emit(enemies_defeated, _get_max_enemies())
+	var experience_reward := _get_scaled_experience_reward(enemy)
+	if not player.gain_experience(experience_reward):
+		push_error("Could not award %d XP for defeating %s." % [
+			experience_reward,
+			enemy.name
+		])
 	_drop_enemy_loot(enemy)
 
 	var max_enemies := _get_max_enemies()
@@ -508,9 +516,17 @@ func _on_enemy_died(enemy: Wolf) -> void:
 
 
 func _on_desert_boss_died(boss: Wolf) -> void:
+	var experience_reward := _get_scaled_experience_reward(boss)
+	if not player.gain_experience(experience_reward):
+		push_error("Could not award %d XP for defeating the desert boss." % experience_reward)
 	_drop_enemy_loot(boss, true)
 	level_is_complete = true
 	level_completed.emit()
+
+
+func _get_scaled_experience_reward(enemy: Wolf) -> int:
+	var area_multiplier := 1.0 + float(area_level - 1) * 0.5
+	return maxi(roundi(enemy.experience_reward * area_multiplier), 1)
 
 
 func _drop_enemy_loot(enemy: Wolf, is_desert_boss := false) -> void:

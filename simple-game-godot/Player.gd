@@ -376,6 +376,10 @@ func try_add_item(item: ItemData) -> bool:
 	return true
 
 
+func gain_experience(amount: int) -> bool:
+	return GameState.add_experience(amount)
+
+
 func purchase_item(item: ItemData) -> bool:
 	if not GameState.purchase_item(item, inventory, equipment, MAX_INVENTORY_SIZE):
 		return false

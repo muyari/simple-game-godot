@@ -8,6 +8,11 @@ const VENOM_SCENE = preload("res://venom_ball.tscn")
 var spit_damage := 20
 
 
+func _ready() -> void:
+	experience_reward = 20
+	super._ready()
+
+
 func _physics_process(delta: float) -> void:
 	if target == null or not is_instance_valid(target):
 		velocity = Vector2.ZERO

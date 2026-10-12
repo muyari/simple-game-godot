@@ -25,6 +25,7 @@ enum State { CHASING, WINDING_UP, COOLDOWN }
 var target: Player
 @export var max_health: float = MAX_HEALTH
 @export var attack_damage: int = ATTACK_DAMAGE
+@export_range(1, 10000, 1) var experience_reward := 15
 
 var health: float
 var state := State.CHASING
