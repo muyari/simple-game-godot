@@ -12,6 +12,7 @@ const EXPERIENCE_BAR_WIDTH = 440.0
 @onready var mana_orb: ResourceGlobe = $ManaOrb
 @onready var health_potion_label: Label = $HealthPotionLabel
 @onready var mana_potion_label: Label = $ManaPotionLabel
+@onready var passive_tree_button: Button = $PassiveTreeButton
 
 var experience_bar: ProgressBar
 var experience_level_label: Label
@@ -29,6 +30,7 @@ var shop_overlay: Control
 var character_overlay: Control
 var character_panel: PanelContainer
 var inventory_panel: PanelContainer
+var witch_skill_tree: WitchSkillTree
 var equipment_stats_label: Label
 var character_progression_label: Label
 var equipment_slot_labels: Dictionary = {}
@@ -41,6 +43,7 @@ var selected_inventory_index := -1
 
 
 func _ready() -> void:
+	passive_tree_button.visible = player.selected_character == "Witch"
 	_build_experience_bar()
 	_update_gold(GameState.gold)
 	GameState.gold_changed.connect(_update_gold)
@@ -74,6 +77,20 @@ func _ready() -> void:
 	)
 
 
+func _process(_delta: float) -> void:
+	if player.selected_character != "Witch":
+		return
+	for slot in ["Q", "W", "E", "R"]:
+		var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+		if skill_slot == null:
+			continue
+		var skill_id := GameState.get_witch_equipped_skill(slot)
+		var cooldown_ratio := player.get_witch_skill_cooldown_ratio(skill_id)
+		if absf(float(skill_slot.get("cooldown_progress")) - cooldown_ratio) > 0.01:
+			skill_slot.set("cooldown_progress", cooldown_ratio)
+			skill_slot.queue_redraw()
+
+
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or event.keycode != KEY_E:
 		return
@@ -87,6 +104,11 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if witch_skill_tree != null and witch_skill_tree.visible:
+			if event.keycode == KEY_ESCAPE:
+				_on_witch_skill_tree_closed()
+			get_viewport().set_input_as_handled()
+			return
 		if waystone_overlay != null and waystone_overlay.visible:
 			if event.keycode == KEY_ESCAPE:
 				_close_waystone()
@@ -113,6 +135,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			else:
 				_open_inventory_menu()
 			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_P and witch_skill_tree != null:
+			if (shop_overlay == null or not shop_overlay.visible) \
+					and (dialogue_overlay == null or not dialogue_overlay.visible) \
+					and (waystone_overlay == null or not waystone_overlay.visible):
+				_open_witch_skill_tree()
+				get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_ESCAPE and character_overlay.visible:
 			_close_character_menu()
 			get_viewport().set_input_as_handled()
@@ -368,6 +396,12 @@ func _build_character_menu() -> void:
 	character_close_button.text = "Close  (C / Esc)"
 	_style_menu_button(character_close_button, 42.0)
 	character_close_button.pressed.connect(_close_character_menu)
+	if player.selected_character == "Witch":
+		var skill_tree_button := Button.new()
+		skill_tree_button.text = "Witch Skill Tree"
+		_style_menu_button(skill_tree_button, 42.0)
+		skill_tree_button.pressed.connect(_open_witch_skill_tree)
+		character_contents.add_child(skill_tree_button)
 	character_contents.add_child(character_close_button)
 
 	var inventory_contents := VBoxContainer.new()
@@ -416,6 +450,45 @@ func _build_character_menu() -> void:
 	inventory_contents.add_child(inventory_close_button)
 
 	_show_character_panel()
+	if player.selected_character == "Witch":
+		witch_skill_tree = WitchSkillTree.new()
+		add_child(witch_skill_tree)
+		witch_skill_tree.hide()
+		witch_skill_tree.closed.connect(_on_witch_skill_tree_closed)
+		witch_skill_tree.loadout_changed.connect(_refresh_witch_skill_slots)
+		_refresh_witch_skill_slots()
+
+
+func _open_witch_skill_tree() -> void:
+	if witch_skill_tree == null:
+		return
+	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
+	witch_skill_tree.open_tree()
+
+
+func _on_witch_skill_tree_closed() -> void:
+	if witch_skill_tree == null:
+		return
+	witch_skill_tree.hide()
+	_close_character_menu()
+	_refresh_witch_skill_slots()
+
+
+func _refresh_witch_skill_slots() -> void:
+	for slot in ["Q", "W", "E", "R"]:
+		var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+		if skill_slot == null:
+			continue
+		var skill_id := GameState.get_witch_equipped_skill(slot)
+		var definition := GameState.get_witch_skill_definition(skill_id)
+		skill_slot.set("skill_label", str(definition.get("short_label", "")))
+		var icon_path := str(definition.get("icon_path", ""))
+		skill_slot.set("skill_icon", load(icon_path) if not icon_path.is_empty() else null)
+		var skill_tooltip := player.get_witch_skill_tooltip(skill_id)
+		skill_slot.set("skill_tooltip", skill_tooltip)
+		skill_slot.tooltip_text = skill_tooltip
+		skill_slot.queue_redraw()
 
 
 func _create_menu_panel(size: Vector2) -> PanelContainer:
@@ -494,7 +567,13 @@ func _open_character_menu() -> void:
 	_show_character_panel()
 	character_overlay.show()
 	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
 	dialogue_overlay.hide()
+
+
+func _on_passive_tree_button_pressed() -> void:
+	if player.selected_character == "Witch":
+		_open_witch_skill_tree()
 
 
 func _open_inventory_menu() -> void:
@@ -503,12 +582,14 @@ func _open_inventory_menu() -> void:
 	_show_inventory_panel()
 	character_overlay.show()
 	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
 	dialogue_overlay.hide()
 
 
 func _close_character_menu() -> void:
 	character_overlay.hide()
 	player.set_physics_process(true)
+	player.set_process_unhandled_input(true)
 
 
 func _open_waystone() -> void:
@@ -603,6 +684,8 @@ func _on_equipment_changed(equipment: Dictionary) -> void:
 		1 + player.get_weapon_damage_bonus(),
 		player.get_damage_reduction()
 	]
+	if player.selected_character == "Witch":
+		_refresh_witch_skill_slots()
 	for slot_name in equipment_slot_labels:
 		var label: Label = equipment_slot_labels[slot_name]
 		if equipment.has(slot_name):

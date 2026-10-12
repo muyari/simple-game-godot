@@ -23,6 +23,7 @@ var experience_tooltip: PanelContainer
 var experience_tooltip_label: Label
 var experience_feedback_label: Label
 var experience_feedback_time := 0.0
+var witch_skill_tree: WitchSkillTree
 @onready var character_menu: Control = $CharacterMenu
 @onready var character_panel: PanelContainer = $CharacterMenu/Panel
 @onready var inventory_panel: PanelContainer = $CharacterMenu/InventoryPanel
@@ -54,6 +55,8 @@ func _ready() -> void:
 	_build_inventory_slots()
 	equip_item_button.pressed.connect(_on_equip_item_pressed)
 	var player: Player = get_node("../Player")
+	if player.selected_character == "Witch":
+		_build_witch_skill_tree()
 	health_orb.maximum = player.MAX_HEALTH
 	health_orb.value = player.health
 	mana_orb.maximum = player.MAX_MANA
@@ -90,6 +93,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_witch_skill_cooldowns()
 	if experience_feedback_time <= 0.0:
 		return
 	experience_feedback_time = maxf(experience_feedback_time - delta, 0.0)
@@ -97,29 +101,118 @@ func _process(delta: float) -> void:
 		experience_feedback_label.hide()
 
 
+func _update_witch_skill_cooldowns() -> void:
+	var player: Player = get_node("../Player")
+	if player.selected_character != "Witch":
+		return
+	for slot in ["Q", "W", "E", "R"]:
+		var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+		if skill_slot == null:
+			continue
+		var skill_id := GameState.get_witch_equipped_skill(slot)
+		var cooldown_ratio := player.get_witch_skill_cooldown_ratio(skill_id)
+		if absf(float(skill_slot.get("cooldown_progress")) - cooldown_ratio) > 0.01:
+			skill_slot.set("cooldown_progress", cooldown_ratio)
+			skill_slot.queue_redraw()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if witch_skill_tree != null and witch_skill_tree.visible:
+		if event.keycode == KEY_ESCAPE:
+			_on_witch_skill_tree_closed()
+		get_viewport().set_input_as_handled()
 		return
 
 	if event.keycode == KEY_C:
 		if character_menu.visible and character_panel.visible:
 			character_menu.hide()
+			_set_player_menu_paused(false)
 		else:
 			character_panel.show()
 			inventory_panel.hide()
 			character_menu.show()
+			_set_player_menu_paused(true)
+		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_P and witch_skill_tree != null:
+		_open_witch_skill_tree()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_I:
 		if character_menu.visible and inventory_panel.visible:
 			character_menu.hide()
+			_set_player_menu_paused(false)
 		else:
 			character_panel.hide()
 			inventory_panel.show()
 			character_menu.show()
+			_set_player_menu_paused(true)
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_ESCAPE and character_menu.visible:
 		character_menu.hide()
+		_set_player_menu_paused(false)
 		get_viewport().set_input_as_handled()
+
+
+func _build_witch_skill_tree() -> void:
+	var character_contents: VBoxContainer = $CharacterMenu/Panel/Contents
+	var skill_tree_button := Button.new()
+	skill_tree_button.text = "Witch Skill Tree"
+	skill_tree_button.custom_minimum_size.y = 42.0
+	skill_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	skill_tree_button.add_theme_font_size_override("font_size", 18)
+	skill_tree_button.pressed.connect(_open_witch_skill_tree)
+	var close_button: Button = character_contents.get_node("CloseButton")
+	character_contents.add_child(skill_tree_button)
+	character_contents.move_child(skill_tree_button, close_button.get_index())
+
+	witch_skill_tree = WitchSkillTree.new()
+	add_child(witch_skill_tree)
+	witch_skill_tree.hide()
+	witch_skill_tree.closed.connect(_on_witch_skill_tree_closed)
+	witch_skill_tree.loadout_changed.connect(_refresh_witch_skill_slots)
+	_refresh_witch_skill_slots()
+
+
+func _open_witch_skill_tree() -> void:
+	if witch_skill_tree == null:
+		return
+	var player: Player = get_node("../Player")
+	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
+	witch_skill_tree.open_tree()
+
+
+func _on_witch_skill_tree_closed() -> void:
+	if witch_skill_tree == null:
+		return
+	witch_skill_tree.hide()
+	character_menu.hide()
+	_set_player_menu_paused(false)
+	_refresh_witch_skill_slots()
+
+
+func _set_player_menu_paused(paused: bool) -> void:
+	var player: Player = get_node("../Player")
+	player.set_physics_process(not paused)
+	player.set_process_unhandled_input(not paused)
+
+
+func _refresh_witch_skill_slots() -> void:
+	for slot in ["Q", "W", "E", "R"]:
+		var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+		if skill_slot == null:
+			continue
+		var skill_id := GameState.get_witch_equipped_skill(slot)
+		var definition := GameState.get_witch_skill_definition(skill_id)
+		skill_slot.set("skill_label", str(definition.get("short_label", "")))
+		var icon_path := str(definition.get("icon_path", ""))
+		skill_slot.set("skill_icon", load(icon_path) if not icon_path.is_empty() else null)
+		var player: Player = get_node("../Player")
+		var skill_tooltip := player.get_witch_skill_tooltip(skill_id)
+		skill_slot.set("skill_tooltip", skill_tooltip)
+		skill_slot.tooltip_text = skill_tooltip
+		skill_slot.queue_redraw()
 
 
 func _build_inventory_slots() -> void:

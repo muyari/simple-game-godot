@@ -427,6 +427,15 @@ offset_right = -150.0
 offset_bottom = 48.0
 text = "Character (C)"
 
+[node name="PassiveTreeButton" type="Button" parent="TownUI"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -420.0
+offset_top = 16.0
+offset_right = -280.0
+offset_bottom = 48.0
+text = "Passive Tree (P)"
+
 [node name="InventoryButton" type="Button" parent="TownUI"]
 anchor_left = 1.0
 anchor_right = 1.0
@@ -448,4 +457,5 @@ text = "Gold: 0"
 horizontal_alignment = 2
 
 [connection signal="pressed" from="TownUI/CharacterButton" to="TownUI" method="_on_character_button_pressed"]
+[connection signal="pressed" from="TownUI/PassiveTreeButton" to="TownUI" method="_on_passive_tree_button_pressed"]
 [connection signal="pressed" from="TownUI/InventoryButton" to="TownUI" method="_on_inventory_button_pressed"]
