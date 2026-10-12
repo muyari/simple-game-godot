@@ -35,6 +35,7 @@ const POTION_REFILL_TIME = 10.0
 const POTION_EFFECT_TIME = 3.0
 const TOWN_PORTAL_CAST_DURATION = 3.0
 const FIREBALL_SCENE = preload("res://fireball.tscn")
+const WITCH_FAMILIAR_SCENE = preload("res://witch_familiar.tscn")
 const WARRIOR_SHEET = preload("res://textures/warrior_sheet.svg")
 const WITCH_SHEET = preload("res://textures/witch_sheet.svg")
 const PORTAL_SCENE = preload("res://portal.tscn")
@@ -62,6 +63,11 @@ var facing := Vector2.DOWN
 var chill_time_remaining := 0.0
 var chill_speed_factor := 1.0
 var knockback_velocity := Vector2.ZERO
+var arcane_shield_time_remaining := 0.0
+var arcane_shield_damage_reduction := 0.0
+var frost_nova_visual_time_remaining := 0.0
+var witch_skill_cooldowns: Dictionary = {}
+var witch_familiar: WitchFamiliar
 var selected_character := "Warrior"
 var click_destination := Vector2.ZERO
 var click_move_active := false
@@ -127,6 +133,11 @@ func _physics_process(delta: float) -> void:
 	_update_potion_effects(delta)
 	iceball_cooldown_remaining = maxf(iceball_cooldown_remaining - delta, 0.0)
 	chill_time_remaining = maxf(chill_time_remaining - delta, 0.0)
+	arcane_shield_time_remaining = maxf(arcane_shield_time_remaining - delta, 0.0)
+	frost_nova_visual_time_remaining = maxf(frost_nova_visual_time_remaining - delta, 0.0)
+	if arcane_shield_time_remaining > 0.0 or frost_nova_visual_time_remaining > 0.0:
+		queue_redraw()
+	_update_witch_skill_cooldowns(delta)
 	if chill_time_remaining == 0.0:
 		chill_speed_factor = 1.0
 	if mouse_move_held and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -223,11 +234,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_2:
 		_use_mana_potion()
 	elif event.keycode == KEY_Q:
-		_cast_fireball()
+		if selected_character == "Witch":
+			_cast_assigned_witch_skill("Q")
+		else:
+			_cast_fireball()
+	elif event.keycode == KEY_W and selected_character == "Witch":
+		_cast_assigned_witch_skill("W")
 	elif event.keycode == KEY_E:
 		if not _try_interact():
-			_cast_e_skill()
+			if selected_character == "Witch":
+				if not _cast_assigned_witch_skill("E"):
+					_cast_e_skill()
+			else:
+				_cast_e_skill()
 		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_R and selected_character == "Witch":
+		_cast_assigned_witch_skill("R")
 	elif event.keycode == KEY_T:
 		_open_town_portal()
 
@@ -274,6 +296,172 @@ func _cast_e_skill() -> void:
 				iceball_cooldown_remaining = ICEBALL_COOLDOWN
 		"Town Portal":
 			_open_town_portal()
+
+
+func _update_witch_skill_cooldowns(delta: float) -> void:
+	for skill_id in witch_skill_cooldowns.keys():
+		var remaining := maxf(float(witch_skill_cooldowns[skill_id]) - delta, 0.0)
+		if remaining == 0.0:
+			witch_skill_cooldowns.erase(skill_id)
+		else:
+			witch_skill_cooldowns[skill_id] = remaining
+
+
+func get_witch_skill_cooldown_ratio(skill_id: String) -> float:
+	var remaining := float(witch_skill_cooldowns.get(skill_id, 0.0))
+	if remaining <= 0.0:
+		return 0.0
+	var definition := GameState.get_witch_skill_definition(skill_id)
+	if definition.is_empty():
+		return 0.0
+	var rank := GameState.get_witch_skill_rank(skill_id)
+	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.12, 0.5)
+	return clampf(remaining / cooldown, 0.0, 1.0)
+
+
+func get_witch_skill_tooltip(skill_id: String) -> String:
+	var rank := GameState.get_witch_skill_rank(skill_id)
+	if rank <= 0:
+		return ""
+
+	var definition := GameState.get_witch_skill_definition(skill_id)
+	if definition.is_empty():
+		return ""
+	var damage_bonus := get_weapon_damage_bonus()
+	match skill_id:
+		"firebolt":
+			return "Firebolt\nDamage: %.1f per hit" % [1.2 + float(rank) * 0.8 + damage_bonus]
+		"frost_nova":
+			return "Frost Nova\nDamage: %.2f per enemy\nAlso stuns nearby enemies" % [1.5 + float(rank) * 0.75 + damage_bonus]
+		"summon_wisp":
+			return "Summon Wisp\nDamage: %.1f per bolt\nWisp duration: %.0f sec" % [
+				1.0 + float(rank),
+				9.0 + float(rank - 1) * 3.0
+			]
+		"soul_siphon":
+			return "Soul Siphon\nDamage: %.1f\nRestores health and mana" % [2.0 + float(rank) * 1.5 + damage_bonus]
+		"arcane_shield":
+			return "Arcane Shield\nNo direct damage\nReduces incoming damage by %d%% for %.1f sec" % [
+				roundi((0.5 + float(rank - 1) * 0.1) * 100.0),
+				4.0 + float(rank - 1) * 1.5
+			]
+		"curse":
+			return "Curse\nNo direct damage\nTarget takes %d%% more damage for %.1f sec" % [
+				roundi((0.3 + float(rank - 1) * 0.15) * 100.0),
+				5.0 + float(rank - 1)
+			]
+	return str(definition.get("description", ""))
+
+
+func _cast_assigned_witch_skill(slot: String) -> bool:
+	var skill_id := GameState.get_witch_equipped_skill(slot)
+	var rank := GameState.get_witch_skill_rank(skill_id)
+	if skill_id.is_empty() or rank <= 0 or witch_skill_cooldowns.has(skill_id):
+		return false
+
+	var definition := GameState.get_witch_skill_definition(skill_id)
+	if definition.is_empty():
+		return false
+	var mana_cost := int(definition["mana_cost"])
+	if mana < mana_cost:
+		return true
+
+	mana -= mana_cost
+	mana_changed.emit(mana, MAX_MANA)
+	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.12, 0.5)
+	witch_skill_cooldowns[skill_id] = cooldown
+	match skill_id:
+		"firebolt":
+			_cast_witch_firebolt(rank)
+		"frost_nova":
+			_cast_witch_frost_nova(rank)
+		"summon_wisp":
+			_cast_witch_summon_wisp(rank)
+		"soul_siphon":
+			_cast_witch_soul_siphon(rank)
+		"arcane_shield":
+			arcane_shield_time_remaining = 4.0 + float(rank - 1) * 1.5
+			arcane_shield_damage_reduction = 0.5 + float(rank - 1) * 0.1
+		"curse":
+			_cast_witch_curse(rank)
+		_:
+			witch_skill_cooldowns.erase(skill_id)
+			mana += mana_cost
+			mana_changed.emit(mana, MAX_MANA)
+			return false
+	return true
+
+
+func _cast_witch_firebolt(rank: int) -> void:
+	var projectile: Fireball = FIREBALL_SCENE.instantiate()
+	projectile.direction = facing
+	projectile.direct_damage = 1.2 + float(rank) * 0.8 + get_weapon_damage_bonus()
+	get_tree().current_scene.add_child(projectile)
+	projectile.global_position = global_position + facing * 20.0
+
+
+func _cast_witch_frost_nova(rank: int) -> void:
+	frost_nova_visual_time_remaining = 0.55
+	var radius := 118.0 + float(rank - 1) * 22.0
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy is Node2D or not enemy.has_method("take_damage"):
+			continue
+		var enemy_node := enemy as Node2D
+		if global_position.distance_to(enemy_node.global_position) <= radius:
+			enemy.call("take_damage", 1.5 + float(rank) * 0.75 + get_weapon_damage_bonus())
+			if enemy.has_method("apply_stun"):
+				enemy.call("apply_stun", 0.55 + float(rank - 1) * 0.25)
+
+
+func _cast_witch_summon_wisp(rank: int) -> void:
+	if is_instance_valid(witch_familiar):
+		witch_familiar.duration_remaining = maxf(
+			witch_familiar.duration_remaining,
+			9.0 + float(rank - 1) * 3.0
+		)
+		witch_familiar.damage = 1.0 + float(rank)
+		return
+
+	witch_familiar = WITCH_FAMILIAR_SCENE.instantiate() as WitchFamiliar
+	if witch_familiar == null:
+		push_error("The Witch familiar scene root must use the WitchFamiliar script.")
+		return
+	witch_familiar.owner_player = self
+	witch_familiar.duration = 9.0 + float(rank - 1) * 3.0
+	witch_familiar.damage = 1.0 + float(rank)
+	get_tree().current_scene.add_child(witch_familiar)
+	witch_familiar.global_position = global_position + Vector2(32.0, -28.0)
+
+
+func _cast_witch_soul_siphon(rank: int) -> void:
+	var target_enemy := _find_nearest_enemy(360.0)
+	if target_enemy == null:
+		return
+	target_enemy.call("take_damage", 2.0 + float(rank) * 1.5 + get_weapon_damage_bonus())
+	health = mini(health + 3 + rank * 2, MAX_HEALTH)
+	mana = mini(mana + 5 + rank * 3, MAX_MANA)
+	health_changed.emit(health, MAX_HEALTH)
+	mana_changed.emit(mana, MAX_MANA)
+
+
+func _cast_witch_curse(rank: int) -> void:
+	var target_enemy := _find_nearest_enemy(440.0)
+	if target_enemy != null and target_enemy.has_method("apply_curse"):
+		target_enemy.call("apply_curse", 5.0 + float(rank - 1), 1.3 + float(rank - 1) * 0.15)
+
+
+func _find_nearest_enemy(max_distance: float) -> Node2D:
+	var nearest_enemy: Node2D
+	var nearest_distance := max_distance
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy is Node2D or not enemy.has_method("take_damage"):
+			continue
+		var enemy_node := enemy as Node2D
+		var distance := global_position.distance_to(enemy_node.global_position)
+		if distance < nearest_distance:
+			nearest_enemy = enemy_node
+			nearest_distance = distance
+	return nearest_enemy
 
 
 func _finish_mouse_move(release_position: Vector2) -> void:
@@ -600,6 +788,16 @@ func _get_primary_attack_damage() -> float:
 	return 1.0 + get_weapon_damage_bonus()
 
 
+func _draw() -> void:
+	if frost_nova_visual_time_remaining > 0.0:
+		var progress := 1.0 - frost_nova_visual_time_remaining / 0.55
+		var nova_radius := lerpf(36.0, 168.0, progress)
+		draw_arc(Vector2.ZERO, nova_radius, 0.0, TAU, 64, Color(0.63, 0.92, 1.0, 1.0 - progress), 4.0)
+	if arcane_shield_time_remaining > 0.0:
+		var shield_alpha := 0.45 + sin(Time.get_ticks_msec() * 0.012) * 0.12
+		draw_arc(Vector2.ZERO, 39.0, 0.0, TAU, 48, Color(0.46, 0.87, 1.0, shield_alpha), 3.0)
+
+
 func apply_chill(duration: float, speed_factor := 0.55) -> void:
 	chill_time_remaining = maxf(chill_time_remaining, duration)
 	chill_speed_factor = minf(chill_speed_factor, clampf(speed_factor, 0.1, 1.0))
@@ -618,6 +816,8 @@ func take_damage(amount: int) -> void:
 		return
 
 	var reduced_damage := maxi(amount - get_damage_reduction(), 0)
+	if arcane_shield_time_remaining > 0.0:
+		reduced_damage = roundi(float(reduced_damage) * (1.0 - arcane_shield_damage_reduction))
 	if reduced_damage > 0:
 		_cancel_town_portal_cast()
 	health = maxi(health - reduced_damage, 0)

@@ -6,7 +6,7 @@ signal experience_gained(amount: int)
 signal player_leveled_up(level: int)
 
 const SAVE_PATH = "user://character_save.json"
-const SAVE_VERSION = 2
+const SAVE_VERSION = 4
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
 const LEVEL_SCENES = {
@@ -15,6 +15,95 @@ const LEVEL_SCENES = {
 	"res://ice_caves.tscn": 3,
 	"res://futuristic_ai_zone.tscn": 4
 }
+const WITCH_SKILL_ORDER = [
+	"firebolt",
+	"frost_nova",
+	"summon_wisp",
+	"soul_siphon",
+	"arcane_shield",
+	"curse"
+]
+const WITCH_SKILL_TREE = {
+	"firebolt": {
+		"name": "Firebolt",
+		"short_label": "FIRE",
+		"icon_path": "res://textures/skills/firebolt.svg",
+		"branch": "Elemental",
+		"description": "Launch a focused flame bolt at the nearest foe. Each rank increases damage.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 1,
+		"prerequisites": [],
+		"mana_cost": 12,
+		"cooldown": 0.8
+	},
+	"frost_nova": {
+		"name": "Frost Nova",
+		"short_label": "NOVA",
+		"icon_path": "res://textures/skills/frost_nova.svg",
+		"branch": "Elemental",
+		"description": "Burst freezing magic around you, damaging and briefly stunning nearby enemies.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 2,
+		"prerequisites": [],
+		"mana_cost": 28,
+		"cooldown": 7.0
+	},
+	"summon_wisp": {
+		"name": "Summon Wisp",
+		"short_label": "WISP",
+		"icon_path": "res://textures/skills/summon_wisp.svg",
+		"branch": "Summoner",
+		"description": "Call a spirit wisp that follows you and attacks nearby enemies for a short time.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 2,
+		"prerequisites": [],
+		"mana_cost": 32,
+		"cooldown": 16.0
+	},
+	"soul_siphon": {
+		"name": "Soul Siphon",
+		"short_label": "SIPHON",
+		"icon_path": "res://textures/skills/soul_siphon.svg",
+		"branch": "Summoner",
+		"description": "Drain a nearby enemy to restore health and mana. Higher ranks improve the drain.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 4,
+		"prerequisites": [],
+		"mana_cost": 20,
+		"cooldown": 10.0
+	},
+	"arcane_shield": {
+		"name": "Arcane Shield",
+		"short_label": "SHIELD",
+		"icon_path": "res://textures/skills/arcane_shield.svg",
+		"branch": "Support",
+		"description": "Wrap yourself in a ward that absorbs most incoming damage for four seconds.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 2,
+		"prerequisites": [],
+		"mana_cost": 26,
+		"cooldown": 14.0
+	},
+	"curse": {
+		"name": "Curse",
+		"short_label": "CURSE",
+		"icon_path": "res://textures/skills/curse.svg",
+		"branch": "Support",
+		"description": "Curse the nearest enemy, making it vulnerable to your attacks for six seconds.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 4,
+		"prerequisites": [],
+		"mana_cost": 18,
+		"cooldown": 12.0
+	}
+}
+const WITCH_SKILL_SLOTS = ["Q", "W", "E", "R"]
 const MAX_PLAYER_LEVEL = 25
 const LEVEL_XP_THRESHOLDS: Array[int] = [
 	0, 300, 750, 1350, 2100, 3000, 4050, 5250, 6600, 8100,
@@ -49,6 +138,8 @@ var player_level := 1
 var experience := 0
 var passive_tree_points := 0
 var skill_tree_points := 0
+var witch_skill_ranks: Dictionary = {}
+var witch_skill_loadout: Dictionary = {}
 
 
 func _ready() -> void:
@@ -114,6 +205,74 @@ func get_level_id(scene_path: String) -> int:
 	return int(LEVEL_SCENES.get(scene_path, 0))
 
 
+func get_witch_skill_definitions() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	for skill_id in WITCH_SKILL_ORDER:
+		var definition: Dictionary = WITCH_SKILL_TREE[skill_id].duplicate(true)
+		definition["id"] = skill_id
+		definitions.append(definition)
+	return definitions
+
+
+func get_witch_skill_definition(skill_id: String) -> Dictionary:
+	if not WITCH_SKILL_TREE.has(skill_id):
+		return {}
+	var definition: Dictionary = WITCH_SKILL_TREE[skill_id].duplicate(true)
+	definition["id"] = skill_id
+	return definition
+
+
+func get_witch_skill_rank(skill_id: String) -> int:
+	return int(witch_skill_ranks.get(skill_id, 0))
+
+
+func get_witch_equipped_skill(slot: String) -> String:
+	return str(witch_skill_loadout.get(slot, ""))
+
+
+func can_unlock_witch_skill(skill_id: String) -> bool:
+	if _get_active_character_class() != "Witch" or not WITCH_SKILL_TREE.has(skill_id):
+		return false
+
+	var skill: Dictionary = WITCH_SKILL_TREE[skill_id]
+	var current_rank := get_witch_skill_rank(skill_id)
+	if player_level < int(skill["required_level"]) \
+			or current_rank >= int(skill["max_rank"]) \
+			or skill_tree_points < int(skill["point_cost"]):
+		return false
+
+	return true
+
+
+func unlock_or_upgrade_witch_skill(skill_id: String) -> bool:
+	if not can_unlock_witch_skill(skill_id):
+		return false
+
+	var previous_rank := get_witch_skill_rank(skill_id)
+	var previous_points := skill_tree_points
+	witch_skill_ranks[skill_id] = previous_rank + 1
+	skill_tree_points -= int(WITCH_SKILL_TREE[skill_id]["point_cost"])
+	if not save_character(get_inventory(), get_equipment()):
+		witch_skill_ranks[skill_id] = previous_rank
+		skill_tree_points = previous_points
+		return false
+	_emit_progression_changed()
+	return true
+
+
+func assign_witch_skill(skill_id: String, slot: String) -> bool:
+	if _get_active_character_class() != "Witch" \
+			or slot not in WITCH_SKILL_SLOTS \
+			or get_witch_skill_rank(skill_id) < 1:
+		return false
+
+	var previous_loadout := witch_skill_loadout.duplicate()
+	for assigned_slot in witch_skill_loadout.keys():
+		if witch_skill_loadout[assigned_slot] == skill_id:
+			witch_skill_loadout.erase(assigned_slot)
+	witch_skill_loadout[slot] = skill_id
+	if not save_character(get_inventory(), get_equipment()):
+		witch_skill_loadout = previous_loadout
 func get_level_state(level_id: int) -> Dictionary:
 	var character_index := _find_character_index(_active_character_id)
 	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
@@ -236,6 +395,7 @@ func create_character(display_name: String, character_class: String) -> String:
 	_active_character_id = character_id
 	_active_save_path = save_path
 	_clear_character_data()
+	_initialize_witch_skill_state()
 	if not save_character([], {}) or not _save_roster():
 		_characters.pop_back()
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
@@ -479,6 +639,8 @@ func save_character(inventory: Array[ItemData], equipment: Dictionary) -> bool:
 		"experience": experience,
 		"passive_tree_points": passive_tree_points,
 		"skill_tree_points": skill_tree_points,
+		"witch_skill_ranks": witch_skill_ranks,
+		"witch_skill_loadout": witch_skill_loadout,
 		"inventory": inventory_records,
 		"equipment": equipment_records
 	}
@@ -568,6 +730,14 @@ func _load_character() -> void:
 		experience = _migrate_legacy_experience(player_level, experience)
 	passive_tree_points = int(saved_passive_points)
 	skill_tree_points = int(saved_skill_points)
+	var raw_witch_skill_ranks: Variant = save_data.get("witch_skill_ranks", {})
+	var raw_witch_skill_loadout: Variant = save_data.get("witch_skill_loadout", {})
+	if typeof(raw_witch_skill_ranks) != TYPE_DICTIONARY \
+			or typeof(raw_witch_skill_loadout) != TYPE_DICTIONARY:
+		push_error("Character save Witch skill data is invalid.")
+		return
+	witch_skill_ranks = _validated_witch_skill_ranks(raw_witch_skill_ranks)
+	witch_skill_loadout = _validated_witch_skill_loadout(raw_witch_skill_loadout)
 
 	var raw_inventory: Variant = save_data.get("inventory", [])
 	var raw_equipment: Variant = save_data.get("equipment", {})
@@ -596,7 +766,8 @@ func _load_character() -> void:
 		if _item_from_record(item_record) != null:
 			_equipment_records[slot_name] = item_record
 
-	if int(saved_version) == 1:
+	_initialize_witch_skill_state()
+	if int(saved_version) < SAVE_VERSION:
 		save_character(get_inventory(), get_equipment())
 
 
@@ -691,6 +862,50 @@ func _find_character_index(character_id: String) -> int:
 	return -1
 
 
+func _get_active_character_class() -> String:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0:
+		return "Warrior"
+	return str(_characters[character_index].get("class", "Warrior"))
+
+
+func _validated_witch_skill_ranks(raw_ranks: Dictionary) -> Dictionary:
+	var ranks: Dictionary = {}
+	for skill_id in raw_ranks:
+		var skill_key := str(skill_id)
+		if not WITCH_SKILL_TREE.has(skill_key):
+			continue
+		var raw_rank: Variant = raw_ranks[skill_id]
+		if typeof(raw_rank) not in [TYPE_INT, TYPE_FLOAT] \
+				or float(raw_rank) != float(int(raw_rank)):
+			continue
+		var rank := int(raw_rank)
+		if rank >= 1 and rank <= int(WITCH_SKILL_TREE[skill_key]["max_rank"]):
+			ranks[skill_key] = rank
+	return ranks
+
+
+func _validated_witch_skill_loadout(raw_loadout: Dictionary) -> Dictionary:
+	var loadout: Dictionary = {}
+	for raw_slot in raw_loadout:
+		var slot := str(raw_slot)
+		var skill_id := str(raw_loadout[raw_slot])
+		if slot in WITCH_SKILL_SLOTS and witch_skill_ranks.get(skill_id, 0) > 0:
+			loadout[slot] = skill_id
+	return loadout
+
+
+func _initialize_witch_skill_state() -> void:
+	if _get_active_character_class() != "Witch":
+		witch_skill_ranks.clear()
+		witch_skill_loadout.clear()
+		return
+	if get_witch_skill_rank("firebolt") < 1:
+		witch_skill_ranks["firebolt"] = 1
+	if witch_skill_loadout.is_empty():
+		witch_skill_loadout["Q"] = "firebolt"
+
+
 func _validated_completed_levels(raw_levels: Variant) -> Array[int]:
 	var completed_levels: Array[int] = []
 	if typeof(raw_levels) != TYPE_ARRAY:
@@ -722,6 +937,8 @@ func _validated_level_states(raw_states: Variant) -> Dictionary:
 func _clear_character_data() -> void:
 	_inventory_records.clear()
 	_equipment_records.clear()
+	witch_skill_ranks.clear()
+	witch_skill_loadout.clear()
 	gold = 0
 	player_level = 1
 	experience = 0

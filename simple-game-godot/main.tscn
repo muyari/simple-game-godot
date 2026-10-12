@@ -313,7 +313,7 @@ theme_override_constants/v_separation = 10
 columns = 2
 
 [node name="WeaponSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=233406139]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -322,7 +322,7 @@ layout_mode = 2
 text = "Weapon  -  Empty"
 
 [node name="HelmSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1716858389]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -331,7 +331,7 @@ layout_mode = 2
 text = "Helm  -  Empty"
 
 [node name="ChestSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1003147974]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -340,7 +340,7 @@ layout_mode = 2
 text = "Chest  -  Empty"
 
 [node name="LegsSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1347715237]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -349,7 +349,7 @@ layout_mode = 2
 text = "Legs  -  Empty"
 
 [node name="GlovesSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=909004632]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -358,7 +358,7 @@ layout_mode = 2
 text = "Gloves  -  Empty"
 
 [node name="BootsSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=902860492]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -367,7 +367,7 @@ layout_mode = 2
 text = "Boots  -  Empty"
 
 [node name="Ring1Slot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=2306385]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -376,7 +376,7 @@ layout_mode = 2
 text = "Ring 1  -  Empty"
 
 [node name="Ring2Slot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=464475931]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 
@@ -385,7 +385,7 @@ layout_mode = 2
 text = "Ring 2  -  Empty"
 
 [node name="AmuletSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1914321103]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
 

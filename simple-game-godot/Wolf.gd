@@ -31,6 +31,9 @@ var health: float
 var state := State.CHASING
 var state_timer := 0.0
 var swipe_timer := 0.0
+var stun_time_remaining := 0.0
+var curse_time_remaining := 0.0
+var curse_damage_multiplier := 1.0
 var facing := Vector2.RIGHT
 var animation_time := 0.0
 
@@ -43,6 +46,17 @@ func _ready() -> void:
 	target = get_node_or_null(target_path) as Player
 	if target == null:
 		push_error("Wolf could not find its player target at %s." % target_path)
+
+
+func _process(delta: float) -> void:
+	if stun_time_remaining > 0.0:
+		stun_time_remaining = maxf(stun_time_remaining - delta, 0.0)
+		if stun_time_remaining == 0.0 and health > 0.0:
+			set_physics_process(true)
+	if curse_time_remaining > 0.0:
+		curse_time_remaining = maxf(curse_time_remaining - delta, 0.0)
+		if curse_time_remaining == 0.0:
+			curse_damage_multiplier = 1.0
 
 
 func _physics_process(delta: float) -> void:
@@ -116,11 +130,26 @@ func take_damage(amount: float) -> void:
 	if health <= 0:
 		return
 
-	health = maxf(health - amount, 0.0)
+	health = maxf(health - amount * curse_damage_multiplier, 0.0)
 	health_bar.value = health
 	if health == 0:
 		died.emit()
 		queue_free()
+
+
+func apply_stun(duration: float) -> void:
+	if health <= 0.0:
+		return
+	stun_time_remaining = maxf(stun_time_remaining, duration)
+	velocity = Vector2.ZERO
+	set_physics_process(false)
+
+
+func apply_curse(duration: float, damage_multiplier: float) -> void:
+	if health <= 0.0:
+		return
+	curse_time_remaining = maxf(curse_time_remaining, duration)
+	curse_damage_multiplier = maxf(curse_damage_multiplier, damage_multiplier)
 
 
 func take_percentage_damage(fraction: float) -> void:
