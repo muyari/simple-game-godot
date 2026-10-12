@@ -25,9 +25,11 @@ const ATTACK_ARC = 1.35
 const SWORD_REACH = 64.0
 const SWORD_HIT_DOT_THRESHOLD = 0.2
 const SWORD_HIT_TIME = 0.1
+const MOUSE_DRAG_THRESHOLD = 8.0
 const MAX_MANA = 100
 const FIREBALL_MANA_COST = 25
 const ICEBALL_MANA_COST = 0
+const ICEBALL_COOLDOWN = 2.0
 const MAX_POTIONS = 3
 const POTION_REFILL_TIME = 10.0
 const POTION_EFFECT_TIME = 3.0
@@ -56,7 +58,13 @@ var mana_heal_accumulator := 0.0
 var potion_ui_timer := 0.0
 var facing := Vector2.DOWN
 var selected_character := "Warrior"
+var click_destination := Vector2.ZERO
+var click_move_active := false
+var mouse_move_held := false
+var mouse_dragged := false
+var mouse_press_position := Vector2.ZERO
 var animation_time := 0.0
+var iceball_cooldown_remaining := 0.0
 var attack_time_remaining := 0.0
 var attack_hit_applied := false
 var town_portal: Portal
@@ -96,6 +104,23 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_potion_refills(delta)
 	_update_potion_effects(delta)
+	iceball_cooldown_remaining = maxf(iceball_cooldown_remaining - delta, 0.0)
+	if mouse_move_held and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_finish_mouse_move(get_viewport().get_mouse_position())
+
+	var keyboard_direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var direction := keyboard_direction
+	if keyboard_direction != Vector2.ZERO:
+		click_move_active = false
+		mouse_move_held = false
+		mouse_dragged = false
+	elif click_move_active:
+		var to_destination := click_destination - global_position
+		if to_destination.length() <= 6.0:
+			click_move_active = false
+			velocity = Vector2.ZERO
+		else:
+			direction = to_destination.normalized()
 
 	if is_casting_town_portal:
 		velocity = Vector2.ZERO
@@ -127,7 +152,9 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("ui_accept"):
 		if selected_character == "Witch":
-			_cast_iceball()
+			if iceball_cooldown_remaining <= 0.0:
+				_cast_iceball()
+				iceball_cooldown_remaining = ICEBALL_COOLDOWN
 		elif attack_time_remaining <= 0.0:
 			attack_time_remaining = ATTACK_DURATION
 			attack_hit_applied = false
@@ -139,7 +166,33 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if health <= 0 or not event is InputEventKey or not event.pressed or event.echo:
+	if health <= 0:
+		return
+	if event is InputEventMouseButton \
+			and event.button_index == MOUSE_BUTTON_LEFT \
+			and not event.pressed:
+		if mouse_move_held:
+			_finish_mouse_move(event.position)
+		return
+	if event is InputEventMouseButton \
+			and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed:
+		mouse_press_position = event.position
+		mouse_move_held = true
+		mouse_dragged = false
+		click_destination = get_global_mouse_position()
+		click_move_active = true
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventMouseMotion \
+			and mouse_move_held \
+			and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		if event.position.distance_to(mouse_press_position) >= MOUSE_DRAG_THRESHOLD:
+			mouse_dragged = true
+		click_destination = get_global_mouse_position()
+		click_move_active = true
+		return
+	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 
 	if event.keycode == KEY_1:
@@ -150,6 +203,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cast_fireball()
 	elif event.keycode == KEY_T:
 		_open_town_portal()
+
+
+func _finish_mouse_move(release_position: Vector2) -> void:
+	if release_position.distance_to(mouse_press_position) >= MOUSE_DRAG_THRESHOLD:
+		mouse_dragged = true
+
+	mouse_move_held = false
+	if mouse_dragged:
+		click_move_active = false
+		velocity = Vector2.ZERO
+	elif (click_destination - global_position).length() <= 6.0:
+		click_move_active = false
+		velocity = Vector2.ZERO
+	else:
+		click_move_active = true
+	mouse_dragged = false
 
 
 func _open_town_portal() -> void:
