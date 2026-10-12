@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="768" viewBox="0 0 1152 768">
+  <defs>
+    <pattern id="grass" width="256" height="256" patternUnits="userSpaceOnUse">
+      <rect width="256" height="256" fill="#38583a"/>
+      <g fill="#466a42" opacity=".78">
+        <path d="M31 65c24-20 58-12 69 8s-9 38-35 40S14 93 31 65z"/>
+        <path d="M156 31c27-13 56 1 58 22s-24 34-46 22-32-29-12-44z"/>
+        <path d="M81 173c23-19 54-8 59 11s-18 34-40 30-38-23-19-41z"/>
+        <path d="M216 151c24-17 32-8 37 13s-18 35-43 30-13-27 6-43z"/>
+      </g>
+      <g fill="#294a33" opacity=".48">
+        <path d="M48 118l22-7 17 13-8 19-25 2-13-12z"/>
+        <path d="M184 102l18-8 18 11-3 19-22 6-15-12z"/>
+        <path d="M111 232l21-8 17 13-6 19-23 3-14-13z"/>
+        <path d="M229 220l18-8 17 10-3 20-20 5-16-12z"/>
+      </g>
+      <g fill="none" stroke="#769257" stroke-width="3" stroke-linecap="round" opacity=".62">
+        <path d="M114 83l-7-13m7 13 11-10m-11 10-12 1"/>
+        <path d="M225 67l-8-13m8 13 12-11m-12 11-12 2"/>
+        <path d="M188 195l-7-13m7 13 12-10m-12 10-12 1"/>
+      </g>
+      <g fill="#b8a46b" opacity=".72">
+        <ellipse cx="75" cy="51" rx="3" ry="2"/>
+        <ellipse cx="146" cy="126" rx="2.5" ry="2"/>
+        <ellipse cx="235" cy="42" rx="3" ry="2"/>
+        <ellipse cx="57" cy="205" rx="2" ry="2.5"/>
+        <ellipse cx="165" cy="228" rx="3" ry="2"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="1152" height="768" fill="url(#grass)"/>
+</svg>

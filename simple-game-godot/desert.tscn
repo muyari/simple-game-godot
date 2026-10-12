@@ -1,0 +1,478 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://dp3jfuvuykpb7" path="res://player.tscn" id="1_ig7tw"]
+[ext_resource type="Texture2D" path="res://textures/desert_ground.svg" id="3_desert"]
+[ext_resource type="Script" uid="uid://vgw2fyi27qcg" path="res://GameUI.gd" id="9_ui"]
+[ext_resource type="Script" uid="uid://cjhoc32h6ws4d" path="res://ResourceGlobe.gd" id="10_globe"]
+[ext_resource type="Script" uid="uid://dr0xwo3tteeun" path="res://SkillSlot.gd" id="11_skill"]
+[ext_resource type="Script" uid="uid://bxfs1iny0xnx2" path="res://LevelController.gd" id="12_level"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_character_panel"]
+content_margin_left = 24.0
+content_margin_top = 20.0
+content_margin_right = 24.0
+content_margin_bottom = 20.0
+bg_color = Color(0.075, 0.09, 0.075, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.62, 0.49, 0.29, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_equipment_slot"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0.13, 0.15, 0.14, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.48, 0.4, 0.29, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="Level2SunscorchSands" type="Node2D"]
+y_sort_enabled = true
+
+[node name="Player" parent="." unique_id=1901920624 instance=ExtResource("1_ig7tw")]
+position = Vector2(84, 574)
+
+[node name="Background" type="Node2D" parent="." unique_id=418381262]
+z_index = -10
+
+[node name="Sprite2D" type="Sprite2D" parent="Background" unique_id=1312998030]
+texture_repeat = 2
+position = Vector2(-52, -32)
+texture = ExtResource("3_desert")
+region_enabled = true
+region_rect = Rect2(0, 0, 16384, 16384)
+
+[node name="LevelController" type="Node" parent="." unique_id=1926311628]
+script = ExtResource("12_level")
+biome = 1
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1643507356]
+script = ExtResource("9_ui")
+
+[node name="HealthOrb" type="Control" parent="UI" unique_id=2067677508]
+layout_mode = 3
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = -166.0
+offset_right = 166.0
+offset_bottom = -22.0
+script = ExtResource("10_globe")
+
+[node name="HealthPotionLabel" type="Label" parent="UI" unique_id=246364791]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = -22.0
+offset_right = 158.0
+offset_bottom = -2.0
+text = "1  x3"
+horizontal_alignment = 1
+
+[node name="ManaOrb" type="Control" parent="UI" unique_id=5414627]
+layout_mode = 3
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -166.0
+offset_top = -166.0
+offset_right = -22.0
+offset_bottom = -22.0
+script = ExtResource("10_globe")
+fill_color = Color(0.12, 0.36, 0.9, 1)
+highlight_color = Color(0.48, 0.7, 1, 0.55)
+
+[node name="ManaPotionLabel" type="Label" parent="UI" unique_id=747844999]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -158.0
+offset_top = -22.0
+offset_right = -30.0
+offset_bottom = -2.0
+text = "2  x3"
+horizontal_alignment = 1
+
+[node name="SkillSlotQ" type="Control" parent="UI" unique_id=1731028023]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -132.0
+offset_top = -90.0
+offset_right = -72.0
+offset_bottom = -30.0
+script = ExtResource("11_skill")
+skill_label = "FIRE 25"
+
+[node name="SkillSlotW" type="Control" parent="UI" unique_id=663144056]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -90.0
+offset_right = -4.0
+offset_bottom = -30.0
+script = ExtResource("11_skill")
+key_label = "W"
+
+[node name="SkillSlotE" type="Control" parent="UI" unique_id=60901772]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -90.0
+offset_right = 64.0
+offset_bottom = -30.0
+script = ExtResource("11_skill")
+key_label = "E"
+
+[node name="SkillSlotR" type="Control" parent="UI" unique_id=603410611]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 72.0
+offset_top = -90.0
+offset_right = 132.0
+offset_bottom = -30.0
+script = ExtResource("11_skill")
+key_label = "R"
+
+[node name="DefeatedLabel" type="Label" parent="UI" unique_id=1122720167]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -130.0
+offset_top = -28.0
+offset_right = 130.0
+offset_bottom = 28.0
+theme_override_font_sizes/font_size = 36
+text = "You were defeated"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ReturnToTownButton" type="Button" parent="UI"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = 45.0
+offset_right = 120.0
+offset_bottom = 95.0
+theme_override_font_sizes/font_size = 20
+text = "Return to Town"
+
+[node name="EnemyProgressLabel" type="Label" parent="UI" unique_id=1157043894]
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 220.0
+offset_bottom = 40.0
+text = "Enemies defeated: 0/15"
+
+[node name="GoldLabel" type="Label" parent="UI" unique_id=615800482]
+offset_left = 20.0
+offset_top = 42.0
+offset_right = 180.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
+text = "Gold: 0"
+
+[node name="PortalHintLabel" type="Label" parent="UI" unique_id=920245736]
+offset_left = 20.0
+offset_top = 68.0
+offset_right = 410.0
+offset_bottom = 92.0
+theme_override_colors/font_color = Color(0.76, 0.92, 1, 1)
+text = "T  Open Town Portal"
+
+[node name="CharacterHint" type="Label" parent="UI" unique_id=445853438]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -250.0
+offset_top = 16.0
+offset_right = -20.0
+offset_bottom = 40.0
+text = "C  Character   I  Inventory"
+horizontal_alignment = 2
+
+[node name="CharacterMenu" type="Control" parent="UI" unique_id=263802651]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Backdrop" type="ColorRect" parent="UI/CharacterMenu" unique_id=599811857]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.68)
+
+[node name="Panel" type="PanelContainer" parent="UI/CharacterMenu" unique_id=372471250]
+custom_minimum_size = Vector2(560, 600)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -300.0
+offset_right = 280.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_character_panel")
+
+[node name="Contents" type="VBoxContainer" parent="UI/CharacterMenu/Panel" unique_id=475677419]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="UI/CharacterMenu/Panel/Contents" unique_id=1039206961]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
+theme_override_font_sizes/font_size = 30
+text = "Character"
+horizontal_alignment = 1
+
+[node name="CharacterName" type="Label" parent="UI/CharacterMenu/Panel/Contents" unique_id=1387949744]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.83, 0.72, 1)
+theme_override_font_sizes/font_size = 18
+text = "Warrior"
+horizontal_alignment = 1
+
+[node name="EquipmentStats" type="Label" parent="UI/CharacterMenu/Panel/Contents" unique_id=1138834709]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+text = "Sword damage: 1  |  Damage reduced: 0"
+horizontal_alignment = 1
+
+[node name="EquipmentGrid" type="GridContainer" parent="UI/CharacterMenu/Panel/Contents" unique_id=37562932]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 2
+
+[node name="WeaponSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=233406139]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/WeaponSlot" unique_id=125231417]
+layout_mode = 2
+text = "Weapon  -  Empty"
+
+[node name="HelmSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1716858389]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/HelmSlot" unique_id=970726585]
+layout_mode = 2
+text = "Helm  -  Empty"
+
+[node name="ChestSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1003147974]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/ChestSlot" unique_id=2023780561]
+layout_mode = 2
+text = "Chest  -  Empty"
+
+[node name="LegsSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1347715237]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/LegsSlot" unique_id=381909977]
+layout_mode = 2
+text = "Legs  -  Empty"
+
+[node name="GlovesSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=909004632]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/GlovesSlot" unique_id=1934161044]
+layout_mode = 2
+text = "Gloves  -  Empty"
+
+[node name="BootsSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=902860492]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/BootsSlot" unique_id=1623973037]
+layout_mode = 2
+text = "Boots  -  Empty"
+
+[node name="Ring1Slot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=2306385]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/Ring1Slot" unique_id=1176926466]
+layout_mode = 2
+text = "Ring 1  -  Empty"
+
+[node name="Ring2Slot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=464475931]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/Ring2Slot" unique_id=1035491669]
+layout_mode = 2
+text = "Ring 2  -  Empty"
+
+[node name="AmuletSlot" type="PanelContainer" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid" unique_id=1914321103]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_equipment_slot")
+
+[node name="SlotLabel" type="Label" parent="UI/CharacterMenu/Panel/Contents/EquipmentGrid/AmuletSlot" unique_id=344195470]
+layout_mode = 2
+text = "Amulet  -  Empty"
+
+[node name="CloseButton" type="Button" parent="UI/CharacterMenu/Panel/Contents" unique_id=1853016956]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Close  (C / Esc)"
+
+[node name="InventoryPanel" type="PanelContainer" parent="UI/CharacterMenu" unique_id=771014247]
+visible = false
+custom_minimum_size = Vector2(600, 620)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -310.0
+offset_right = 300.0
+offset_bottom = 310.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_character_panel")
+
+[node name="Contents" type="VBoxContainer" parent="UI/CharacterMenu/InventoryPanel" unique_id=1570446465]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=780271738]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
+theme_override_font_sizes/font_size = 30
+text = "Inventory"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=923805954]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+text = "25 slots"
+horizontal_alignment = 1
+
+[node name="GoldTotal" type="Label" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=1217818745]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
+theme_override_font_sizes/font_size = 18
+text = "Gold: 0"
+horizontal_alignment = 1
+
+[node name="SelectedItem" type="Label" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=1009691006]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.83, 0.72, 1)
+text = "Select an item to inspect it."
+horizontal_alignment = 1
+
+[node name="InventoryGrid" type="GridContainer" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=721353747]
+layout_mode = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="EquipButton" type="Button" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=1344894316]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+disabled = true
+text = "Equip Selected Item"
+
+[node name="CloseButton" type="Button" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=317251270]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Close  (I / Esc)"
+
+[node name="LevelCompleteLabel" type="Label" parent="UI" unique_id=229303701]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 46.0
+offset_right = -20.0
+offset_bottom = 76.0
+theme_override_font_sizes/font_size = 20
+text = "Sunscorch Sands Cleared!"
+horizontal_alignment = 2
+
+[node name="ReturnToLevelsButton" type="Button" parent="UI" unique_id=1420956320]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 78.0
+offset_right = -20.0
+offset_bottom = 112.0
+theme_override_font_sizes/font_size = 14
+text = "Return to Levels"
+
+[connection signal="pressed" from="UI/CharacterMenu/Panel/Contents/CloseButton" to="UI" method="_on_character_menu_close_pressed"]
+[connection signal="pressed" from="UI/CharacterMenu/InventoryPanel/Contents/CloseButton" to="UI" method="_on_character_menu_close_pressed"]
+[connection signal="pressed" from="UI/ReturnToLevelsButton" to="UI" method="_on_return_to_levels_pressed"]
+[connection signal="pressed" from="UI/ReturnToTownButton" to="UI" method="_on_return_to_town_pressed"]

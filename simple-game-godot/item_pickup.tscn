@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ItemPickup.gd" id="1_pickup"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
+radius = 26.0
+
+[node name="ItemPickup" type="Area2D"]
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("1_pickup")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_pickup")
+
+[node name="Icon" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, -18, 15, 0, 0, 18, -15, 0)
+color = Color(0.85, 0.78, 0.42, 1)
+
+[node name="ItemName" type="Label" parent="."]
+offset_left = -70.0
+offset_top = 20.0
+offset_right = 70.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(1, 0.91, 0.64, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "Item"
+horizontal_alignment = 1

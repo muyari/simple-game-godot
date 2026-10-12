@@ -13,6 +13,11 @@ config_version=5
 config/name="simple-game-godot"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
+run/main_scene="res://Menu.tscn"
+
+[autoload]
+
+GameState="*res://GameState.gd"
 
 [display]
 

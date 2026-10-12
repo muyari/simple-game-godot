@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://dp3jfuvuykpb7"]
+
+[ext_resource type="Script" uid="uid://b8osi1eosh0mx" path="res://Player.gd" id="1_4flbx"]
+[ext_resource type="Texture2D" path="res://textures/warrior_sheet.svg" id="2_warrior"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
+radius = 12.0
+height = 28.0
+
+[node name="Player" type="CharacterBody2D" unique_id=1901920624]
+script = ExtResource("1_4flbx")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+offset = Vector2(0, 90)
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1892384711]
+texture = ExtResource("2_warrior")
+region_enabled = true
+region_rect = Rect2(0, 0, 64, 64)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1970016250]
+shape = SubResource("CapsuleShape2D_player")
+
+[node name="Sword" type="Node2D" parent="."]
+visible = false
+z_index = 1
+
+[node name="Blade" type="Polygon2D" parent="Sword"]
+polygon = PackedVector2Array(10, -3, 37, -2.5, 49, 0, 37, 2.5, 10, 3)
+color = Color(0.78, 0.86, 0.86, 1)
+
+[node name="Edge" type="Polygon2D" parent="Sword"]
+polygon = PackedVector2Array(12, 0, 37, -1, 46, 0, 37, 1)
+color = Color(0.97, 0.98, 0.86, 1)
+
+[node name="Guard" type="Polygon2D" parent="Sword"]
+polygon = PackedVector2Array(8, -8, 12, -7, 12, 7, 8, 8)
+color = Color(0.77, 0.55, 0.22, 1)
+
+[node name="Grip" type="Polygon2D" parent="Sword"]
+polygon = PackedVector2Array(0, -2.5, 9, -2.5, 9, 2.5, 0, 2.5)
+color = Color(0.39, 0.2, 0.13, 1)
+
+[node name="Pommel" type="Polygon2D" parent="Sword"]
+polygon = PackedVector2Array(-2, -3, 2, -3, 3, 0, 2, 3, -2, 3, -3, 0)
+color = Color(0.77, 0.55, 0.22, 1)

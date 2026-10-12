@@ -1,0 +1,403 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://player.tscn" id="1_player"]
+[ext_resource type="Texture2D" path="res://textures/town_ground.svg" id="2_ground"]
+[ext_resource type="Texture2D" path="res://textures/forest_tree.svg" id="3_tree"]
+[ext_resource type="PackedScene" path="res://portal.tscn" id="4_portal"]
+[ext_resource type="Script" path="res://TownUI.gd" id="5_town_ui"]
+[ext_resource type="Script" path="res://Vendor.gd" id="6_vendor"]
+[ext_resource type="Texture2D" path="res://textures/vendor_sheet.svg" id="7_vendor_sprite"]
+[ext_resource type="Script" path="res://ResourceGlobe.gd" id="8_globe"]
+[ext_resource type="Script" path="res://SkillSlot.gd" id="9_skill"]
+[ext_resource type="Script" path="res://TownFence.gd" id="10_fence"]
+[ext_resource type="Script" path="res://Waystone.gd" id="11_waystone"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_vendor"]
+radius = 90.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_waystone"]
+radius = 78.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_town_vertical"]
+size = Vector2(20, 728)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_town_horizontal"]
+size = Vector2(1112, 20)
+
+[node name="Town" type="Node2D"]
+y_sort_enabled = true
+
+[node name="TownBoundary" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="LeftWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(20, 384)
+shape = SubResource("RectangleShape2D_town_vertical")
+
+[node name="RightWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(1132, 384)
+shape = SubResource("RectangleShape2D_town_vertical")
+
+[node name="TopWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(576, 20)
+shape = SubResource("RectangleShape2D_town_horizontal")
+
+[node name="BottomWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(576, 748)
+shape = SubResource("RectangleShape2D_town_horizontal")
+
+[node name="TownFence" type="Node2D" parent="."]
+z_index = 5
+script = ExtResource("10_fence")
+
+[node name="Ground" type="Sprite2D" parent="."]
+z_index = -10
+texture = ExtResource("2_ground")
+region_enabled = true
+region_rect = Rect2(0, 0, 1152, 768)
+centered = false
+
+[node name="MainRoad" type="Polygon2D" parent="."]
+z_index = -5
+polygon = PackedVector2Array(0, 270, 1152, 270, 1152, 530, 0, 530)
+color = Color(0.48, 0.4, 0.29, 1)
+
+[node name="RoadHighlight" type="Polygon2D" parent="."]
+z_index = -4
+polygon = PackedVector2Array(0, 278, 1152, 278, 1152, 286, 0, 286, 0, 514, 1152, 514, 1152, 522, 0, 522)
+color = Color(0.61, 0.51, 0.36, 1)
+
+[node name="Plaza" type="Polygon2D" parent="."]
+z_index = -3
+position = Vector2(576, 397)
+polygon = PackedVector2Array(-95, 0, -67, -67, 0, -95, 67, -67, 95, 0, 67, 67, 0, 95, -67, 67)
+color = Color(0.59, 0.5, 0.37, 1)
+
+[node name="Well" type="Polygon2D" parent="."]
+z_index = -2
+position = Vector2(576, 397)
+polygon = PackedVector2Array(-32, -22, -22, -34, 22, -34, 32, -22, 32, 22, 22, 34, -22, 34, -32, 22)
+color = Color(0.36, 0.36, 0.31, 1)
+
+[node name="WellWater" type="Polygon2D" parent="."]
+z_index = -1
+position = Vector2(576, 397)
+polygon = PackedVector2Array(-20, -12, 20, -12, 20, 12, -20, 12)
+color = Color(0.2, 0.52, 0.62, 1)
+
+[node name="Waystone" type="Area2D" parent="."]
+position = Vector2(420, 400)
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("11_waystone")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Waystone"]
+shape = SubResource("CircleShape2D_waystone")
+
+[node name="Glow" type="Polygon2D" parent="Waystone"]
+z_index = -1
+polygon = PackedVector2Array(-34, 14, -25, -18, 0, -38, 25, -18, 34, 14, 22, 31, -22, 31)
+color = Color(0.25, 0.68, 0.85, 0.22)
+
+[node name="Pedestal" type="Polygon2D" parent="Waystone"]
+position = Vector2(0, 17)
+polygon = PackedVector2Array(-32, -3, -24, -13, 24, -13, 32, -3, 25, 10, -25, 10)
+color = Color(0.32, 0.31, 0.28, 1)
+
+[node name="Stone" type="Polygon2D" parent="Waystone"]
+polygon = PackedVector2Array(-21, 18, -24, -10, -13, -31, 0, -43, 14, -29, 23, -8, 19, 18)
+color = Color(0.47, 0.48, 0.43, 1)
+
+[node name="Rune" type="Polygon2D" parent="Waystone"]
+polygon = PackedVector2Array(-3, 9, -8, -8, 0, -28, 8, -8, 3, 9, 0, 14)
+color = Color(0.34, 0.85, 1, 0.95)
+
+[node name="Prompt" type="Label" parent="Waystone"]
+offset_left = -120.0
+offset_top = 43.0
+offset_right = 120.0
+offset_bottom = 67.0
+theme_override_colors/font_color = Color(0.79, 0.94, 1, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+text = "E  Choose a level"
+horizontal_alignment = 1
+
+[node name="NorthwestHouse" type="Polygon2D" parent="."]
+position = Vector2(220, 166)
+polygon = PackedVector2Array(-84, 24, -84, -22, 0, -82, 84, -22, 84, 24)
+color = Color(0.53, 0.38, 0.25, 1)
+
+[node name="NorthwestRoof" type="Polygon2D" parent="."]
+position = Vector2(220, 166)
+polygon = PackedVector2Array(-100, -18, 0, -98, 100, -18, 82, -7, 0, -73, -82, -7)
+color = Color(0.39, 0.22, 0.17, 1)
+
+[node name="NorthwestDoor" type="Polygon2D" parent="."]
+position = Vector2(220, 166)
+polygon = PackedVector2Array(-15, 24, -15, -20, 15, -20, 15, 24)
+color = Color(0.22, 0.16, 0.12, 1)
+
+[node name="NortheastHouse" type="Polygon2D" parent="."]
+position = Vector2(920, 166)
+polygon = PackedVector2Array(-84, 24, -84, -22, 0, -82, 84, -22, 84, 24)
+color = Color(0.63, 0.53, 0.36, 1)
+
+[node name="NortheastRoof" type="Polygon2D" parent="."]
+position = Vector2(920, 166)
+polygon = PackedVector2Array(-100, -18, 0, -98, 100, -18, 82, -7, 0, -73, -82, -7)
+color = Color(0.34, 0.25, 0.19, 1)
+
+[node name="NortheastDoor" type="Polygon2D" parent="."]
+position = Vector2(920, 166)
+polygon = PackedVector2Array(-15, 24, -15, -20, 15, -20, 15, 24)
+color = Color(0.22, 0.16, 0.12, 1)
+
+[node name="SouthwestHouse" type="Polygon2D" parent="."]
+position = Vector2(220, 648)
+polygon = PackedVector2Array(-84, 24, -84, -22, 0, -82, 84, -22, 84, 24)
+color = Color(0.59, 0.47, 0.34, 1)
+
+[node name="SouthwestRoof" type="Polygon2D" parent="."]
+position = Vector2(220, 648)
+polygon = PackedVector2Array(-100, -18, 0, -98, 100, -18, 82, -7, 0, -73, -82, -7)
+color = Color(0.42, 0.24, 0.18, 1)
+
+[node name="SouthwestDoor" type="Polygon2D" parent="."]
+position = Vector2(220, 648)
+polygon = PackedVector2Array(-15, 24, -15, -20, 15, -20, 15, 24)
+color = Color(0.22, 0.16, 0.12, 1)
+
+[node name="SoutheastHouse" type="Polygon2D" parent="."]
+position = Vector2(920, 648)
+polygon = PackedVector2Array(-84, 24, -84, -22, 0, -82, 84, -22, 84, 24)
+color = Color(0.52, 0.44, 0.32, 1)
+
+[node name="SoutheastRoof" type="Polygon2D" parent="."]
+position = Vector2(920, 648)
+polygon = PackedVector2Array(-100, -18, 0, -98, 100, -18, 82, -7, 0, -73, -82, -7)
+color = Color(0.35, 0.24, 0.2, 1)
+
+[node name="SoutheastDoor" type="Polygon2D" parent="."]
+position = Vector2(920, 648)
+polygon = PackedVector2Array(-15, 24, -15, -20, 15, -20, 15, 24)
+color = Color(0.22, 0.16, 0.12, 1)
+
+[node name="Vendor" type="Area2D" parent="."]
+position = Vector2(790, 400)
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("6_vendor")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Vendor"]
+shape = SubResource("CircleShape2D_vendor")
+
+[node name="Canopy" type="Polygon2D" parent="Vendor"]
+position = Vector2(0, -36)
+polygon = PackedVector2Array(-64, -16, 64, -16, 52, 12, -52, 12)
+color = Color(0.62, 0.19, 0.16, 1)
+
+[node name="VendorSprite" type="Sprite2D" parent="Vendor"]
+position = Vector2(0, -21)
+texture = ExtResource("7_vendor_sprite")
+region_enabled = true
+region_rect = Rect2(0, 0, 64, 64)
+
+[node name="Counter" type="Polygon2D" parent="Vendor"]
+position = Vector2(0, 4)
+polygon = PackedVector2Array(-56, -12, 56, -12, 48, 20, -48, 20)
+color = Color(0.45, 0.29, 0.19, 1)
+
+[node name="Prompt" type="Label" parent="Vendor"]
+offset_left = -105.0
+offset_top = 42.0
+offset_right = 105.0
+offset_bottom = 64.0
+theme_override_colors/font_color = Color(1, 0.91, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+text = "E  Talk"
+horizontal_alignment = 1
+
+[node name="TreeLeft" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(90, 400)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("3_tree")
+
+[node name="TreeRight" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(1060, 400)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("3_tree")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(576, 350)
+
+[node name="ReturnPortal" parent="." instance=ExtResource("4_portal")]
+position = Vector2(576, 500)
+destination_scene = "res://main.tscn"
+destination_position = Vector2(84, 574)
+
+[node name="TownUI" type="CanvasLayer" parent="."]
+script = ExtResource("5_town_ui")
+
+[node name="HealthOrb" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = -166.0
+offset_right = 166.0
+offset_bottom = -22.0
+script = ExtResource("8_globe")
+
+[node name="HealthPotionLabel" type="Label" parent="TownUI"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = -22.0
+offset_right = 158.0
+offset_bottom = -2.0
+text = "1  x3"
+horizontal_alignment = 1
+
+[node name="ManaOrb" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -166.0
+offset_top = -166.0
+offset_right = -22.0
+offset_bottom = -22.0
+script = ExtResource("8_globe")
+fill_color = Color(0.12, 0.36, 0.9, 1)
+highlight_color = Color(0.48, 0.7, 1, 0.55)
+
+[node name="ManaPotionLabel" type="Label" parent="TownUI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -158.0
+offset_top = -22.0
+offset_right = -30.0
+offset_bottom = -2.0
+text = "2  x3"
+horizontal_alignment = 1
+
+[node name="SkillSlotQ" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -132.0
+offset_top = -90.0
+offset_right = -72.0
+offset_bottom = -30.0
+script = ExtResource("9_skill")
+skill_label = "FIRE 25"
+
+[node name="SkillSlotW" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -90.0
+offset_right = -4.0
+offset_bottom = -30.0
+script = ExtResource("9_skill")
+key_label = "W"
+
+[node name="SkillSlotE" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -90.0
+offset_right = 64.0
+offset_bottom = -30.0
+script = ExtResource("9_skill")
+key_label = "E"
+
+[node name="SkillSlotR" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 72.0
+offset_top = -90.0
+offset_right = 132.0
+offset_bottom = -30.0
+script = ExtResource("9_skill")
+key_label = "R"
+
+[node name="TownName" type="Label" parent="TownUI"]
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 380.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.97, 0.85, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 28
+text = "Hearthvale"
+
+[node name="TownHint" type="Label" parent="TownUI"]
+offset_left = 20.0
+offset_top = 52.0
+offset_right = 500.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(0.95, 0.92, 0.84, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 3
+text = "C Character  |  I Inventory  |  Waystone: replay any level."
+
+[node name="CharacterButton" type="Button" parent="TownUI"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -270.0
+offset_top = 16.0
+offset_right = -150.0
+offset_bottom = 48.0
+text = "Character (C)"
+
+[node name="InventoryButton" type="Button" parent="TownUI"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 16.0
+offset_right = -20.0
+offset_bottom = 48.0
+text = "Inventory (I)"
+
+[node name="GoldLabel" type="Label" parent="TownUI"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 52.0
+offset_right = -20.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
+text = "Gold: 0"
+horizontal_alignment = 2
+
+[connection signal="pressed" from="TownUI/CharacterButton" to="TownUI" method="_on_character_button_pressed"]
+[connection signal="pressed" from="TownUI/InventoryButton" to="TownUI" method="_on_inventory_button_pressed"]

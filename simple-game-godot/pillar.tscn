@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://f4g56cn568o8"]
+
+[ext_resource type="Texture2D" uid="uid://dgvbtwd08m0gx" path="res://textures/red_brick.svg" id="1_rjv88"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ke0wg"]
+size = Vector2(78, 71.5)
+
+[node name="Pillar" type="StaticBody2D" unique_id=1569725530]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=453457342]
+position = Vector2(-15, -12.75)
+shape = SubResource("RectangleShape2D_ke0wg")
+
+[node name="Sprite2D" type="Sprite2D" parent="CollisionShape2D" unique_id=1603106061]
+position = Vector2(0, -0.24999237)
+scale = Vector2(0.2910156, 0.25390625)
+texture = ExtResource("1_rjv88")

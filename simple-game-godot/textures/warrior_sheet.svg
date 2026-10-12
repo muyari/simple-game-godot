@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <g id="down">
+      <ellipse cx="32" cy="53" rx="17" ry="4" fill="#17241e" opacity=".5"/>
+      <path d="M22 35l-8 12 5 6 9-8m18-10 8 12-5 6-9-8" fill="#8b2935" stroke="#352c2a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M24 39l-6 12 5 2 8-10m13-4 6 12-5 2-7-9" fill="#b58a50" stroke="#352c2a" stroke-width="1.5"/>
+      <path d="M22 27l-4 15 10 5h9l11-6-5-15z" fill="#315a69" stroke="#27363a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M24 31l8 3 8-3 4 8-12 5-12-5z" fill="#b58a50"/>
+      <path d="M27 23h10l5 9-10 5-10-5z" fill="#d2ad70" stroke="#48392b" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="M26 28h12l-1 6-5 3-5-3z" fill="#e9c893"/>
+      <path d="M25 27l2-7 6-3 7 4 1 6-5-3-7 1z" fill="#7f342e" stroke="#422c29" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="M32 19v-3m7 10 5 3-5 2" fill="none" stroke="#473a2e" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="29" cy="29" r="1" fill="#302c28"/><circle cx="36" cy="29" r="1" fill="#302c28"/>
+      <path d="M21 47l-4 5m22-5 4 5" stroke="#332d2a" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g id="side">
+      <ellipse cx="32" cy="53" rx="17" ry="4" fill="#17241e" opacity=".5"/>
+      <path d="M24 36l-8 12 6 5 8-11m10-7 10 10-4 7-10-9" fill="#8b2935" stroke="#352c2a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M25 39l-6 12 5 2 8-10m9-4 8 10-5 3-9-10" fill="#b58a50" stroke="#352c2a" stroke-width="1.5"/>
+      <path d="M23 27l-3 15 11 5 11-4 2-14z" fill="#315a69" stroke="#27363a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M24 31l8 3 8-3 3 8-11 5-11-5z" fill="#b58a50"/>
+      <path d="M28 23l8-1 7 8-6 7-9-3z" fill="#d2ad70" stroke="#48392b" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="M32 26l7 1 3 4-6 4-6-3z" fill="#e9c893"/>
+      <path d="M27 26l2-7 7-2 8 6-1 6-6-4-8 3z" fill="#7f342e" stroke="#422c29" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="M40 29l6 2-6 3" fill="#473a2e"/>
+      <circle cx="38" cy="29" r="1" fill="#302c28"/>
+      <path d="M22 47l-4 5m20-5 5 5" stroke="#332d2a" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g id="up">
+      <ellipse cx="32" cy="53" rx="17" ry="4" fill="#17241e" opacity=".5"/>
+      <path d="M23 35l-9 12 5 6 10-9m17-9 8 12-5 6-9-8" fill="#8b2935" stroke="#352c2a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M24 39l-6 12 5 2 8-10m13-4 6 12-5 2-7-9" fill="#b58a50" stroke="#352c2a" stroke-width="1.5"/>
+      <path d="M22 27l-4 15 10 5h9l11-6-5-15z" fill="#315a69" stroke="#27363a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M24 31l8 3 8-3 4 8-12 5-12-5z" fill="#b58a50"/>
+      <path d="M21 28l3-10 8-4 9 4 4 10-7-3-6 3-6-3z" fill="#7f342e" stroke="#422c29" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M25 25l7-3 8 3m-8-8v7" fill="none" stroke="#d0aa69" stroke-width="2"/>
+      <path d="M21 47l-4 5m22-5 4 5" stroke="#332d2a" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <!-- Rows face down, left, right, and up; columns are idle and three walk poses. -->
+  <g transform="translate(0 0)">
+    <use href="#down" x="0" y="0"/>
+    <use href="#down" x="64" y="0" transform="translate(0 1)"/>
+    <use href="#down" x="128" y="0"/>
+    <use href="#down" x="192" y="0" transform="translate(0 1)"/>
+  </g>
+  <g transform="translate(0 64)">
+    <g transform="translate(64 0) scale(-1 1)"><use href="#side"/></g>
+    <g transform="translate(128 1) scale(-1 1)"><use href="#side"/></g>
+    <g transform="translate(192 0) scale(-1 1)"><use href="#side"/></g>
+    <g transform="translate(256 1) scale(-1 1)"><use href="#side"/></g>
+  </g>
+  <g transform="translate(0 128)">
+    <use href="#side" x="0" y="0"/>
+    <use href="#side" x="64" y="1"/>
+    <use href="#side" x="128" y="0"/>
+    <use href="#side" x="192" y="1"/>
+  </g>
+  <g transform="translate(0 192)">
+    <use href="#up" x="0" y="0"/>
+    <use href="#up" x="64" y="1"/>
+    <use href="#up" x="128" y="0"/>
+    <use href="#up" x="192" y="1"/>
+  </g>
+</svg>

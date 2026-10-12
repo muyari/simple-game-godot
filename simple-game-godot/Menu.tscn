@@ -1,0 +1,137 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Menu.gd" id="1_menu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.075, 0.09, 0.075, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.62, 0.49, 0.29, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 36.0
+content_margin_top = 30.0
+content_margin_right = 36.0
+content_margin_bottom = 30.0
+
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.045, 0.07, 0.055, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuPanel" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(520, 460)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="CharacterScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
+theme_override_font_sizes/font_size = 32
+text = "Choose Your Character"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+text = "Select a hero for the adventure."
+horizontal_alignment = 1
+
+[node name="WarriorButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Warrior"
+
+[node name="LockedCharacter" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+disabled = true
+text = "???  -  Coming Soon"
+
+[node name="CharacterStatus" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
+text = "Choose the Warrior to continue."
+horizontal_alignment = 1
+
+[node name="CharacterContinue" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Choose a Level"
+
+[node name="LevelScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="CenterContainer/MenuPanel/LevelScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
+theme_override_font_sizes/font_size = 32
+text = "Choose a Level"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/LevelScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+text = "Your selected hero: Warrior"
+horizontal_alignment = 1
+
+[node name="Level1Button" type="Button" parent="CenterContainer/MenuPanel/LevelScreen"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Level 1  -  Forest Outskirts"
+
+[node name="Level2Button" type="Button" parent="CenterContainer/MenuPanel/LevelScreen"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Level 2  -  Sunscorch Sands"
+
+[node name="LevelStatus" type="Label" parent="CenterContainer/MenuPanel/LevelScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
+text = "Defeat all 10 enemies to clear a level."
+horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="CenterContainer/MenuPanel/LevelScreen"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Back to Character Select"
+
+[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WarriorButton" to="." method="_on_warrior_selected"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CharacterContinue" to="." method="_on_character_continue"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level1Button" to="." method="_on_level_1_selected"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level2Button" to="." method="_on_level_2_selected"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/BackButton" to="." method="_on_back_to_characters"]

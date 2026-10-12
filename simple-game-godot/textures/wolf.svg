@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <g id="wolf-down" stroke="#282e2b" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="32" cy="54" rx="19" ry="4" fill="#17251d" opacity=".48" stroke="none"/>
+      <path d="M20 37c-8-3-11-9-10-15 5 5 10 5 15 4l4 8z" fill="#797c70" stroke-width="2"/>
+      <path d="M21 39l-4 10 6 2 5-9m13-3 5 10 6-2-4-11" fill="#686c62" stroke-width="2"/>
+      <path d="M18 30l4-11 9-4 12 5 5 11-5 13-12 5-13-7z" fill="#858779" stroke-width="2.5"/>
+      <path d="M22 30l9-8 10 5-1 12-9 6-10-7z" fill="#a39f88" stroke="none" opacity=".78"/>
+      <path d="M19 28l3-13 8 8m8-2 8-9 2 16" fill="#77796e" stroke-width="2"/>
+      <path d="M23 19l2-7 4 7m12-2 4-7 1 11" fill="#bd8f7b" stroke="none"/>
+      <path d="M20 33l-6 3 2 6 8 1 6-5-2-5z" fill="#c0b69c" stroke-width="1.5"/>
+      <path d="M15 35l6 1-2 3-5-1z" fill="#29302d" stroke="none"/>
+      <circle cx="24" cy="29" r="1.5" fill="#e3bd68" stroke="none"/>
+      <circle cx="24" cy="29" r=".7" fill="#171c1b" stroke="none"/>
+      <circle cx="41" cy="29" r="1.5" fill="#e3bd68" stroke="none"/>
+      <circle cx="41" cy="29" r=".7" fill="#171c1b" stroke="none"/>
+      <path d="M26 46l-3 5m11-4v5m9-7 3 6" fill="none" stroke-width="2"/>
+      <path d="M25 42l7 3 8-4" fill="none" stroke="#d0c4a5" stroke-width="1.5"/>
+    </g>
+    <g id="wolf-side" stroke="#282e2b" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="32" cy="54" rx="20" ry="4" fill="#17251d" opacity=".48" stroke="none"/>
+      <path d="M17 34C9 33 7 28 7 23c5 4 9 4 14 2l6 6z" fill="#77796e" stroke-width="2"/>
+      <path d="M22 40l-4 10 6 2 6-10m12-3 5 11 6-2-4-12" fill="#666b61" stroke-width="2"/>
+      <path d="M17 31c3-10 14-15 26-12l8 8-2 14-11 7-16-3-7-7z" fill="#858779" stroke-width="2.5"/>
+      <path d="M19 31l9-8 12 2 5 7-4 9-13 4-8-5z" fill="#aaa590" stroke="none" opacity=".76"/>
+      <path d="M36 28l7-13 7 12 5 5-8 4-10-2z" fill="#7b7d72" stroke-width="2"/>
+      <path d="M44 24l2-6 3 7" fill="#bd8f7b" stroke="none"/>
+      <path d="M45 32l11-1 5 5-4 5-13-1-6-4z" fill="#c2b99f" stroke-width="1.5"/>
+      <path d="M56 33l5 2-4 2-5-1z" fill="#29302d" stroke="none"/>
+      <circle cx="48" cy="28" r="1.7" fill="#e3bd68" stroke="none"/>
+      <circle cx="48" cy="28" r=".8" fill="#171c1b" stroke="none"/>
+      <path d="M22 44l8 2 6-2" fill="none" stroke="#d0c4a5" stroke-width="1.5"/>
+      <path d="M19 36l-2 3m17 1 2 3" fill="none" stroke="#585f57" stroke-width="1.5"/>
+    </g>
+    <g id="wolf-up" stroke="#282e2b" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="32" cy="54" rx="19" ry="4" fill="#17251d" opacity=".48" stroke="none"/>
+      <path d="M20 37c-8-3-11-9-10-15 5 5 10 5 15 4l4 8z" fill="#797c70" stroke-width="2"/>
+      <path d="M21 39l-4 10 6 2 5-9m13-3 5 10 6-2-4-11" fill="#686c62" stroke-width="2"/>
+      <path d="M18 30l4-11 9-4 12 5 5 11-5 13-12 5-13-7z" fill="#858779" stroke-width="2.5"/>
+      <path d="M22 30l9-8 10 5-1 12-9 6-10-7z" fill="#a39f88" stroke="none" opacity=".78"/>
+      <path d="M19 28l3-13 8 8m8-2 8-9 2 16" fill="#77796e" stroke-width="2"/>
+      <path d="M23 19l2-7 4 7m12-2 4-7 1 11" fill="#bd8f7b" stroke="none"/>
+      <path d="M22 44l9 3 10-4-2 5-8 5-8-4z" fill="#565e57" stroke-width="1.5"/>
+      <path d="M26 46v6m12-7 1 6" fill="none" stroke-width="2"/>
+      <path d="M24 30l3 2m10-2 3-2" fill="none" stroke="#d0c4a5" stroke-width="1.5"/>
+    </g>
+  </defs>
+  <g transform="translate(0 0)">
+    <use href="#wolf-down" x="0" y="0"/>
+    <use href="#wolf-down" x="64" y="2"/>
+    <use href="#wolf-down" x="128" y="0"/>
+    <use href="#wolf-down" x="192" y="-1"/>
+  </g>
+  <g transform="translate(0 64)">
+    <g transform="translate(64 0) scale(-1 1)"><use href="#wolf-side"/></g>
+    <g transform="translate(128 2) scale(-1 1)"><use href="#wolf-side"/></g>
+    <g transform="translate(192 0) scale(-1 1)"><use href="#wolf-side"/></g>
+    <g transform="translate(256 -1) scale(-1 1)"><use href="#wolf-side"/></g>
+  </g>
+  <g transform="translate(0 128)">
+    <use href="#wolf-side" x="0" y="0"/>
+    <use href="#wolf-side" x="64" y="2"/>
+    <use href="#wolf-side" x="128" y="0"/>
+    <use href="#wolf-side" x="192" y="-1"/>
+  </g>
+  <g transform="translate(0 192)">
+    <use href="#wolf-up" x="0" y="0"/>
+    <use href="#wolf-up" x="64" y="2"/>
+    <use href="#wolf-up" x="128" y="0"/>
+    <use href="#wolf-up" x="192" y="-1"/>
+  </g>
+</svg>
