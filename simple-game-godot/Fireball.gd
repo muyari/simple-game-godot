@@ -6,6 +6,8 @@ const HIT_RADIUS = 30.0
 const MAX_RANGE = 600.0
 
 var direction := Vector2.DOWN
+var is_ice := false
+var ice_damage := 1.0
 var distance_travelled := 0.0
 var animation_time := 0.0
 
@@ -16,7 +18,10 @@ func _process(delta: float) -> void:
 	var step_end := global_position + direction * step_distance
 	var hit_target := _find_hit_target(step_distance)
 	if hit_target != null:
-		hit_target.call("take_percentage_damage", 0.5)
+		if is_ice:
+			hit_target.call("take_damage", ice_damage)
+		else:
+			hit_target.call("take_percentage_damage", 0.5)
 		queue_free()
 		return
 
@@ -54,14 +59,23 @@ func _find_hit_target(step_distance: float) -> Node2D:
 
 func _draw() -> void:
 	var pulse := sin(animation_time * 24.0) * 1.5
-	draw_circle(Vector2.ZERO, 10.0 + pulse, Color("#bc321c"))
-	draw_circle(Vector2(1.0, 0.0), 7.0 + pulse * 0.5, Color("#f47722"))
-	draw_circle(Vector2(3.0, 0.0), 4.0, Color("#ffe58a"))
+	var outer_color := Color("#bc321c")
+	var middle_color := Color("#f47722")
+	var core_color := Color("#ffe58a")
+	var trail_color := Color("#ee5422", 0.72)
+	if is_ice:
+		outer_color = Color("#2686bd")
+		middle_color = Color("#64d5ed")
+		core_color = Color("#e6fcff")
+		trail_color = Color("#85e8ff", 0.72)
+	draw_circle(Vector2.ZERO, 10.0 + pulse, outer_color)
+	draw_circle(Vector2(1.0, 0.0), 7.0 + pulse * 0.5, middle_color)
+	draw_circle(Vector2(3.0, 0.0), 4.0, core_color)
 	draw_colored_polygon(
 		PackedVector2Array([
 			Vector2(-6.0, -4.0),
 			Vector2(-19.0, 0.0),
 			Vector2(-6.0, 4.0)
 		]),
-		Color("#ee5422", 0.72)
+		trail_color
 	)

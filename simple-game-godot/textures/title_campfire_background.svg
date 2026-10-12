@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#142a37"/>
+      <stop offset="0.43" stop-color="#526975"/>
+      <stop offset="0.72" stop-color="#d18b68"/>
+      <stop offset="1" stop-color="#f0bd7d"/>
+    </linearGradient>
+    <linearGradient id="meadow" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#576b4b"/>
+      <stop offset="0.35" stop-color="#344c3a"/>
+      <stop offset="1" stop-color="#152a25"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ed522f"/>
+      <stop offset="0.55" stop-color="#ff9b36"/>
+      <stop offset="1" stop-color="#ffe39a"/>
+    </linearGradient>
+    <linearGradient id="fire_inner" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ff8a2d"/>
+      <stop offset="1" stop-color="#fff0aa"/>
+    </linearGradient>
+    <radialGradient id="firelight" cx="50%" cy="55%" r="50%">
+      <stop offset="0" stop-color="#f8aa4e" stop-opacity="0.36"/>
+      <stop offset="1" stop-color="#f8aa4e" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grass_marks" width="64" height="42" patternUnits="userSpaceOnUse">
+      <path d="M8 42l5-12m12 12l-2-9m23 9l6-15m6 15l-1-7" fill="none" stroke="#a4b779" stroke-opacity="0.18" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#sky)"/>
+
+  <g fill="#f4cfaa" opacity="0.18">
+    <path d="M65 190c42-28 77-27 111-6 27-13 62-8 83 9 32-3 53 11 57 25H54c-8-11-2-20 11-28z"/>
+    <path d="M1174 154c38-23 72-20 102-2 25-12 57-7 76 9 31-3 49 8 53 20h-248c-7-10 2-19 17-27z"/>
+    <path d="M426 250c27-17 52-15 73-1 17-8 41-5 54 7 21-2 36 7 38 15H414c-5-8 1-15 12-21z"/>
+  </g>
+  <g fill="none" stroke="#f4d2ad" stroke-opacity="0.2" stroke-width="2">
+    <path d="M76 217h223M1183 181h213M426 270h162"/>
+  </g>
+
+  <path d="M0 518L114 416 178 458 331 292 423 398 548 278 663 438 803 250 939 423 1084 286 1199 426 1332 308 1458 423 1538 361 1600 414V624H0Z" fill="#43565e"/>
+  <path d="M331 292l-56 61 49-23 27 29 72 39zM548 278l-57 78 55-34 30 29 87 87zM803 250l-72 115 68-49 40 43 100 64zM1084 286l-70 82 61-37 37 35 87 60zM1332 308l-65 83 65-41 40 28 86 45z" fill="#bac1b5" opacity="0.8"/>
+
+  <path d="M0 526L167 395 258 476 378 367 477 496 624 369 752 509 925 366 1059 501 1214 379 1348 500 1496 389 1600 458V633H0Z" fill="#394a4b" opacity="0.9"/>
+  <path d="M0 566c121-53 231-67 336-31 116-50 249-37 365 17 122-54 251-49 369 5 146-63 328-49 530 16v327H0z" fill="url(#meadow)"/>
+
+  <path d="M0 620c190-54 341-45 475 5 147-39 271-33 388 13 174-61 432-57 737 9v253H0z" fill="#294236" opacity="0.72"/>
+  <path d="M0 566c121-53 231-67 336-31 116-50 249-37 365 17 122-54 251-49 369 5 146-63 328-49 530 16v327H0z" fill="url(#grass_marks)" opacity="0.65"/>
+
+  <g fill="#1d302b">
+    <path d="M44 606l68-170 68 170h-43l62 93H22l62-93z"/>
+    <path d="M153 630l54-133 55 133h-35l49 73h-138l49-73z"/>
+    <path d="M1372 607l71-176 70 176h-44l64 97h-181l64-97z"/>
+    <path d="M1495 634l50-123 51 123h-33l44 67h-131l44-67z"/>
+  </g>
+  <g fill="#304739" opacity="0.9">
+    <path d="M0 686l42-105 42 105H57l39 58H-12l39-58z"/>
+    <path d="M1264 674l47-116 47 116h-30l43 64h-120l43-64z"/>
+    <path d="M1540 716l31-77 31 77h-20l29 44h-80l29-44z"/>
+  </g>
+
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1164 789l93 3M1170 799l88 2" stroke="#684934" stroke-width="10"/>
+    <path d="M1170 788l80 2" stroke="#b27a4c" stroke-opacity="0.7" stroke-width="2"/>
+  </g>
+
+  <ellipse cx="1370" cy="727" rx="190" ry="128" fill="url(#firelight)"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1315 743l111 34M1327 778l91-53" stroke="#241c17" stroke-width="19"/>
+    <path d="M1320 740l102 32M1330 776l85-48" stroke="#79503a" stroke-width="8"/>
+    <g transform="translate(1370 0) scale(0.65 1) translate(-1370 0)">
+      <path d="M1360 758c-30-37 12-57 12-91 27 22 19 39 20 47 29-28 19-53 18-70 47 39 43 82 13 114z" fill="url(#fire)" transform="translate(-32 -8)"/>
+      <path d="M1380 758c-18-23 7-37 12-58 14 13 13 26 13 31 16-16 14-29 13-39 28 28 23 51 8 66z" fill="url(#fire_inner)" transform="translate(-32 -8)"/>
+    </g>
+  </g>
+  <g fill="#74634b" stroke="#b7a17a" stroke-opacity="0.45" stroke-width="2">
+    <ellipse cx="1304" cy="789" rx="15" ry="9"/>
+    <ellipse cx="1331" cy="808" rx="17" ry="10"/>
+    <ellipse cx="1368" cy="815" rx="16" ry="9"/>
+    <ellipse cx="1410" cy="807" rx="17" ry="10"/>
+    <ellipse cx="1440" cy="789" rx="15" ry="9"/>
+    <ellipse cx="1287" cy="770" rx="12" ry="8"/>
+    <ellipse cx="1455" cy="769" rx="12" ry="8"/>
+  </g>
+  <g fill="#ffd982">
+    <path d="M1364 655l4-13 4 13-4 5z"/>
+    <path d="M1438 677l3-10 3 10-3 4z"/>
+    <path d="M1320 689l3-9 3 9-3 3z"/>
+    <path d="M1401 646l3-10 3 10-3 4z"/>
+  </g>
+
+  <g fill="none" stroke="#a2b37b" stroke-linecap="round" opacity="0.58">
+    <path d="M88 900q4-44 18-67m-18 67q-7-38-19-50m28 50q10-31 28-42" stroke-width="3"/>
+    <path d="M320 900q3-34 14-54m-14 54q-8-30-19-38m25 38q8-24 22-32" stroke-width="3"/>
+    <path d="M1128 900q5-37 16-59m-16 59q-7-28-18-41m24 41q10-26 22-35" stroke-width="3"/>
+    <path d="M1534 900q3-49 15-73m-15 73q-8-34-21-48m28 48q8-29 23-41" stroke-width="3"/>
+    <path d="M478 900q3-26 10-39m-10 39q-6-20-13-27m20 27q7-19 16-25M980 900q4-30 13-45m-13 45q-7-22-15-31m22 31q8-21 17-28" stroke-width="2"/>
+  </g>
+
+  <rect width="1600" height="900" fill="#081318" opacity="0.16"/>
+</svg>

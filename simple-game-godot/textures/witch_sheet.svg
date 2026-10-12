@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <g id="down">
+      <ellipse cx="32" cy="54" rx="17" ry="4" fill="#101b1b" opacity="0.45"/>
+      <path d="M22 39l-7 11 5 5 10-9m16-7 8 11-5 5-10-9" fill="#513d59" stroke="#302a38" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M25 44l-5 10 5 2 8-9m9-3 6 10-5 2-7-9" fill="#bea06b" stroke="#302a38" stroke-width="1.5"/>
+      <path d="M20 31q12-10 24 0l9 13-4 11-17 3-18-5-2-10z" fill="#50445f" stroke="#302a38" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M20 39l-9 10 5 5 12-10m20-6 9 11-5 5-12-10" fill="#6f5574" stroke="#302a38" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M28 32h8l5 9-9 5-10-5z" fill="#d5b17d" stroke="#4b3b3b" stroke-width="1.5"/>
+      <path d="M24 29q8-9 17 0l-2 10-7 5-8-5z" fill="#bd886f" stroke="#49383d" stroke-width="1.5"/>
+      <path d="M23 28l3-8 7-3 8 4 2 8-7-3-7 2z" fill="#633f62" stroke="#322b3b" stroke-width="1.7"/>
+      <path d="M10 25L30 5 49 24Q31 21 10 25z" fill="#44354f" stroke="#2d2937" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M8 25q23-8 49 0l-3 5q-23-5-43 1z" fill="#735476" stroke="#302a38" stroke-width="2"/>
+      <path d="M21 26q11-3 23 0" fill="none" stroke="#dfbd79" stroke-width="2"/>
+      <path d="M31 32v8m-3 0h7" stroke="#e5c685" stroke-width="1.5"/>
+    </g>
+    <g id="left">
+      <ellipse cx="32" cy="54" rx="17" ry="4" fill="#101b1b" opacity="0.45"/>
+      <path d="M26 37l-9 13 6 5 10-12m9-7 8 12-5 5-9-10" fill="#513d59" stroke="#302a38" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M22 31q12-8 23 1l7 15-7 8-21-1-8-12z" fill="#50445f" stroke="#302a38" stroke-width="2"/>
+      <path d="M26 38l-12 9 4 6 14-9m13-8 9 11-5 5-12-10" fill="#6f5574" stroke="#302a38" stroke-width="2"/>
+      <path d="M28 31q11-7 18 3l-4 11-10 3-8-8z" fill="#bd886f" stroke="#49383d" stroke-width="1.5"/>
+      <path d="M26 30l3-8 8-4 8 5 1 8-8-3-8 4z" fill="#633f62" stroke="#322b3b" stroke-width="1.7"/>
+      <path d="M6 26L27 5 48 24Q28 21 6 26z" fill="#44354f" stroke="#2d2937" stroke-width="2"/>
+      <path d="M5 26q22-8 49 0l-3 5q-24-5-44 1z" fill="#735476" stroke="#302a38" stroke-width="2"/>
+      <path d="M20 26q12-3 24 0" fill="none" stroke="#dfbd79" stroke-width="2"/>
+    </g>
+    <g id="right">
+      <ellipse cx="32" cy="54" rx="17" ry="4" fill="#101b1b" opacity="0.45"/>
+      <path d="M22 37l-8 12 5 5 10-10m14-7 9 13-6 5-10-11" fill="#513d59" stroke="#302a38" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M16 31q12-8 23 1l8 14-6 9-21-1-8-12z" fill="#50445f" stroke="#302a38" stroke-width="2"/>
+      <path d="M19 39l-9 11 5 5 12-11m12-5 13 9-4 6-15-10" fill="#6f5574" stroke="#302a38" stroke-width="2"/>
+      <path d="M18 33q7-10 18-3l5 9-8 8-10-3z" fill="#bd886f" stroke="#49383d" stroke-width="1.5"/>
+      <path d="M15 30l1-8 8-5 8 4 3 8-8-3-8 4z" fill="#633f62" stroke="#322b3b" stroke-width="1.7"/>
+      <path d="M16 24L37 5 58 26Q36 21 16 24z" fill="#44354f" stroke="#2d2937" stroke-width="2"/>
+      <path d="M10 26q27-8 49 0l-2 6q-25-6-44 0z" fill="#735476" stroke="#302a38" stroke-width="2"/>
+      <path d="M18 26q12-3 24 0" fill="none" stroke="#dfbd79" stroke-width="2"/>
+      <circle cx="22" cy="34" r="1" fill="#302a38"/>
+    </g>
+    <g id="up">
+      <ellipse cx="32" cy="54" rx="17" ry="4" fill="#101b1b" opacity="0.45"/>
+      <path d="M22 39l-7 11 5 5 10-9m16-7 8 11-5 5-10-9" fill="#513d59" stroke="#302a38" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M19 31q13-10 26 0l8 19-6 8H16l-5-9z" fill="#50445f" stroke="#302a38" stroke-width="2"/>
+      <path d="M10 25L30 5 49 24Q31 21 10 25z" fill="#44354f" stroke="#2d2937" stroke-width="2"/>
+      <path d="M8 25q23-8 49 0l-3 5q-23-5-43 1z" fill="#735476" stroke="#302a38" stroke-width="2"/>
+      <path d="M20 39l12 5 12-5m-22 8 10 4 10-4" fill="none" stroke="#b9a2c4" stroke-width="2"/>
+      <path d="M19 53l-3 5m29-5 3 5" stroke="#dfbd79" stroke-width="2"/>
+    </g>
+  </defs>
+  <use href="#down" x="0" y="0"/>
+  <use href="#down" x="64" y="0"/>
+  <use href="#down" x="128" y="0"/>
+  <use href="#down" x="192" y="0"/>
+  <use href="#left" x="0" y="64"/>
+  <use href="#left" x="64" y="64"/>
+  <use href="#left" x="128" y="64"/>
+  <use href="#left" x="192" y="64"/>
+  <use href="#right" x="0" y="128"/>
+  <use href="#right" x="64" y="128"/>
+  <use href="#right" x="128" y="128"/>
+  <use href="#right" x="192" y="128"/>
+  <use href="#up" x="0" y="192"/>
+  <use href="#up" x="64" y="192"/>
+  <use href="#up" x="128" y="192"/>
+  <use href="#up" x="192" y="192"/>
+</svg>
