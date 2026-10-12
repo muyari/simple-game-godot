@@ -4,38 +4,41 @@ class_name Portal
 @export_file("*.tscn") var destination_scene := ""
 @export var destination_position := Vector2.ZERO
 
-var pulse_time := 0.0
+@onready var interaction_prompt: Label = $InteractionPrompt
+
+var nearby_player: Player
 var is_transitioning := false
 
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
+	interaction_prompt.hide()
 
 
-func _process(delta: float) -> void:
-	pulse_time += delta
-	queue_redraw()
+func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(nearby_player) and not is_transitioning \
+			and event is InputEventKey and event.pressed \
+			and not event.echo and event.keycode == KEY_E:
+		if destination_scene.is_empty() or not ResourceLoader.exists(destination_scene):
+			push_error("Portal destination scene does not exist: %s" % destination_scene)
+			return
 
-
-func _draw() -> void:
-	var center := Vector2.ZERO
-	var pulse := sin(pulse_time * 3.0) * 2.0
-	draw_circle(center, 31.0 + pulse, Color(0.15, 0.62, 0.92, 0.16))
-	draw_arc(center, 27.0 + pulse, 0.0, TAU, 64, Color(0.28, 0.83, 1.0, 0.95), 4.0, true)
-	draw_arc(center, 20.0 - pulse * 0.4, 0.0, TAU, 64, Color(0.62, 0.91, 1.0, 0.8), 2.0, true)
-	draw_circle(center, 17.0, Color(0.08, 0.24, 0.48, 0.88))
-	draw_circle(center, 11.0, Color(0.2, 0.58, 0.86, 0.75))
+		is_transitioning = true
+		call_deferred("_change_scene", nearby_player)
+		get_viewport().set_input_as_handled()
 
 
 func _on_body_entered(body: Node2D) -> void:
-	if is_transitioning or not body is Player:
-		return
-	if destination_scene.is_empty() or not ResourceLoader.exists(destination_scene):
-		push_error("Portal destination scene does not exist: %s" % destination_scene)
-		return
+	if body is Player and not is_instance_valid(nearby_player):
+		nearby_player = body as Player
+		interaction_prompt.show()
 
-	is_transitioning = true
-	call_deferred("_change_scene", body as Player)
+
+func _on_body_exited(body: Node2D) -> void:
+	if body == nearby_player:
+		nearby_player = null
+		interaction_prompt.hide()
 
 
 func _change_scene(player: Player) -> void:
