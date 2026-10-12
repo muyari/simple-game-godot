@@ -273,6 +273,11 @@ func assign_witch_skill(skill_id: String, slot: String) -> bool:
 	witch_skill_loadout[slot] = skill_id
 	if not save_character(get_inventory(), get_equipment()):
 		witch_skill_loadout = previous_loadout
+		return false
+	_emit_progression_changed()
+	return true
+
+
 func get_level_state(level_id: int) -> Dictionary:
 	var character_index := _find_character_index(_active_character_id)
 	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
