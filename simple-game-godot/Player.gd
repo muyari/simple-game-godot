@@ -102,6 +102,22 @@ func _ready() -> void:
 			global_position = spawn_position
 		else:
 			push_error("Portal spawn position must be a Vector2.")
+	var current_scene := get_tree().current_scene
+	if current_scene != null:
+		var level_id: int = GameState.get_level_id(current_scene.scene_file_path)
+		if level_id > 0:
+			var level_state: Dictionary = GameState.get_level_state(level_id)
+			if not level_state.is_empty():
+				var saved_position: Variant = level_state.get("player_position", null)
+				if typeof(saved_position) == TYPE_ARRAY and saved_position.size() == 2 \
+						and typeof(saved_position[0]) in [TYPE_INT, TYPE_FLOAT] \
+						and typeof(saved_position[1]) in [TYPE_INT, TYPE_FLOAT]:
+					global_position = Vector2(
+						float(saved_position[0]),
+						float(saved_position[1])
+					)
+				else:
+					push_error("Saved player position for level %d is invalid." % level_id)
 	if get_tree().has_meta("portal_player_vitals"):
 		var saved_vitals: Variant = get_tree().get_meta("portal_player_vitals")
 		get_tree().remove_meta("portal_player_vitals")

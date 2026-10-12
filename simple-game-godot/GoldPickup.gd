@@ -1,6 +1,8 @@
 extends Area2D
 class_name GoldPickup
 
+signal collected
+
 @export_range(1, 3, 1) var amount := 1
 
 @onready var amount_label: Label = $Amount
@@ -12,6 +14,7 @@ func _ready() -> void:
 		set_deferred("monitoring", false)
 		return
 
+	add_to_group("level_drops")
 	amount_label.text = "+%d" % amount
 	body_entered.connect(_on_body_entered)
 
@@ -20,5 +23,7 @@ func _on_body_entered(body: Node2D) -> void:
 	if not body is Player:
 		return
 
+	remove_from_group("level_drops")
+	collected.emit()
 	GameState.add_gold(amount)
 	queue_free()

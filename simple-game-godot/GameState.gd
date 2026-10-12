@@ -154,7 +154,9 @@ func get_characters() -> Array[Dictionary]:
 			"id": "legacy",
 			"name": "Adventurer",
 			"class": "Warrior",
-			"save_path": SAVE_PATH
+			"save_path": SAVE_PATH,
+			"completed_levels": [],
+			"level_states": {}
 		})
 		_save_roster()
 
@@ -271,6 +273,65 @@ func assign_witch_skill(skill_id: String, slot: String) -> bool:
 	witch_skill_loadout[slot] = skill_id
 	if not save_character(get_inventory(), get_equipment()):
 		witch_skill_loadout = previous_loadout
+func get_level_state(level_id: int) -> Dictionary:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
+		return {}
+
+	var character: Dictionary = _characters[character_index]
+	var level_states: Variant = character.get("level_states", {})
+	if typeof(level_states) != TYPE_DICTIONARY:
+		push_error("Saved level states must be a Dictionary.")
+		return {}
+	var level_state: Variant = level_states.get(str(level_id), {})
+	if typeof(level_state) != TYPE_DICTIONARY:
+		push_error("Saved state for level %d must be a Dictionary." % level_id)
+		return {}
+	return level_state.duplicate(true)
+
+
+func set_level_state(level_id: int, level_state: Dictionary) -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
+		push_error("Cannot save state for an invalid level or inactive character.")
+		return false
+
+	var previous_character: Dictionary = _characters[character_index]
+	var updated_character := previous_character.duplicate(true)
+	var level_states: Variant = updated_character.get("level_states", {})
+	if typeof(level_states) != TYPE_DICTIONARY:
+		push_error("Saved level states must be a Dictionary.")
+		return false
+	var updated_level_states: Dictionary = level_states
+	updated_level_states[str(level_id)] = level_state.duplicate(true)
+	updated_character["level_states"] = updated_level_states
+	_characters[character_index] = updated_character
+	if not _save_roster():
+		_characters[character_index] = previous_character
+		return false
+	return true
+
+
+func clear_level_state(level_id: int) -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
+		push_error("Cannot clear state for an invalid level or inactive character.")
+		return false
+
+	var previous_character: Dictionary = _characters[character_index]
+	var updated_character := previous_character.duplicate(true)
+	var level_states: Variant = updated_character.get("level_states", {})
+	if typeof(level_states) != TYPE_DICTIONARY:
+		push_error("Saved level states must be a Dictionary.")
+		return false
+	var updated_level_states: Dictionary = level_states
+	if not updated_level_states.has(str(level_id)):
+		return true
+	updated_level_states.erase(str(level_id))
+	updated_character["level_states"] = updated_level_states
+	_characters[character_index] = updated_character
+	if not _save_roster():
+		_characters[character_index] = previous_character
 		return false
 	return true
 
@@ -280,17 +341,24 @@ func complete_level(level_id: int) -> bool:
 	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
 		return false
 
-	var character: Dictionary = _characters[character_index]
+	var previous_character: Dictionary = _characters[character_index]
+	var character := previous_character.duplicate(true)
 	var completed_levels := _validated_completed_levels(character.get("completed_levels", []))
 	if completed_levels.has(level_id):
-		return false
+		return clear_level_state(level_id)
 
 	completed_levels.append(level_id)
 	character["completed_levels"] = completed_levels
+	var level_states: Variant = character.get("level_states", {})
+	if typeof(level_states) != TYPE_DICTIONARY:
+		push_error("Saved level states must be a Dictionary.")
+		return false
+	var updated_level_states: Dictionary = level_states
+	updated_level_states.erase(str(level_id))
+	character["level_states"] = updated_level_states
 	_characters[character_index] = character
 	if not _save_roster():
-		completed_levels.erase(level_id)
-		_characters[character_index] = character
+		_characters[character_index] = previous_character
 		return false
 	return true
 
@@ -322,6 +390,7 @@ func create_character(display_name: String, character_class: String) -> String:
 		"class": character_class,
 		"save_path": save_path,
 		"completed_levels": [],
+		"level_states": {},
 	})
 	_active_character_id = character_id
 	_active_save_path = save_path
@@ -763,7 +832,8 @@ func _load_roster() -> void:
 			"name": display_name,
 			"class": character_class,
 			"save_path": save_path,
-			"completed_levels": _validated_completed_levels(character.get("completed_levels", []))
+			"completed_levels": _validated_completed_levels(character.get("completed_levels", [])),
+			"level_states": _validated_level_states(character.get("level_states", {}))
 		})
 
 
@@ -847,6 +917,21 @@ func _validated_completed_levels(raw_levels: Variant) -> Array[int]:
 		if level_id >= 1 and level_id <= LEVEL_SCENES.size() and not completed_levels.has(level_id):
 			completed_levels.append(level_id)
 	return completed_levels
+
+
+func _validated_level_states(raw_states: Variant) -> Dictionary:
+	var level_states: Dictionary = {}
+	if typeof(raw_states) != TYPE_DICTIONARY:
+		return level_states
+	for raw_level_id in raw_states:
+		var level_id := str(raw_level_id).to_int()
+		var level_state: Variant = raw_states[raw_level_id]
+		if str(raw_level_id) != str(level_id) \
+				or level_id < 1 or level_id > LEVEL_SCENES.size() \
+				or typeof(level_state) != TYPE_DICTIONARY:
+			continue
+		level_states[str(level_id)] = level_state.duplicate(true)
+	return level_states
 
 
 func _clear_character_data() -> void:

@@ -45,6 +45,7 @@ const SCENERY_CLEARANCE = 24.0
 
 var player: Player
 var player_camera: Camera2D
+var level_id := 0
 var region_size := Vector2.ZERO
 var region_origin := Vector2.ZERO
 var current_region := Vector2i.ZERO
@@ -53,6 +54,7 @@ var enemies_spawned := 0
 var enemies_defeated := 0
 var boss_spawned := false
 var level_is_complete := false
+var spawned_enemy_regions: Dictionary = {}
 var generated_scenery_regions: Dictionary = {}
 var scenery_placements_by_region: Dictionary = {}
 var active_scenery_region := Vector2i.ZERO
@@ -86,14 +88,317 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 
-	region_origin = player.global_position + player_camera.offset / player_camera.zoom
-	current_region = _get_region_for_position(_get_camera_center())
+	level_id = _get_level_id()
+	var level_state := GameState.get_level_state(level_id)
+	if level_state.is_empty():
+		region_origin = player.global_position + player_camera.offset / player_camera.zoom
+		current_region = _get_region_for_position(_get_camera_center())
+	elif not _restore_level_state(level_state):
+		level_state.clear()
+		enemies_spawned = 0
+		enemies_defeated = 0
+		boss_spawned = false
+		spawned_enemy_regions.clear()
 	last_player_position = player.global_position
 	_create_item_pool()
 	loot_random.randomize()
 	_generate_nearby_scenery(current_region)
+	if not level_state.is_empty():
+		call_deferred("_restore_active_enemies", level_state.get("enemies", []))
+		call_deferred("_restore_level_drops", level_state.get("drops", []))
 	player.died.connect(_on_player_died)
+	call_deferred("_emit_initial_progress")
+
+
+func _emit_initial_progress() -> void:
 	progress_changed.emit(enemies_defeated, _get_max_enemies())
+
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_PAUSED]:
+		save_current_level_state()
+
+
+func _restore_level_state(level_state: Dictionary) -> bool:
+	var saved_spawned: Variant = level_state.get("enemies_spawned", 0)
+	var saved_defeated: Variant = level_state.get("enemies_defeated", 0)
+	if typeof(saved_spawned) not in [TYPE_INT, TYPE_FLOAT] \
+			or typeof(saved_defeated) not in [TYPE_INT, TYPE_FLOAT]:
+		push_error("Saved level enemy counts are invalid.")
+		GameState.clear_level_state(level_id)
+		region_origin = player.global_position + player_camera.offset / player_camera.zoom
+		current_region = _get_region_for_position(_get_camera_center())
+		return false
+
+	enemies_spawned = clampi(int(saved_spawned), 0, _get_max_enemies())
+	enemies_defeated = clampi(int(saved_defeated), 0, enemies_spawned)
+	boss_spawned = bool(level_state.get("boss_spawned", false))
+	var saved_origin: Variant = _vector_from_record(
+		level_state.get("region_origin", []),
+		"region origin"
+	)
+	if saved_origin == null:
+		GameState.clear_level_state(level_id)
+		region_origin = player.global_position + player_camera.offset / player_camera.zoom
+		current_region = _get_region_for_position(_get_camera_center())
+		return false
+	region_origin = Vector2(saved_origin)
+
+	var saved_region: Variant = level_state.get("current_region", [])
+	if typeof(saved_region) == TYPE_ARRAY and saved_region.size() == 2:
+		current_region = Vector2i(int(saved_region[0]), int(saved_region[1]))
+	else:
+		current_region = _get_region_for_position(_get_camera_center())
+
+	var saved_regions: Variant = level_state.get("spawned_enemy_regions", [])
+	if typeof(saved_regions) != TYPE_ARRAY:
+		push_error("Saved cleared-area list is invalid.")
+		GameState.clear_level_state(level_id)
+		return false
+	for saved_region_entry in saved_regions:
+		if typeof(saved_region_entry) != TYPE_ARRAY or saved_region_entry.size() != 2:
+			push_error("Ignoring an invalid saved cleared area.")
+			continue
+		spawned_enemy_regions[_region_key(
+			Vector2i(int(saved_region_entry[0]), int(saved_region_entry[1]))
+		)] = true
+	return true
+
+
+func save_current_level_state() -> bool:
+	if level_id == 0:
+		push_error("Cannot save level state for an unsupported scene.")
+		return false
+	if level_is_complete:
+		return true
+
+	var enemy_records: Array[Dictionary] = []
+	for enemy_node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := enemy_node as Wolf
+		if enemy == null or enemy.health <= 0.0 or enemy.scene_file_path.is_empty():
+			continue
+		enemy_records.append({
+			"scene_path": enemy.scene_file_path,
+			"position": [enemy.global_position.x, enemy.global_position.y],
+			"health": enemy.health
+		})
+
+	var drop_records: Array[Dictionary] = []
+	for drop_node in get_tree().get_nodes_in_group("level_drops"):
+		var item_pickup := drop_node as ItemPickup
+		if item_pickup != null:
+			if item_pickup.item == null:
+				push_error("Cannot save an item pickup without item data.")
+				continue
+			drop_records.append({
+				"type": "item",
+				"position": [item_pickup.global_position.x, item_pickup.global_position.y],
+				"item": _item_to_record(item_pickup.item)
+			})
+			continue
+
+		var gold_pickup := drop_node as GoldPickup
+		if gold_pickup != null:
+			drop_records.append({
+				"type": "gold",
+				"position": [gold_pickup.global_position.x, gold_pickup.global_position.y],
+				"amount": gold_pickup.amount
+			})
+
+	var cleared_regions: Array[Array] = []
+	for region_key in spawned_enemy_regions:
+		var coordinates := str(region_key).split(",")
+		if coordinates.size() == 2:
+			cleared_regions.append([coordinates[0].to_int(), coordinates[1].to_int()])
+
+	var level_state := {
+		"enemies_spawned": enemies_spawned,
+		"enemies_defeated": enemies_defeated,
+		"boss_spawned": boss_spawned,
+		"player_position": [player.global_position.x, player.global_position.y],
+		"region_origin": [region_origin.x, region_origin.y],
+		"current_region": [current_region.x, current_region.y],
+		"spawned_enemy_regions": cleared_regions,
+		"enemies": enemy_records,
+		"drops": drop_records
+	}
+	if not GameState.set_level_state(level_id, level_state):
+		push_error("Could not persist progress for level %d." % level_id)
+		return false
+	return true
+
+
+func _save_level_state() -> void:
+	if not save_current_level_state():
+		push_error("Could not save the current level state.")
+
+
+func _restore_active_enemies(raw_enemies: Variant) -> void:
+	if typeof(raw_enemies) != TYPE_ARRAY:
+		push_error("Saved active enemy list is invalid.")
+		return
+
+	for raw_enemy in raw_enemies:
+		if typeof(raw_enemy) != TYPE_DICTIONARY:
+			push_error("Ignoring an invalid saved enemy.")
+			continue
+		var enemy_record: Dictionary = raw_enemy
+		var scene_path: Variant = enemy_record.get("scene_path", null)
+		var saved_health: Variant = enemy_record.get("health", null)
+		if typeof(scene_path) != TYPE_STRING \
+				or typeof(saved_health) not in [TYPE_INT, TYPE_FLOAT]:
+			push_error("Ignoring saved enemy with invalid fields.")
+			continue
+		var enemy_scene := _get_enemy_scene(str(scene_path))
+		if enemy_scene == null:
+			push_error("Ignoring saved enemy with unsupported scene '%s'." % scene_path)
+			continue
+		var enemy := enemy_scene.instantiate() as Wolf
+		if enemy == null:
+			push_error("Saved enemy scene '%s' does not use the Wolf script." % scene_path)
+			continue
+		var enemy_position: Variant = _vector_from_record(
+			enemy_record.get("position", []),
+			"enemy position"
+		)
+		if enemy_position == null:
+			enemy.free()
+			continue
+
+		enemy.target_path = NodePath("../Player")
+		if str(scene_path) == "res://desert_boss.tscn":
+			enemy.died.connect(_on_desert_boss_died.bind(enemy))
+		else:
+			enemy.died.connect(_on_enemy_died.bind(enemy))
+		get_parent().add_child(enemy)
+		enemy.global_position = enemy_position
+		enemy.health = clampf(float(saved_health), 0.0, enemy.max_health)
+		var health_bar := enemy.get_node_or_null("HealthBar") as ProgressBar
+		if health_bar != null:
+			health_bar.value = enemy.health
+
+
+func _restore_level_drops(raw_drops: Variant) -> void:
+	if typeof(raw_drops) != TYPE_ARRAY:
+		push_error("Saved level drop list is invalid.")
+		return
+
+	for raw_drop in raw_drops:
+		if typeof(raw_drop) != TYPE_DICTIONARY:
+			push_error("Ignoring an invalid saved level drop.")
+			continue
+		var drop_record: Dictionary = raw_drop
+		var drop_type: Variant = drop_record.get("type", null)
+		var drop_position: Variant = _vector_from_record(
+			drop_record.get("position", []),
+			"drop position"
+		)
+		if drop_position == null:
+			continue
+
+		match drop_type:
+			"gold":
+				var amount: Variant = drop_record.get("amount", null)
+				if typeof(amount) not in [TYPE_INT, TYPE_FLOAT] \
+						or int(amount) < 1 or int(amount) > 3:
+					push_error("Ignoring saved gold pickup with invalid amount.")
+					continue
+				_spawn_gold_pickup(drop_position, int(amount))
+			"item":
+				var item_record: Variant = drop_record.get("item", null)
+				if typeof(item_record) != TYPE_DICTIONARY:
+					push_error("Ignoring saved item pickup with invalid item data.")
+					continue
+				var item := _item_from_record(item_record)
+				if item == null:
+					continue
+				_spawn_item_pickup(item, drop_position)
+			_:
+				push_error("Ignoring saved pickup with unsupported type '%s'." % drop_type)
+
+
+func _item_to_record(item: ItemData) -> Dictionary:
+	return {
+		"display_name": item.display_name,
+		"equipment_slot": item.equipment_slot,
+		"icon_color": item.icon_color.to_html(true),
+		"damage_bonus": item.damage_bonus,
+		"damage_reduction": item.damage_reduction,
+		"price": item.price
+	}
+
+
+func _item_from_record(raw_item: Dictionary) -> ItemData:
+	var display_name: Variant = raw_item.get("display_name", null)
+	var equipment_slot: Variant = raw_item.get("equipment_slot", null)
+	var icon_color: Variant = raw_item.get("icon_color", null)
+	var damage_bonus: Variant = raw_item.get("damage_bonus", null)
+	var damage_reduction: Variant = raw_item.get("damage_reduction", null)
+	var price: Variant = raw_item.get("price", null)
+	if typeof(display_name) != TYPE_STRING \
+			or typeof(equipment_slot) != TYPE_STRING \
+			or typeof(icon_color) != TYPE_STRING \
+			or typeof(damage_bonus) not in [TYPE_INT, TYPE_FLOAT] \
+			or typeof(damage_reduction) not in [TYPE_INT, TYPE_FLOAT] \
+			or typeof(price) not in [TYPE_INT, TYPE_FLOAT]:
+		push_error("Ignoring saved item pickup with invalid item fields.")
+		return null
+
+	var item := ItemData.new()
+	item.display_name = display_name
+	item.equipment_slot = equipment_slot
+	item.icon_color = Color.from_string(icon_color, Color.WHITE)
+	item.damage_bonus = int(damage_bonus)
+	item.damage_reduction = int(damage_reduction)
+	item.price = int(price)
+	return item
+
+
+func _get_enemy_scene(scene_path: String) -> PackedScene:
+	match scene_path:
+		"res://wolf.tscn":
+			return WOLF_SCENE
+		"res://scorpion.tscn":
+			return SCORPION_SCENE
+		"res://snake.tscn":
+			return SNAKE_SCENE
+		"res://frostbound_wraith.tscn":
+			return FROSTBOUND_WRAITH_SCENE
+		"res://crystalback_yeti.tscn":
+			return CRYSTALBACK_YETI_SCENE
+		"res://shiverfang_ice_serpent.tscn":
+			return SHIVERFANG_ICE_SERPENT_SCENE
+		"res://sentinel_hexwalker.tscn":
+			return SENTINEL_HEXWALKER_SCENE
+		"res://neurocore_drone.tscn":
+			return NEUROCORE_DRONE_SCENE
+		"res://titanforge_exo_unit.tscn":
+			return TITANFORGE_EXO_UNIT_SCENE
+		"res://phase_shift_infiltrator.tscn":
+			return PHASE_SHIFT_INFILTRATOR_SCENE
+		"res://desert_boss.tscn":
+			return DESERT_BOSS_SCENE
+	return null
+
+
+func _vector_from_record(value: Variant, field_name: String) -> Variant:
+	if typeof(value) != TYPE_ARRAY or value.size() != 2 \
+			or typeof(value[0]) not in [TYPE_INT, TYPE_FLOAT] \
+			or typeof(value[1]) not in [TYPE_INT, TYPE_FLOAT]:
+		push_error("Saved %s is invalid." % field_name)
+		return null
+	return Vector2(float(value[0]), float(value[1]))
+
+
+func _region_key(region: Vector2i) -> String:
+	return "%d,%d" % [region.x, region.y]
+
+
+func _get_level_id() -> int:
+	var current_scene := get_tree().current_scene
+	if current_scene == null:
+		return 0
+	return GameState.get_level_id(current_scene.scene_file_path)
 
 
 func _physics_process(_delta: float) -> void:
@@ -105,8 +410,11 @@ func _physics_process(_delta: float) -> void:
 	if entered_region != current_region:
 		var movement := player.global_position - last_player_position
 		_generate_nearby_scenery(entered_region)
-		if movement.length_squared() > 0.0:
-			_spawn_enemy(movement.normalized())
+		var region_key := _region_key(entered_region)
+		if movement.length_squared() > 0.0 and not spawned_enemy_regions.has(region_key):
+			if _spawn_enemy(movement.normalized()):
+				spawned_enemy_regions[region_key] = true
+				_save_level_state()
 		current_region = entered_region
 
 	last_player_position = player.global_position
@@ -129,19 +437,21 @@ func _spawn_item_pickup(item: ItemData, world_position: Vector2) -> void:
 		return
 
 	pickup.item = item
-	pickup.position = world_position
-	get_parent().call_deferred("add_child", pickup)
+	pickup.collected.connect(_save_level_state)
+	get_parent().add_child(pickup)
+	pickup.global_position = world_position
 
 
-func _spawn_gold_pickup(world_position: Vector2) -> void:
+func _spawn_gold_pickup(world_position: Vector2, amount := 0) -> void:
 	var pickup := GOLD_PICKUP_SCENE.instantiate() as GoldPickup
 	if pickup == null:
 		push_error("The gold pickup scene root must use the GoldPickup script.")
 		return
 
-	pickup.amount = loot_random.randi_range(1, 3)
-	pickup.position = world_position
-	get_parent().call_deferred("add_child", pickup)
+	pickup.amount = amount if amount > 0 else loot_random.randi_range(1, 3)
+	pickup.collected.connect(_save_level_state)
+	get_parent().add_child(pickup)
+	pickup.global_position = world_position
 
 
 func _generate_scenery_for_region(region: Vector2i) -> void:
@@ -432,7 +742,7 @@ func _get_max_enemies() -> int:
 	return MAX_FOREST_ENEMIES
 
 
-func _spawn_enemy(direction: Vector2) -> void:
+func _spawn_enemy(direction: Vector2) -> bool:
 	var enemy_scene: PackedScene = WOLF_SCENE
 	if biome == 1:
 		enemy_scene = SCORPION_SCENE if loot_random.randf() < 0.75 else SNAKE_SCENE
@@ -458,13 +768,14 @@ func _spawn_enemy(direction: Vector2) -> void:
 	if enemy == null:
 		push_error("The enemy scene root must use the Wolf base script.")
 		set_physics_process(false)
-		return
+		return false
 
 	enemy.target_path = NodePath("../Player")
 	enemy.died.connect(_on_enemy_died.bind(enemy))
 	get_parent().add_child(enemy)
 	enemy.global_position = player.global_position + direction * _get_spawn_distance(direction)
 	enemies_spawned += 1
+	return true
 
 
 func _spawn_desert_boss() -> void:
@@ -509,9 +820,11 @@ func _on_enemy_died(enemy: Wolf) -> void:
 	var max_enemies := _get_max_enemies()
 	if biome == 1 and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_desert_boss()
+		_save_level_state()
 	elif biome != 1 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
-		level_is_complete = true
-		level_completed.emit()
+		_complete_current_level()
+	else:
+		_save_level_state()
 
 
 func _on_desert_boss_died(boss: Wolf) -> void:
@@ -519,6 +832,10 @@ func _on_desert_boss_died(boss: Wolf) -> void:
 	if not player.gain_experience(experience_reward):
 		push_error("Could not award %d XP for defeating the desert boss." % experience_reward)
 	_drop_enemy_loot(boss, true)
+	_complete_current_level()
+
+
+func _complete_current_level() -> void:
 	level_is_complete = true
 	level_completed.emit()
 
@@ -569,3 +886,4 @@ func _create_desert_gear(is_boss_drop: bool) -> ItemData:
 
 func _on_player_died() -> void:
 	set_physics_process(false)
+	_save_level_state()
