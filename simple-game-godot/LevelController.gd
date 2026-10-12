@@ -136,14 +136,18 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 		_add_scenery_sprite(
 			TREE_TEXTURE,
 			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.15)
+			random.randf_range(0.7, 1.15),
+			24.0,
+			Vector2(0.0, 62.0)
 		)
 
 	for _boulder_index in range(random.randi_range(1, 2)):
 		_add_scenery_sprite(
 			BOULDERS_TEXTURE,
 			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.1)
+			random.randf_range(0.7, 1.1),
+			47.0,
+			Vector2(0.0, 16.0)
 		)
 
 	if random.randf() < 0.45:
@@ -157,7 +161,9 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 		_add_scenery_sprite(
 			CAVE_TEXTURE,
 			region_center + _random_region_offset(random, safe_area * 0.7),
-			random.randf_range(0.8, 1.15)
+			random.randf_range(0.8, 1.15),
+			70.0,
+			Vector2(0.0, 47.0)
 		)
 
 
@@ -170,7 +176,9 @@ func _generate_desert_scenery(
 		_add_scenery_sprite(
 			DESERT_CACTUS_TEXTURE,
 			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.15)
+			random.randf_range(0.7, 1.15),
+			18.0,
+			Vector2(0.0, 55.0)
 		)
 
 	for _dune_index in range(random.randi_range(1, 2)):
@@ -191,7 +199,9 @@ func _generate_desert_scenery(
 		_add_scenery_sprite(
 			DESERT_RUINS_TEXTURE,
 			region_center + _random_region_offset(random, safe_area * 0.7),
-			random.randf_range(0.75, 1.1)
+			random.randf_range(0.75, 1.1),
+			72.0,
+			Vector2(0.0, 15.0)
 		)
 
 
@@ -202,13 +212,32 @@ func _random_region_offset(random: RandomNumberGenerator, safe_area: Vector2) ->
 	)
 
 
-func _add_scenery_sprite(texture: Texture2D, world_position: Vector2, uniform_scale: float) -> void:
+func _add_scenery_sprite(
+	texture: Texture2D,
+	world_position: Vector2,
+	uniform_scale: float,
+	collision_radius := 0.0,
+	collision_offset := Vector2.ZERO
+) -> void:
 	var scenery := Sprite2D.new()
 	scenery.texture = texture
-	scenery.position = world_position
 	scenery.scale = Vector2.ONE * uniform_scale
 	scenery.z_index = -1
-	get_parent().call_deferred("add_child", scenery)
+	if collision_radius <= 0.0:
+		scenery.position = world_position
+		get_parent().call_deferred("add_child", scenery)
+		return
+
+	var obstacle := StaticBody2D.new()
+	obstacle.position = world_position
+	var collision := CollisionShape2D.new()
+	var shape := CircleShape2D.new()
+	shape.radius = collision_radius * uniform_scale
+	collision.shape = shape
+	collision.position = collision_offset * uniform_scale
+	obstacle.add_child(collision)
+	obstacle.add_child(scenery)
+	get_parent().call_deferred("add_child", obstacle)
 
 
 func _get_camera_center() -> Vector2:
