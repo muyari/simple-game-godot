@@ -11,22 +11,25 @@ var is_transitioning := false
 
 
 func _ready() -> void:
+	add_to_group("interactables")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	interaction_prompt.hide()
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if is_instance_valid(nearby_player) and not is_transitioning \
-			and event is InputEventKey and event.pressed \
-			and not event.echo and event.keycode == KEY_E:
-		if destination_scene.is_empty() or not ResourceLoader.exists(destination_scene):
-			push_error("Portal destination scene does not exist: %s" % destination_scene)
-			return
+func can_interact(player: Player) -> bool:
+	return is_instance_valid(nearby_player) and nearby_player == player and not is_transitioning
 
-		is_transitioning = true
-		call_deferred("_change_scene", nearby_player)
-		get_viewport().set_input_as_handled()
+
+func interact(player: Player) -> void:
+	if not can_interact(player):
+		return
+	if destination_scene.is_empty() or not ResourceLoader.exists(destination_scene):
+		push_error("Portal destination scene does not exist: %s" % destination_scene)
+		return
+
+	is_transitioning = true
+	call_deferred("_change_scene", player)
 
 
 func _on_body_entered(body: Node2D) -> void:

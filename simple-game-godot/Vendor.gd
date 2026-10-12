@@ -9,16 +9,19 @@ var player_nearby := false
 
 
 func _ready() -> void:
+	add_to_group("interactables")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	prompt.hide()
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if player_nearby and event is InputEventKey and event.pressed \
-			and not event.echo and event.keycode == KEY_E:
+func can_interact(_player: Player) -> bool:
+	return player_nearby
+
+
+func interact(_player: Player) -> void:
+	if player_nearby:
 		shop_requested.emit()
-		get_viewport().set_input_as_handled()
 
 
 func _on_body_entered(body: Node2D) -> void:

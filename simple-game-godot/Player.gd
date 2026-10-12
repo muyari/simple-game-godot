@@ -43,6 +43,8 @@ const TOWN_ARRIVAL_POSITION = Vector2(576, 350)
 const TOWN_RETURN_SCENE_META = "town_return_scene"
 const TOWN_RETURN_POSITION_META = "town_return_position"
 
+@export_enum("None", "Fireball", "Iceball", "Town Portal") var e_skill := "None"
+
 var health := MAX_HEALTH
 var mana := MAX_MANA
 var health_potions := MAX_POTIONS
@@ -150,13 +152,7 @@ func _physics_process(delta: float) -> void:
 		animation_time = 0.0
 
 	if Input.is_action_just_pressed("ui_accept"):
-		if selected_character == "Witch":
-			if iceball_cooldown_remaining <= 0.0:
-				_cast_iceball()
-				iceball_cooldown_remaining = ICEBALL_COOLDOWN
-		elif attack_time_remaining <= 0.0:
-			attack_time_remaining = ATTACK_DURATION
-			attack_hit_applied = false
+		_use_primary_attack()
 
 	_update_sprite(direction != Vector2.ZERO)
 	_update_sword(delta)
@@ -200,8 +196,56 @@ func _unhandled_input(event: InputEvent) -> void:
 		_use_mana_potion()
 	elif event.keycode == KEY_Q:
 		_cast_fireball()
+	elif event.keycode == KEY_E:
+		if not _try_interact():
+			_cast_e_skill()
+		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_T:
 		_open_town_portal()
+
+
+func _try_interact() -> bool:
+	var nearest_interactable: Node2D
+	var nearest_distance_squared := INF
+	for candidate in get_tree().get_nodes_in_group("interactables"):
+		if not candidate is Node2D \
+				or not candidate.has_method("can_interact") \
+				or not candidate.has_method("interact") \
+				or not bool(candidate.call("can_interact", self)):
+			continue
+
+		var interactable := candidate as Node2D
+		var distance_squared := global_position.distance_squared_to(interactable.global_position)
+		if distance_squared < nearest_distance_squared:
+			nearest_interactable = interactable
+			nearest_distance_squared = distance_squared
+
+	if nearest_interactable == null:
+		return false
+	nearest_interactable.call("interact", self)
+	return true
+
+
+func _use_primary_attack() -> void:
+	if selected_character == "Witch":
+		if iceball_cooldown_remaining <= 0.0:
+			_cast_iceball()
+			iceball_cooldown_remaining = ICEBALL_COOLDOWN
+	elif attack_time_remaining <= 0.0:
+		attack_time_remaining = ATTACK_DURATION
+		attack_hit_applied = false
+
+
+func _cast_e_skill() -> void:
+	match e_skill:
+		"Fireball":
+			_cast_fireball()
+		"Iceball":
+			if iceball_cooldown_remaining <= 0.0:
+				_cast_iceball()
+				iceball_cooldown_remaining = ICEBALL_COOLDOWN
+		"Town Portal":
+			_open_town_portal()
 
 
 func _finish_mouse_move(release_position: Vector2) -> void:
