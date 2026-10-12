@@ -66,7 +66,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="MenuPanel" type="PanelContainer" parent="CenterContainer" unique_id=888232533]
-custom_minimum_size = Vector2(520, 460)
+custom_minimum_size = Vector2(600, 560)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
@@ -110,6 +110,69 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Quit"
 
+[node name="RosterScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="CenterContainer/MenuPanel/RosterScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
+theme_override_font_sizes/font_size = 32
+text = "Your Characters"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/RosterScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+text = "Choose a hero to continue your adventure."
+horizontal_alignment = 1
+
+[node name="CharacterScroll" type="ScrollContainer" parent="CenterContainer/MenuPanel/RosterScreen"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="CharacterList" type="VBoxContainer" parent="CenterContainer/MenuPanel/RosterScreen/CharacterScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RosterStatus" type="Label" parent="CenterContainer/MenuPanel/RosterScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
+text = "No character selected."
+horizontal_alignment = 1
+
+[node name="RosterActions" type="HBoxContainer" parent="CenterContainer/MenuPanel/RosterScreen"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ContinueButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen/RosterActions"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Continue"
+
+[node name="DeleteButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen/RosterActions"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Delete Selected"
+
+[node name="CreateButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen/RosterActions"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Create Character"
+
+[node name="RosterBackButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Back"
+
 [node name="CharacterScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel" unique_id=633969023]
 visible = false
 layout_mode = 2
@@ -119,44 +182,49 @@ theme_override_constants/separation = 14
 layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
 theme_override_font_sizes/font_size = 32
-text = "Choose Your Character"
+text = "Create a Character"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=2119354544]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
-text = "Select a hero for the adventure."
+text = "Name your hero and choose a class."
 horizontal_alignment = 1
 
+[node name="CharacterNameInput" type="LineEdit" parent="CenterContainer/MenuPanel/CharacterScreen"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+placeholder_text = "Character name"
+max_length = 24
+
 [node name="WarriorButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=506950426]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "Warrior"
 
 [node name="WitchButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=169029068]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "Witch"
 
-[node name="LockedCharacter" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=1563243672]
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-disabled = true
-text = "???  -  Coming Soon"
-
 [node name="CharacterStatus" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=1543352664]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
-text = "Choose a character to continue."
+text = "Choose a class for your character."
 horizontal_alignment = 1
 
 [node name="CharacterContinue" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=420303589]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Choose a Level"
+text = "Create Character"
+
+[node name="CancelCreationButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Cancel"
 
 [node name="LevelScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel" unique_id=1255282867]
 visible = false
@@ -196,11 +264,20 @@ horizontal_alignment = 1
 [node name="BackButton" type="Button" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=933499780]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-text = "Back to Character Select"
+text = "Back to Characters"
+
+[node name="DeleteConfirmation" type="ConfirmationDialog" parent="."]
+title = "Delete Character"
+dialog_text = "Delete this character? This cannot be undone."
 
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WarriorButton" to="." method="_on_warrior_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WitchButton" to="." method="_on_witch_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CharacterContinue" to="." method="_on_character_continue"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CancelCreationButton" to="." method="_on_creation_cancel_pressed"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterActions/ContinueButton" to="." method="_on_roster_continue_pressed"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterActions/DeleteButton" to="." method="_on_roster_delete_pressed"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterActions/CreateButton" to="." method="_on_roster_create_pressed"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterBackButton" to="." method="_on_roster_back_pressed"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level1Button" to="." method="_on_level_1_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level2Button" to="." method="_on_level_2_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/BackButton" to="." method="_on_back_to_characters"]
