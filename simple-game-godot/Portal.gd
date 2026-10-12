@@ -52,6 +52,19 @@ func _change_scene(player: Player) -> void:
 		push_error("Could not travel through portal: player no longer exists.")
 		return
 
+	var current_scene := get_tree().current_scene
+	if current_scene != null:
+		var level_controller := current_scene.get_node_or_null("LevelController")
+		if level_controller != null:
+			if not level_controller.has_method("save_current_level_state"):
+				is_transitioning = false
+				push_error("The current level controller cannot save its state.")
+				return
+			if not bool(level_controller.call("save_current_level_state")):
+				is_transitioning = false
+				push_error("Could not save the current level before portal travel.")
+				return
+
 	get_tree().set_meta("portal_spawn_position", destination_position)
 	get_tree().set_meta("portal_player_vitals", {
 		"health": player.health,

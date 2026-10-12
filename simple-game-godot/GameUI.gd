@@ -463,7 +463,8 @@ func _build_progression_hud() -> void:
 
 func _on_level_completed() -> void:
 	var level_id := GameState.get_level_id(get_tree().current_scene.scene_file_path)
-	GameState.complete_level(level_id)
+	if not GameState.complete_level(level_id):
+		push_error("Could not persist completion for level %d." % level_id)
 	level_complete_label.text = "Area secured."
 	level_complete_label.show()
 	return_to_levels_button.show()
@@ -485,6 +486,12 @@ func _on_return_to_town_pressed() -> void:
 		return
 
 	return_to_town_button.disabled = true
+	var level_controller: Node = get_node("../LevelController")
+	if not level_controller.has_method("save_current_level_state") \
+			or not bool(level_controller.call("save_current_level_state")):
+		return_to_town_button.disabled = false
+		push_error("Could not save the current level before returning to town.")
+		return
 	get_tree().set_meta(Player.TOWN_RETURN_SCENE_META, scene_path)
 	get_tree().set_meta(Player.TOWN_RETURN_POSITION_META, player.global_position)
 	get_tree().set_meta("portal_spawn_position", Vector2(576, 350))
