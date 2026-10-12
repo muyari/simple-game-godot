@@ -172,7 +172,9 @@ func _on_equip_item_pressed() -> void:
 
 func _on_equipment_changed(equipment: Dictionary) -> void:
 	var player: Player = get_node("../Player")
-	equipment_stats_label.text = "Sword damage: %d  |  Damage reduced: %d" % [
+	var attack_name := "Spell damage" if player.selected_character == "Witch" else "Sword damage"
+	equipment_stats_label.text = "%s: %d  |  Damage reduced: %d" % [
+		attack_name,
 		1 + player.get_weapon_damage_bonus(),
 		player.get_damage_reduction()
 	]

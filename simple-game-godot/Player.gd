@@ -25,6 +25,7 @@ const SWORD_HIT_TIME = 0.1
 const MAX_MANA = 100
 const FIREBALL_MANA_COST = 25
 const ICEBALL_MANA_COST = 0
+const ICEBALL_COOLDOWN = 2.0
 const MAX_POTIONS = 3
 const POTION_REFILL_TIME = 10.0
 const POTION_EFFECT_TIME = 3.0
@@ -53,6 +54,7 @@ var potion_ui_timer := 0.0
 var facing := Vector2.DOWN
 var selected_character := "Warrior"
 var animation_time := 0.0
+var iceball_cooldown_remaining := 0.0
 var attack_time_remaining := 0.0
 var attack_hit_applied := false
 var town_portal_open := false
@@ -89,6 +91,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_potion_refills(delta)
 	_update_potion_effects(delta)
+	iceball_cooldown_remaining = maxf(iceball_cooldown_remaining - delta, 0.0)
 
 	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if direction != Vector2.ZERO:
@@ -101,7 +104,9 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("ui_accept"):
 		if selected_character == "Witch":
-			_cast_iceball()
+			if iceball_cooldown_remaining <= 0.0:
+				_cast_iceball()
+				iceball_cooldown_remaining = ICEBALL_COOLDOWN
 		elif attack_time_remaining <= 0.0:
 			attack_time_remaining = ATTACK_DURATION
 			attack_hit_applied = false
