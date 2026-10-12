@@ -41,7 +41,6 @@ const SCENERY_CLEARANCE = 24.0
 
 @export var player_path: NodePath = NodePath("../Player")
 @export_enum("Forest", "Desert", "Ice Caves", "Futuristic AI Zone") var biome := 0
-@export_enum("Forest", "Desert") var biome := 0
 @export_range(1, 25, 1) var area_level := 1
 
 var player: Player
