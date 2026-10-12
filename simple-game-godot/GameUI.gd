@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const EXPERIENCE_BAR_WIDTH = 440.0
+
 
 @onready var health_orb: ResourceGlobe = $HealthOrb
 @onready var mana_orb: ResourceGlobe = $ManaOrb
@@ -15,6 +17,12 @@ extends CanvasLayer
 var portal_cast_panel: PanelContainer
 var portal_cast_progress_bar: ProgressBar
 var portal_cast_countdown: Label
+var experience_bar: ProgressBar
+var experience_level_label: Label
+var experience_tooltip: PanelContainer
+var experience_tooltip_label: Label
+var experience_feedback_label: Label
+var experience_feedback_time := 0.0
 @onready var character_menu: Control = $CharacterMenu
 @onready var character_panel: PanelContainer = $CharacterMenu/Panel
 @onready var inventory_panel: PanelContainer = $CharacterMenu/InventoryPanel
@@ -23,6 +31,7 @@ var portal_cast_countdown: Label
 @onready var equip_item_button: Button = $CharacterMenu/InventoryPanel/Contents/EquipButton
 @onready var inventory_gold_label: Label = $CharacterMenu/InventoryPanel/Contents/GoldTotal
 @onready var equipment_stats_label: Label = $CharacterMenu/Panel/Contents/EquipmentStats
+@onready var character_progression_label: Label = $CharacterMenu/Panel/Contents/ProgressionStats
 @onready var equipment_slot_labels: Dictionary = {
 	"Weapon": $CharacterMenu/Panel/Contents/EquipmentGrid/WeaponSlot/SlotLabel,
 	"Helm": $CharacterMenu/Panel/Contents/EquipmentGrid/HelmSlot/SlotLabel,
@@ -41,6 +50,7 @@ var selected_inventory_index := -1
 
 func _ready() -> void:
 	_build_portal_cast_bar()
+	_build_progression_hud()
 	_build_inventory_slots()
 	equip_item_button.pressed.connect(_on_equip_item_pressed)
 	var player: Player = get_node("../Player")
@@ -59,13 +69,32 @@ func _ready() -> void:
 	player.town_portal_cast_cancelled.connect(_on_town_portal_cast_cancelled)
 	player.town_portal_opened.connect(_on_town_portal_opened)
 	player.died.connect(_on_player_died)
+	GameState.progression_changed.connect(_on_progression_changed)
+	GameState.experience_gained.connect(_on_experience_gained)
+	GameState.player_leveled_up.connect(_on_player_leveled_up)
 	_on_inventory_changed(player.inventory)
 	_on_equipment_changed(player.equipment)
 	_on_gold_changed(GameState.gold)
+	_on_progression_changed(
+		GameState.player_level,
+		GameState.experience,
+		GameState.get_xp_into_current_level(),
+		GameState.get_xp_for_next_level(),
+		GameState.passive_tree_points,
+		GameState.skill_tree_points
+	)
 	GameState.gold_changed.connect(_on_gold_changed)
 	var level_controller: Node = get_node("../LevelController")
 	level_controller.progress_changed.connect(_on_enemy_progress_changed)
 	level_controller.level_completed.connect(_on_level_completed)
+
+
+func _process(delta: float) -> void:
+	if experience_feedback_time <= 0.0:
+		return
+	experience_feedback_time = maxf(experience_feedback_time - delta, 0.0)
+	if experience_feedback_time == 0.0:
+		experience_feedback_label.hide()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -231,6 +260,46 @@ func _on_enemy_progress_changed(defeated: int, total: int) -> void:
 	enemy_progress_label.text = "Enemies defeated: %d/%d" % [defeated, total]
 
 
+func _on_progression_changed(
+	_level: int,
+	_total_experience: int,
+	xp_into_level: int,
+	xp_for_level: int,
+	_passive_points: int,
+	_skill_points: int
+) -> void:
+	character_progression_label.text = GameState.get_progression_summary()
+	experience_level_label.text = "Lv. %d" % GameState.player_level
+	if GameState.player_level >= GameState.MAX_PLAYER_LEVEL:
+		experience_bar.max_value = 1.0
+		experience_bar.value = 1.0
+		experience_tooltip_label.text = "MAX LEVEL"
+	else:
+		experience_bar.max_value = xp_for_level
+		experience_bar.value = xp_into_level
+		experience_tooltip_label.text = "%d / %d XP" % [xp_into_level, xp_for_level]
+
+
+func _on_experience_bar_mouse_entered() -> void:
+	experience_tooltip.show()
+
+
+func _on_experience_bar_mouse_exited() -> void:
+	experience_tooltip.hide()
+
+
+func _on_experience_gained(amount: int) -> void:
+	experience_feedback_label.text = "+%d XP" % amount
+	experience_feedback_label.show()
+	experience_feedback_time = 2.5
+
+
+func _on_player_leveled_up(_level: int) -> void:
+	experience_feedback_label.text = "LEVEL UP!"
+	experience_feedback_label.show()
+	experience_feedback_time = 3.5
+
+
 func _on_gold_changed(total_gold: int) -> void:
 	gold_label.text = "Gold: %d" % total_gold
 	inventory_gold_label.text = "Gold: %d" % total_gold
@@ -312,6 +381,83 @@ func _build_portal_cast_bar() -> void:
 	portal_cast_countdown.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	portal_cast_countdown.text = "%.1f s" % Player.TOWN_PORTAL_CAST_DURATION
 	progress_row.add_child(portal_cast_countdown)
+
+
+func _build_progression_hud() -> void:
+	experience_level_label = Label.new()
+	experience_level_label.anchor_left = 0.5
+	experience_level_label.anchor_right = 0.5
+	experience_level_label.anchor_top = 1.0
+	experience_level_label.anchor_bottom = 1.0
+	experience_level_label.offset_left = -(EXPERIENCE_BAR_WIDTH * 0.5) - 58.0
+	experience_level_label.offset_top = -26.0
+	experience_level_label.offset_right = -(EXPERIENCE_BAR_WIDTH * 0.5) - 8.0
+	experience_level_label.offset_bottom = -6.0
+	experience_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	experience_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(experience_level_label)
+
+	experience_bar = ProgressBar.new()
+	experience_bar.anchor_left = 0.5
+	experience_bar.anchor_right = 0.5
+	experience_bar.anchor_top = 1.0
+	experience_bar.anchor_bottom = 1.0
+	experience_bar.offset_left = -EXPERIENCE_BAR_WIDTH * 0.5
+	experience_bar.offset_top = -22.0
+	experience_bar.offset_right = EXPERIENCE_BAR_WIDTH * 0.5
+	experience_bar.offset_bottom = -10.0
+	experience_bar.min_value = 0.0
+	experience_bar.show_percentage = false
+	experience_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	var experience_background := StyleBoxFlat.new()
+	experience_background.bg_color = Color("#10233b")
+	experience_background.set_border_width_all(1)
+	experience_background.border_color = Color("#4875a5")
+	experience_background.set_corner_radius_all(4)
+	experience_bar.add_theme_stylebox_override("background", experience_background)
+	var experience_fill := StyleBoxFlat.new()
+	experience_fill.bg_color = Color("#2389e8")
+	experience_fill.set_corner_radius_all(4)
+	experience_bar.add_theme_stylebox_override("fill", experience_fill)
+	add_child(experience_bar)
+
+	experience_tooltip = PanelContainer.new()
+	experience_tooltip.anchor_left = 0.5
+	experience_tooltip.anchor_right = 0.5
+	experience_tooltip.anchor_top = 1.0
+	experience_tooltip.anchor_bottom = 1.0
+	experience_tooltip.offset_left = -70.0
+	experience_tooltip.offset_top = -52.0
+	experience_tooltip.offset_right = 70.0
+	experience_tooltip.offset_bottom = -28.0
+	experience_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tooltip_style := StyleBoxFlat.new()
+	tooltip_style.bg_color = Color("#10233b")
+	tooltip_style.set_border_width_all(1)
+	tooltip_style.border_color = Color("#4875a5")
+	tooltip_style.set_corner_radius_all(4)
+	tooltip_style.content_margin_left = 6.0
+	tooltip_style.content_margin_right = 6.0
+	tooltip_style.content_margin_top = 2.0
+	tooltip_style.content_margin_bottom = 2.0
+	experience_tooltip.add_theme_stylebox_override("panel", tooltip_style)
+	experience_tooltip_label = Label.new()
+	experience_tooltip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	experience_tooltip.add_child(experience_tooltip_label)
+	experience_tooltip.hide()
+	add_child(experience_tooltip)
+	experience_bar.mouse_entered.connect(_on_experience_bar_mouse_entered)
+	experience_bar.mouse_exited.connect(_on_experience_bar_mouse_exited)
+
+	experience_feedback_label = Label.new()
+	experience_feedback_label.position = Vector2(20.0, 180.0)
+	experience_feedback_label.add_theme_font_size_override("font_size", 18)
+	experience_feedback_label.add_theme_color_override("font_color", Color("#ffe58a"))
+	experience_feedback_label.add_theme_color_override("font_shadow_color", Color("#251a0b"))
+	experience_feedback_label.add_theme_constant_override("shadow_offset_x", 1)
+	experience_feedback_label.add_theme_constant_override("shadow_offset_y", 1)
+	experience_feedback_label.hide()
+	add_child(experience_feedback_label)
 
 
 func _on_level_completed() -> void:

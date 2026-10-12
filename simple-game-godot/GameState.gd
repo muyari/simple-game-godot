@@ -1,11 +1,25 @@
 extends Node
 
 signal gold_changed(total_gold: int)
+signal progression_changed(level: int, experience: int, xp_into_level: int, xp_for_level: int, passive_points: int, skill_points: int)
+signal experience_gained(amount: int)
+signal player_leveled_up(level: int)
 
 const SAVE_PATH = "user://character_save.json"
-const SAVE_VERSION = 1
+const SAVE_VERSION = 2
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
+const MAX_PLAYER_LEVEL = 25
+const LEVEL_XP_THRESHOLDS: Array[int] = [
+	0, 300, 750, 1350, 2100, 3000, 4050, 5250, 6600, 8100,
+	9750, 11550, 13500, 15600, 17850, 20250, 22800, 25500,
+	28350, 31350, 34500, 37800, 41250, 44850, 48600
+]
+const LEGACY_LEVEL_XP_THRESHOLDS: Array[int] = [
+	0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700,
+	3250, 3850, 4500, 5200, 5950, 6750, 7600, 8500, 9450,
+	10450, 11500, 12600, 13750, 14950, 16200
+]
 const EQUIPMENT_SLOTS = [
 	"Weapon",
 	"Helm",
@@ -25,6 +39,10 @@ var _active_character_id := ""
 var _active_save_path := SAVE_PATH
 var _roster_loaded := false
 var gold := 0
+var player_level := 1
+var experience := 0
+var passive_tree_points := 0
+var skill_tree_points := 0
 
 
 func _ready() -> void:
@@ -159,6 +177,78 @@ func get_equipment() -> Dictionary:
 	return equipment
 
 
+func get_xp_for_next_level() -> int:
+	if player_level >= MAX_PLAYER_LEVEL:
+		return 0
+	return LEVEL_XP_THRESHOLDS[player_level] - LEVEL_XP_THRESHOLDS[player_level - 1]
+
+
+func get_xp_into_current_level() -> int:
+	if player_level >= MAX_PLAYER_LEVEL:
+		return 0
+	return experience - LEVEL_XP_THRESHOLDS[player_level - 1]
+
+
+func get_progression_summary() -> String:
+	var level_summary := "Level %d / %d" % [player_level, MAX_PLAYER_LEVEL]
+	if player_level >= MAX_PLAYER_LEVEL:
+		level_summary += "  |  MAX LEVEL"
+	else:
+		level_summary += "  |  XP: %d / %d" % [
+			get_xp_into_current_level(),
+			get_xp_for_next_level()
+		]
+	return "%s\nPassive points: %d  |  Skill points: %d" % [
+		level_summary,
+		passive_tree_points,
+		skill_tree_points
+	]
+
+
+func add_experience(amount: int) -> bool:
+	if amount <= 0:
+		push_error("Experience gained must be greater than zero.")
+		return false
+	if player_level >= MAX_PLAYER_LEVEL:
+		return true
+
+	var previous_experience := experience
+	var previous_level := player_level
+	var previous_passive_points := passive_tree_points
+	var previous_skill_points := skill_tree_points
+	experience = mini(experience + amount, LEVEL_XP_THRESHOLDS[MAX_PLAYER_LEVEL - 1])
+
+	while player_level < MAX_PLAYER_LEVEL \
+			and experience >= LEVEL_XP_THRESHOLDS[player_level]:
+		player_level += 1
+		passive_tree_points += 1
+		skill_tree_points += 1
+
+	if not save_character(get_inventory(), get_equipment()):
+		experience = previous_experience
+		player_level = previous_level
+		passive_tree_points = previous_passive_points
+		skill_tree_points = previous_skill_points
+		return false
+
+	experience_gained.emit(amount)
+	_emit_progression_changed()
+	for reached_level in range(previous_level + 1, player_level + 1):
+		player_leveled_up.emit(reached_level)
+	return true
+
+
+func _emit_progression_changed() -> void:
+	progression_changed.emit(
+		player_level,
+		experience,
+		get_xp_into_current_level(),
+		get_xp_for_next_level(),
+		passive_tree_points,
+		skill_tree_points
+	)
+
+
 func add_gold(amount: int) -> void:
 	if amount <= 0:
 		push_error("Gold pickup amount must be greater than zero.")
@@ -257,6 +347,10 @@ func save_character(inventory: Array[ItemData], equipment: Dictionary) -> bool:
 	var save_data := {
 		"version": SAVE_VERSION,
 		"gold": gold,
+		"level": player_level,
+		"experience": experience,
+		"passive_tree_points": passive_tree_points,
+		"skill_tree_points": skill_tree_points,
 		"inventory": inventory_records,
 		"equipment": equipment_records
 	}
@@ -302,7 +396,10 @@ func _load_character() -> void:
 		return
 
 	var save_data: Dictionary = json.data
-	if int(save_data.get("version", -1)) != SAVE_VERSION:
+	var saved_version: Variant = save_data.get("version", -1)
+	if typeof(saved_version) not in [TYPE_INT, TYPE_FLOAT] \
+			or float(saved_version) != float(int(saved_version)) \
+			or int(saved_version) < 1 or int(saved_version) > SAVE_VERSION:
 		push_error("Character save has an unsupported version.")
 		return
 
@@ -311,6 +408,38 @@ func _load_character() -> void:
 		push_error("Character save gold amount is invalid.")
 		return
 	gold = int(saved_gold)
+
+	var saved_level: Variant = save_data.get("level", 1)
+	var saved_experience: Variant = save_data.get("experience", 0)
+	var saved_passive_points: Variant = save_data.get("passive_tree_points", 0)
+	var saved_skill_points: Variant = save_data.get("skill_tree_points", 0)
+	var progression_thresholds: Array[int] = (
+		LEGACY_LEVEL_XP_THRESHOLDS
+		if int(saved_version) == 1
+		else LEVEL_XP_THRESHOLDS
+	)
+	if typeof(saved_level) not in [TYPE_INT, TYPE_FLOAT] \
+			or typeof(saved_experience) not in [TYPE_INT, TYPE_FLOAT] \
+			or typeof(saved_passive_points) not in [TYPE_INT, TYPE_FLOAT] \
+			or typeof(saved_skill_points) not in [TYPE_INT, TYPE_FLOAT] \
+			or float(saved_level) != float(int(saved_level)) \
+			or float(saved_experience) != float(int(saved_experience)) \
+			or float(saved_passive_points) != float(int(saved_passive_points)) \
+			or float(saved_skill_points) != float(int(saved_skill_points)) \
+			or int(saved_level) < 1 or int(saved_level) > MAX_PLAYER_LEVEL \
+			or int(saved_experience) < 0 \
+			or int(saved_experience) > progression_thresholds[MAX_PLAYER_LEVEL - 1] \
+			or int(saved_passive_points) < 0 \
+			or int(saved_skill_points) < 0 \
+			or int(saved_experience) < progression_thresholds[int(saved_level) - 1]:
+		push_error("Character save progression data is invalid.")
+		return
+	player_level = int(saved_level)
+	experience = int(saved_experience)
+	if int(saved_version) == 1:
+		experience = _migrate_legacy_experience(player_level, experience)
+	passive_tree_points = int(saved_passive_points)
+	skill_tree_points = int(saved_skill_points)
 
 	var raw_inventory: Variant = save_data.get("inventory", [])
 	var raw_equipment: Variant = save_data.get("equipment", {})
@@ -338,6 +467,21 @@ func _load_character() -> void:
 		var item_record: Dictionary = raw_item
 		if _item_from_record(item_record) != null:
 			_equipment_records[slot_name] = item_record
+
+	if int(saved_version) == 1:
+		save_character(get_inventory(), get_equipment())
+
+
+func _migrate_legacy_experience(saved_level: int, saved_experience: int) -> int:
+	if saved_level >= MAX_PLAYER_LEVEL:
+		return LEVEL_XP_THRESHOLDS[MAX_PLAYER_LEVEL - 1]
+
+	var old_level_start := LEGACY_LEVEL_XP_THRESHOLDS[saved_level - 1]
+	var old_level_xp := LEGACY_LEVEL_XP_THRESHOLDS[saved_level] - old_level_start
+	var progress := float(saved_experience - old_level_start) / float(old_level_xp)
+	var new_level_start := LEVEL_XP_THRESHOLDS[saved_level - 1]
+	var new_level_xp := LEVEL_XP_THRESHOLDS[saved_level] - new_level_start
+	return new_level_start + roundi(new_level_xp * progress)
 
 
 func _load_roster() -> void:
@@ -421,6 +565,10 @@ func _clear_character_data() -> void:
 	_inventory_records.clear()
 	_equipment_records.clear()
 	gold = 0
+	player_level = 1
+	experience = 0
+	passive_tree_points = 0
+	skill_tree_points = 0
 
 
 func _restore_active_character(character_id: String) -> void:
