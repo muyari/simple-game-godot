@@ -91,7 +91,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			if event.keycode == KEY_ESCAPE:
 				_close_waystone()
 				get_viewport().set_input_as_handled()
-			return
 		if dialogue_overlay != null and dialogue_overlay.visible:
 			if event.keycode == KEY_ESCAPE:
 				_close_dialogue()
@@ -156,7 +155,7 @@ func _build_shop() -> void:
 
 	var title := Label.new()
 	title.text = "Hearthvale Trading Post"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color("#e8ca86"))
 	contents.add_child(title)
@@ -164,7 +163,7 @@ func _build_shop() -> void:
 	shop_gold_label = Label.new()
 	shop_gold_label.name = "ShopGold"
 	shop_gold_label.text = "Gold: %d" % GameState.gold
-	shop_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	shop_gold_label.add_theme_color_override("font_color", Color("#ffdc83"))
 	contents.add_child(shop_gold_label)
 
@@ -180,12 +179,12 @@ func _build_shop() -> void:
 
 	status_label = Label.new()
 	status_label.custom_minimum_size.y = 22
-	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	contents.add_child(status_label)
 
 	var close_button := Button.new()
 	close_button.text = "Close  (Esc)"
-	close_button.custom_minimum_size.y = 38
+	_style_menu_button(close_button, 48.0)
 	close_button.pressed.connect(_close_shop)
 	contents.add_child(close_button)
 
@@ -201,7 +200,7 @@ func _build_shop_column(parent: HBoxContainer, heading_text: String) -> VBoxCont
 
 	var heading := Label.new()
 	heading.text = heading_text
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	heading.add_theme_font_size_override("font_size", 20)
 	heading.add_theme_color_override("font_color", Color("#e8ca86"))
 	column.add_child(heading)
@@ -254,19 +253,20 @@ func _build_dialogue() -> void:
 
 	var dialogue := Label.new()
 	dialogue.text = "What do you want???\nI have everything, come look!"
-	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	dialogue.add_theme_color_override("font_color", Color("#e8ca86"))
 	dialogue.add_theme_font_size_override("font_size", 20)
 	contents.add_child(dialogue)
 
 	var browse_button := Button.new()
 	browse_button.text = "Browse wares  (E)"
-	browse_button.custom_minimum_size.y = 38
+	_style_menu_button(browse_button, 48.0)
 	browse_button.pressed.connect(_open_shop)
 	contents.add_child(browse_button)
 
 	var close_button := Button.new()
 	close_button.text = "Not now  (Esc)"
+	_style_menu_button(close_button, 48.0)
 	close_button.pressed.connect(_close_dialogue)
 	contents.add_child(close_button)
 
@@ -283,7 +283,7 @@ func _build_waystone_menu() -> void:
 	backdrop.color = Color(0.02, 0.03, 0.025, 0.72)
 	waystone_overlay.add_child(backdrop)
 
-	var panel := _create_menu_panel(Vector2(520, 350))
+	var panel := _create_menu_panel(Vector2(600, 470))
 	waystone_overlay.add_child(panel)
 
 	var contents := VBoxContainer.new()
@@ -293,28 +293,29 @@ func _build_waystone_menu() -> void:
 
 	var description := Label.new()
 	description.text = "Choose a region to begin another run."
-	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	contents.add_child(description)
 
-	var forest_button := Button.new()
-	forest_button.text = "Level 1  -  Forest Outskirts"
-	forest_button.custom_minimum_size.y = 52
-	forest_button.pressed.connect(_enter_waystone_level.bind(
-		"res://main.tscn", "Forest Outskirts"
-	))
-	contents.add_child(forest_button)
-
-	var desert_button := Button.new()
-	desert_button.text = "Level 2  -  Sunscorch Sands"
-	desert_button.custom_minimum_size.y = 52
-	desert_button.pressed.connect(_enter_waystone_level.bind(
-		"res://desert.tscn", "Sunscorch Sands"
-	))
-	contents.add_child(desert_button)
+	var level_options := [
+		[1, "res://main.tscn", "Forest Outskirts"],
+		[2, "res://desert.tscn", "Sunscorch Sands"],
+		[3, "res://ice_caves.tscn", "The Ice Caves"],
+		[4, "res://futuristic_ai_zone.tscn", "The Futuristic AI Zone"]
+	]
+	for level_option in level_options:
+		var level_id: int = level_option[0]
+		var scene_path: String = level_option[1]
+		var level_name: String = level_option[2]
+		var level_button := Button.new()
+		level_button.text = "Level %d  -  %s" % [level_id, level_name]
+		_style_menu_button(level_button, 48.0)
+		level_button.disabled = not GameState.is_level_unlocked(level_id)
+		level_button.pressed.connect(_enter_waystone_level.bind(scene_path, level_name))
+		contents.add_child(level_button)
 
 	var close_button := Button.new()
 	close_button.text = "Close  (Esc)"
-	close_button.custom_minimum_size.y = 40
+	_style_menu_button(close_button, 48.0)
 	close_button.pressed.connect(_close_waystone)
 	contents.add_child(close_button)
 
@@ -331,7 +332,7 @@ func _build_character_menu() -> void:
 	backdrop.color = Color(0.02, 0.03, 0.025, 0.72)
 	character_overlay.add_child(backdrop)
 
-	character_panel = _create_menu_panel(Vector2(560, 520))
+	character_panel = _create_menu_panel(Vector2(560, 600))
 	inventory_panel = _create_menu_panel(Vector2(600, 620))
 	character_overlay.add_child(character_panel)
 	character_overlay.add_child(inventory_panel)
@@ -342,7 +343,7 @@ func _build_character_menu() -> void:
 	_add_menu_title(character_contents, "Character")
 
 	equipment_stats_label = Label.new()
-	equipment_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	equipment_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	character_contents.add_child(equipment_stats_label)
 
 	character_progression_label = Label.new()
@@ -365,24 +366,24 @@ func _build_character_menu() -> void:
 
 	var character_close_button := Button.new()
 	character_close_button.text = "Close  (C / Esc)"
-	character_close_button.custom_minimum_size.y = 40
+	_style_menu_button(character_close_button, 42.0)
 	character_close_button.pressed.connect(_close_character_menu)
 	character_contents.add_child(character_close_button)
 
 	var inventory_contents := VBoxContainer.new()
-	inventory_contents.add_theme_constant_override("separation", 10)
+	inventory_contents.add_theme_constant_override("separation", 12)
 	inventory_panel.add_child(inventory_contents)
 	_add_menu_title(inventory_contents, "Inventory")
 
 	inventory_gold_label = Label.new()
-	inventory_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inventory_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	inventory_gold_label.add_theme_color_override("font_color", Color("#ffdc83"))
 	inventory_contents.add_child(inventory_gold_label)
 	_update_gold(GameState.gold)
 
 	selected_item_label = Label.new()
 	selected_item_label.custom_minimum_size.y = 42
-	selected_item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	selected_item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	selected_item_label.text = "Select an item to inspect it."
 	inventory_contents.add_child(selected_item_label)
 
@@ -393,7 +394,8 @@ func _build_character_menu() -> void:
 	inventory_contents.add_child(inventory_grid)
 	for slot_index in range(Player.MAX_INVENTORY_SIZE):
 		var slot := Button.new()
-		slot.custom_minimum_size = Vector2(76, 64)
+		slot.custom_minimum_size = Vector2(76, 54)
+		slot.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		slot.add_theme_font_size_override("font_size", 11)
 		slot.pressed.connect(_on_inventory_slot_pressed.bind(slot_index))
@@ -402,14 +404,14 @@ func _build_character_menu() -> void:
 
 	equip_item_button = Button.new()
 	equip_item_button.text = "Equip Selected Item"
-	equip_item_button.custom_minimum_size.y = 40
+	_style_menu_button(equip_item_button, 42.0)
 	equip_item_button.disabled = true
 	equip_item_button.pressed.connect(_on_equip_item_pressed)
 	inventory_contents.add_child(equip_item_button)
 
 	var inventory_close_button := Button.new()
 	inventory_close_button.text = "Close  (I / Esc)"
-	inventory_close_button.custom_minimum_size.y = 40
+	_style_menu_button(inventory_close_button, 42.0)
 	inventory_close_button.pressed.connect(_close_character_menu)
 	inventory_contents.add_child(inventory_close_button)
 
@@ -425,22 +427,28 @@ func _create_menu_panel(size: Vector2) -> PanelContainer:
 	panel.offset_right = size.x / 2.0
 	panel.offset_bottom = size.y / 2.0
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.075, 0.09, 0.075, 0.99)
+	panel_style.bg_color = Color(0.075, 0.09, 0.075, 0.98)
 	panel_style.set_border_width_all(3)
 	panel_style.border_color = Color(0.62, 0.49, 0.29, 1)
 	panel_style.set_corner_radius_all(8)
-	panel_style.content_margin_left = 20.0
-	panel_style.content_margin_right = 20.0
-	panel_style.content_margin_top = 16.0
-	panel_style.content_margin_bottom = 16.0
+	panel_style.content_margin_left = 24.0
+	panel_style.content_margin_right = 24.0
+	panel_style.content_margin_top = 20.0
+	panel_style.content_margin_bottom = 20.0
 	panel.add_theme_stylebox_override("panel", panel_style)
 	return panel
+
+
+func _style_menu_button(button: Button, minimum_height: float = 52.0) -> void:
+	button.custom_minimum_size.y = minimum_height
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_font_size_override("font_size", 18)
 
 
 func _add_menu_title(contents: VBoxContainer, title_text: String) -> void:
 	var title := Label.new()
 	title.text = title_text
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color("#e8ca86"))
 	contents.add_child(title)
@@ -516,6 +524,9 @@ func _close_waystone() -> void:
 
 
 func _enter_waystone_level(scene_path: String, level_name: String) -> void:
+	var level_id := GameState.get_level_id(scene_path)
+	if not GameState.is_level_unlocked(level_id):
+		return
 	if not ResourceLoader.exists(scene_path):
 		push_error("Waystone level does not exist: %s" % scene_path)
 		return
@@ -724,13 +735,14 @@ func _refresh_shop_items() -> void:
 		var buy_button := Button.new()
 		buy_button.custom_minimum_size.x = 112
 		buy_button.text = "Buy  %d G" % item.price
+		_style_menu_button(buy_button, 42.0)
 		buy_button.pressed.connect(_on_buy_item_pressed.bind(item))
 		row.add_child(buy_button)
 
 	if player.inventory.is_empty():
 		var empty_message := Label.new()
 		empty_message.text = "Your inventory is empty."
-		empty_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		sell_item_list.add_child(empty_message)
 		return
 
@@ -755,6 +767,7 @@ func _refresh_shop_items() -> void:
 		var sell_button := Button.new()
 		sell_button.custom_minimum_size.x = 112
 		sell_button.text = "Sell  %d G" % sell_price
+		_style_menu_button(sell_button, 42.0)
 		sell_button.pressed.connect(_on_sell_item_pressed.bind(inventory_index))
 		row.add_child(sell_button)
 

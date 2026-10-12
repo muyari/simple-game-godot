@@ -125,7 +125,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_inventory_slots() -> void:
 	for slot_index in range(25):
 		var slot := Button.new()
-		slot.custom_minimum_size = Vector2(76, 64)
+		slot.custom_minimum_size = Vector2(76, 54)
+		slot.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		slot.add_theme_font_size_override("font_size", 11)
 
@@ -461,6 +462,9 @@ func _build_progression_hud() -> void:
 
 
 func _on_level_completed() -> void:
+	var level_id := GameState.get_level_id(get_tree().current_scene.scene_file_path)
+	GameState.complete_level(level_id)
+	level_complete_label.text = "Area secured."
 	level_complete_label.show()
 	return_to_levels_button.show()
 
@@ -476,7 +480,7 @@ func _on_return_to_levels_pressed() -> void:
 func _on_return_to_town_pressed() -> void:
 	var player: Player = get_node("../Player")
 	var scene_path := get_tree().current_scene.scene_file_path
-	if scene_path not in ["res://main.tscn", "res://desert.tscn"]:
+	if GameState.get_level_id(scene_path) == 0:
 		push_error("Cannot return to town from an unsupported level: %s" % scene_path)
 		return
 

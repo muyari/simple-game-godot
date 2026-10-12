@@ -6,6 +6,13 @@ signal level_completed
 const WOLF_SCENE = preload("res://wolf.tscn")
 const SCORPION_SCENE = preload("res://scorpion.tscn")
 const SNAKE_SCENE = preload("res://snake.tscn")
+const FROSTBOUND_WRAITH_SCENE = preload("res://frostbound_wraith.tscn")
+const CRYSTALBACK_YETI_SCENE = preload("res://crystalback_yeti.tscn")
+const SHIVERFANG_ICE_SERPENT_SCENE = preload("res://shiverfang_ice_serpent.tscn")
+const SENTINEL_HEXWALKER_SCENE = preload("res://sentinel_hexwalker.tscn")
+const NEUROCORE_DRONE_SCENE = preload("res://neurocore_drone.tscn")
+const TITANFORGE_EXO_UNIT_SCENE = preload("res://titanforge_exo_unit.tscn")
+const PHASE_SHIFT_INFILTRATOR_SCENE = preload("res://phase_shift_infiltrator.tscn")
 const DESERT_BOSS_SCENE = preload("res://desert_boss.tscn")
 const ITEM_PICKUP_SCENE = preload("res://item_pickup.tscn")
 const GOLD_PICKUP_SCENE = preload("res://gold_pickup.tscn")
@@ -17,13 +24,23 @@ const DESERT_CACTUS_TEXTURE = preload("res://textures/desert_cactus.svg")
 const DESERT_OASIS_TEXTURE = preload("res://textures/desert_oasis.svg")
 const DESERT_DUNES_TEXTURE = preload("res://textures/desert_dunes.svg")
 const DESERT_RUINS_TEXTURE = preload("res://textures/desert_ruins.svg")
+const ICE_GROUND_TEXTURE = preload("res://textures/ice_caves_ground.svg")
+const FROZEN_TREE_TEXTURE = preload("res://textures/frozen_ice_tree.svg")
+const AI_GROUND_TEXTURE = preload("res://textures/futuristic_ai_ground.svg")
+const AI_RELAY_PYLON_TEXTURE = preload("res://textures/ai_relay_pylon.svg")
+const AI_SERVER_STACK_TEXTURE = preload("res://textures/ai_server_stack.svg")
+const AI_COMMAND_CORE_TEXTURE = preload("res://textures/ai_command_core.svg")
 const MAX_FOREST_ENEMIES = 10
 const MAX_DESERT_ENEMIES = 15
+const MAX_ICE_ENEMIES = 12
+const MAX_AI_ENEMIES = 15
 const SPAWN_EDGE_MARGIN = 128.0
 const SCENERY_PRELOAD_RADIUS = 1
 const ITEM_DROP_CHANCE = 0.1
+const SCENERY_CLEARANCE = 24.0
 
 @export var player_path: NodePath = NodePath("../Player")
+@export_enum("Forest", "Desert", "Ice Caves", "Futuristic AI Zone") var biome := 0
 @export_enum("Forest", "Desert") var biome := 0
 @export_range(1, 25, 1) var area_level := 1
 
@@ -38,11 +55,20 @@ var enemies_defeated := 0
 var boss_spawned := false
 var level_is_complete := false
 var generated_scenery_regions: Dictionary = {}
+var scenery_placements_by_region: Dictionary = {}
+var active_scenery_region := Vector2i.ZERO
 var item_pool: Array[ItemData] = []
 var loot_random := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	var ground := get_node_or_null("../Background/Sprite2D") as Sprite2D
+	if ground != null:
+		if biome == 2:
+			ground.texture = ICE_GROUND_TEXTURE
+		elif biome == 3:
+			ground.texture = AI_GROUND_TEXTURE
+
 	player = get_node_or_null(player_path) as Player
 	if player == null:
 		push_error("LevelController could not find its player at %s." % player_path)
@@ -123,6 +149,7 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 	if generated_scenery_regions.has(region):
 		return
 	generated_scenery_regions[region] = true
+	active_scenery_region = region
 
 	var random := RandomNumberGenerator.new()
 	random.seed = int(region.x) * 73856093 ^ int(region.y) * 19349663
@@ -131,6 +158,12 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 
 	if biome == 1:
 		_generate_desert_scenery(random, region_center, safe_area)
+		return
+	if biome == 2:
+		_generate_ice_scenery(random, region_center, safe_area)
+		return
+	if biome == 3:
+		_generate_ai_scenery(random, region_center, safe_area)
 		return
 
 	for _tree_index in range(random.randi_range(3, 5)):
@@ -142,10 +175,12 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 			Vector2(0.0, 62.0)
 		)
 
-	for _boulder_index in range(random.randi_range(1, 2)):
-		_add_scenery_sprite(
+	for _boulder_index in range(random.randi_range(2, 3)):
+		_add_random_scenery_sprite(
+			random,
 			BOULDERS_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
+			region_center,
+			safe_area,
 			random.randf_range(0.7, 1.1),
 			47.0,
 			Vector2(0.0, 16.0)
@@ -158,14 +193,15 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 			random.randf_range(0.75, 1.1)
 		)
 
-	if random.randf() < 0.18:
-		_add_scenery_sprite(
-			CAVE_TEXTURE,
-			region_center + _random_region_offset(random, safe_area * 0.7),
-			random.randf_range(0.8, 1.15),
-			70.0,
-			Vector2(0.0, 47.0)
-		)
+	_add_random_scenery_sprite(
+		random,
+		CAVE_TEXTURE,
+		region_center,
+		safe_area * 0.7,
+		random.randf_range(0.8, 1.15),
+		70.0,
+		Vector2(0.0, 47.0)
+	)
 
 
 func _generate_desert_scenery(
@@ -173,6 +209,15 @@ func _generate_desert_scenery(
 	region_center: Vector2,
 	safe_area: Vector2
 ) -> void:
+	for _rock_index in range(random.randi_range(1, 2)):
+		_add_scenery_sprite(
+			BOULDERS_TEXTURE,
+			region_center + _random_region_offset(random, safe_area),
+			random.randf_range(0.7, 1.05),
+			44.0,
+			Vector2(0.0, 14.0)
+		)
+
 	for _cactus_index in range(random.randi_range(3, 5)):
 		_add_scenery_sprite(
 			DESERT_CACTUS_TEXTURE,
@@ -205,6 +250,69 @@ func _generate_desert_scenery(
 			Vector2(0.0, 15.0)
 		)
 
+	if random.randf() < 0.24:
+		_add_scenery_sprite(
+			CAVE_TEXTURE,
+			region_center + _random_region_offset(random, safe_area * 0.65),
+			random.randf_range(0.8, 1.05),
+			66.0,
+			Vector2(0.0, 44.0)
+		)
+
+
+func _generate_ice_scenery(
+	random: RandomNumberGenerator,
+	region_center: Vector2,
+	safe_area: Vector2
+) -> void:
+	for _tree_index in range(random.randi_range(2, 3)):
+		_add_scenery_sprite(
+			FROZEN_TREE_TEXTURE,
+			region_center + _random_region_offset(random, safe_area),
+			random.randf_range(0.75, 1.2)
+		)
+
+	for _ice_rock_index in range(random.randi_range(2, 4)):
+		_add_scenery_sprite(
+			BOULDERS_TEXTURE,
+			region_center + _random_region_offset(random, safe_area),
+			random.randf_range(0.75, 1.25),
+			42.0,
+			Vector2(0.0, 16.0)
+		)
+
+func _generate_ai_scenery(
+	random: RandomNumberGenerator,
+	region_center: Vector2,
+	safe_area: Vector2
+) -> void:
+	for _pylon_index in range(random.randi_range(2, 3)):
+		_add_scenery_sprite(
+			AI_RELAY_PYLON_TEXTURE,
+			region_center + _random_region_offset(random, safe_area),
+			random.randf_range(0.75, 1.15),
+			24.0,
+			Vector2(0.0, 28.0)
+		)
+
+	for _server_index in range(random.randi_range(1, 2)):
+		_add_scenery_sprite(
+			AI_SERVER_STACK_TEXTURE,
+			region_center + _random_region_offset(random, safe_area),
+			random.randf_range(0.7, 1.0),
+			38.0,
+			Vector2(0.0, 18.0)
+		)
+
+	if random.randf() < 0.6:
+		_add_scenery_sprite(
+			AI_COMMAND_CORE_TEXTURE,
+			region_center + _random_region_offset(random, safe_area * 0.65),
+			random.randf_range(0.75, 1.0),
+			44.0,
+			Vector2(0.0, 20.0)
+		)
+
 
 func _random_region_offset(random: RandomNumberGenerator, safe_area: Vector2) -> Vector2:
 	return Vector2(
@@ -220,9 +328,29 @@ func _add_scenery_sprite(
 	collision_radius := 0.0,
 	collision_offset := Vector2.ZERO
 ) -> void:
+	var sprite_size := Vector2(texture.get_width(), texture.get_height()) * uniform_scale
+	var half_size := sprite_size * 0.5
+	if collision_radius > 0.0:
+		var collision_extent := Vector2(
+			collision_radius * uniform_scale + absf(collision_offset.x * uniform_scale),
+			collision_radius * uniform_scale + absf(collision_offset.y * uniform_scale)
+		)
+		half_size.x = maxf(half_size.x, collision_extent.x)
+		half_size.y = maxf(half_size.y, collision_extent.y)
+	if not _has_scenery_clearance(world_position, half_size):
+		return
+
+	var placements: Array = scenery_placements_by_region.get(active_scenery_region, [])
+	placements.append({"position": world_position, "half_size": half_size})
+	scenery_placements_by_region[active_scenery_region] = placements
+
 	var scenery := Sprite2D.new()
 	scenery.texture = texture
 	scenery.scale = Vector2.ONE * uniform_scale
+	if biome == 2:
+		scenery.modulate = Color("#9bd9f5")
+	elif biome == 3:
+		scenery.modulate = Color("#67d9ce")
 	scenery.z_index = -1
 	if collision_radius <= 0.0:
 		scenery.position = world_position
@@ -241,6 +369,48 @@ func _add_scenery_sprite(
 	get_parent().call_deferred("add_child", obstacle)
 
 
+func _add_random_scenery_sprite(
+	random: RandomNumberGenerator,
+	texture: Texture2D,
+	region_center: Vector2,
+	safe_area: Vector2,
+	uniform_scale: float,
+	collision_radius := 0.0,
+	collision_offset := Vector2.ZERO
+) -> bool:
+	for _attempt in range(32):
+		var existing_placement_count: int = scenery_placements_by_region.get(
+			active_scenery_region,
+			[]
+		).size()
+		_add_scenery_sprite(
+			texture,
+			region_center + _random_region_offset(random, safe_area),
+			uniform_scale,
+			collision_radius,
+			collision_offset
+		)
+		var updated_placements: Array = scenery_placements_by_region.get(active_scenery_region, [])
+		if updated_placements.size() > existing_placement_count:
+			return true
+	return false
+
+
+func _has_scenery_clearance(world_position: Vector2, half_size: Vector2) -> bool:
+	for x_offset in range(-1, 2):
+		for y_offset in range(-1, 2):
+			var nearby_region := active_scenery_region + Vector2i(x_offset, y_offset)
+			var placements: Array = scenery_placements_by_region.get(nearby_region, [])
+			for placement in placements:
+				var other_position: Vector2 = placement["position"]
+				var other_half_size: Vector2 = placement["half_size"]
+				var separation := world_position - other_position
+				if absf(separation.x) < half_size.x + other_half_size.x + SCENERY_CLEARANCE \
+						and absf(separation.y) < half_size.y + other_half_size.y + SCENERY_CLEARANCE:
+					return false
+	return true
+
+
 func _get_camera_center() -> Vector2:
 	return player.global_position + player_camera.offset / player_camera.zoom
 
@@ -253,13 +423,38 @@ func _get_region_for_position(world_position: Vector2) -> Vector2i:
 
 
 func _get_max_enemies() -> int:
-	return MAX_DESERT_ENEMIES if biome == 1 else MAX_FOREST_ENEMIES
+	match biome:
+		1:
+			return MAX_DESERT_ENEMIES
+		2:
+			return MAX_ICE_ENEMIES
+		3:
+			return MAX_AI_ENEMIES
+	return MAX_FOREST_ENEMIES
 
 
 func _spawn_enemy(direction: Vector2) -> void:
 	var enemy_scene: PackedScene = WOLF_SCENE
 	if biome == 1:
 		enemy_scene = SCORPION_SCENE if loot_random.randf() < 0.75 else SNAKE_SCENE
+	elif biome == 2:
+		var ice_enemy_roll := loot_random.randf()
+		if ice_enemy_roll < 0.34:
+			enemy_scene = FROSTBOUND_WRAITH_SCENE
+		elif ice_enemy_roll < 0.67:
+			enemy_scene = CRYSTALBACK_YETI_SCENE
+		else:
+			enemy_scene = SHIVERFANG_ICE_SERPENT_SCENE
+	elif biome == 3:
+		var robot_roll := loot_random.randf()
+		if robot_roll < 0.25:
+			enemy_scene = SENTINEL_HEXWALKER_SCENE
+		elif robot_roll < 0.5:
+			enemy_scene = NEUROCORE_DRONE_SCENE
+		elif robot_roll < 0.75:
+			enemy_scene = TITANFORGE_EXO_UNIT_SCENE
+		else:
+			enemy_scene = PHASE_SHIFT_INFILTRATOR_SCENE
 	var enemy := enemy_scene.instantiate() as Wolf
 	if enemy == null:
 		push_error("The enemy scene root must use the Wolf base script.")
@@ -315,7 +510,7 @@ func _on_enemy_died(enemy: Wolf) -> void:
 	var max_enemies := _get_max_enemies()
 	if biome == 1 and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_desert_boss()
-	elif biome == 0 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
+	elif biome != 1 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
 		level_is_complete = true
 		level_completed.emit()
 
@@ -338,7 +533,7 @@ func _drop_enemy_loot(enemy: Wolf, is_desert_boss := false) -> void:
 	_spawn_gold_pickup(enemy.global_position)
 	if is_desert_boss:
 		_spawn_item_pickup(_create_desert_gear(true), enemy.global_position)
-	elif biome == 1:
+	elif biome == 1 or biome == 3:
 		if loot_random.randf() < ITEM_DROP_CHANCE:
 			_spawn_item_pickup(_create_desert_gear(false), enemy.global_position)
 	elif loot_random.randf() < ITEM_DROP_CHANCE:

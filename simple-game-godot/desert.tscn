@@ -92,7 +92,7 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -166.0
+offset_left = -132.0
 offset_top = -166.0
 offset_right = -22.0
 offset_bottom = -22.0
@@ -276,14 +276,14 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
 theme_override_font_sizes/font_size = 30
 text = "Character"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="CharacterName" type="Label" parent="UI/CharacterMenu/Panel/Contents" unique_id=1387949744]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.88, 0.83, 0.72, 1)
 theme_override_font_sizes/font_size = 18
 text = "Warrior"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="ProgressionStats" type="Label" parent="UI/CharacterMenu/Panel/Contents"]
 layout_mode = 2
@@ -295,7 +295,7 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
 text = "Sword damage: 1  |  Damage reduced: 0"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="EquipmentGrid" type="GridContainer" parent="UI/CharacterMenu/Panel/Contents" unique_id=37562932]
 layout_mode = 2
@@ -387,6 +387,8 @@ text = "Amulet  -  Empty"
 [node name="CloseButton" type="Button" parent="UI/CharacterMenu/Panel/Contents" unique_id=1853016956]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+alignment = 0
+theme_override_font_sizes/font_size = 18
 text = "Close  (C / Esc)"
 
 [node name="InventoryPanel" type="PanelContainer" parent="UI/CharacterMenu" unique_id=771014247]
@@ -415,27 +417,27 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
 theme_override_font_sizes/font_size = 30
 text = "Inventory"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="Subtitle" type="Label" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=923805954]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
 text = "25 slots"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="GoldTotal" type="Label" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=1217818745]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
 theme_override_font_sizes/font_size = 18
 text = "Gold: 0"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="SelectedItem" type="Label" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=1009691006]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.88, 0.83, 0.72, 1)
 text = "Select an item to inspect it."
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="InventoryGrid" type="GridContainer" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=721353747]
 layout_mode = 2
@@ -447,11 +449,15 @@ columns = 5
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
 disabled = true
+alignment = 0
+theme_override_font_sizes/font_size = 18
 text = "Equip Selected Item"
 
 [node name="CloseButton" type="Button" parent="UI/CharacterMenu/InventoryPanel/Contents" unique_id=317251270]
 custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
+alignment = 0
+theme_override_font_sizes/font_size = 18
 text = "Close  (I / Esc)"
 
 [node name="LevelCompleteLabel" type="Label" parent="UI" unique_id=229303701]

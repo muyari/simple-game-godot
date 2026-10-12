@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://TitanforgeExoUnit.gd" id="1_titan"]
+[ext_resource type="Texture2D" path="res://textures/titanforge_exo_unit.svg" id="2_titan_texture"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_titan"]
+radius = 26.0
+height = 62.0
+
+[node name="TitanforgeExoUnit" type="CharacterBody2D"]
+script = ExtResource("1_titan")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_titan_texture")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_titan")
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -32.0
+offset_top = -60.0
+offset_right = 32.0
+offset_bottom = -52.0
+show_percentage = false
+
+[node name="Swipe" type="Line2D" parent="."]
+visible = false
+points = PackedVector2Array(-26, -25, 0, -34, 26, -25)
+width = 10.0
+default_color = Color(0.35, 0.92, 1, 0.95)

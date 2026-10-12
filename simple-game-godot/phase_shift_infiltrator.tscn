@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://PhaseShiftInfiltrator.gd" id="1_infiltrator"]
+[ext_resource type="Texture2D" path="res://textures/phase_shift_infiltrator.svg" id="2_infiltrator_texture"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_infiltrator"]
+radius = 14.0
+height = 36.0
+
+[node name="PhaseShiftInfiltrator" type="CharacterBody2D"]
+script = ExtResource("1_infiltrator")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_infiltrator_texture")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_infiltrator")
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -24.0
+offset_top = -49.0
+offset_right = 24.0
+offset_bottom = -43.0
+show_percentage = false
+
+[node name="Swipe" type="Line2D" parent="."]
+visible = false
+points = PackedVector2Array(18, -14, 38, 0, 18, 14)
+width = 6.0
+default_color = Color(0.48, 0.94, 0.88, 0.95)

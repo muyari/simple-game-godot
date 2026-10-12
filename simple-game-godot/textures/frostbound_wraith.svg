@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <defs>
+    <linearGradient id="veil" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d8f8ff" stop-opacity="0.86"/>
+      <stop offset="0.58" stop-color="#70c7e6" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="#354f91" stop-opacity="0.48"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#8ceaff" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#8ceaff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="48" cy="48" rx="43" ry="46" fill="url(#glow)"/>
+  <path d="M48 10c-18 0-29 14-29 31 0 12 6 20 13 27l-10 16 16-4 10 9 10-10 17 4-9-16c9-8 14-17 14-29 0-16-12-28-32-28z" fill="url(#veil)" stroke="#d7f7ff" stroke-opacity="0.82" stroke-width="3"/>
+  <path d="M31 75l-11 15 22-9m23-5 12 14-24-7" fill="none" stroke="#8bdcf2" stroke-opacity="0.65" stroke-width="6" stroke-linecap="round"/>
+  <path d="M30 42q7-7 14 0m8 0q7-7 14 0" fill="none" stroke="#153452" stroke-width="4" stroke-linecap="round"/>
+  <path d="M41 55q7 5 14 0" fill="none" stroke="#e5fbff" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M34 19l-9-8m37 7 9-9m-5 47 9 4" stroke="#effcff" stroke-opacity="0.6" stroke-width="2"/>
+</svg>
