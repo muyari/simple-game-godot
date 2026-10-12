@@ -214,7 +214,7 @@ func get_item_sell_price(item: ItemData) -> int:
 	if item == null:
 		push_error("Cannot calculate the sale price of a null item.")
 		return 0
-	return maxi(item.price / 2, 1)
+	return maxi(floori(float(item.price) / 2.0), 1)
 
 
 func sell_inventory_item(
