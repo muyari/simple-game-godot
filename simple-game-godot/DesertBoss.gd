@@ -12,6 +12,7 @@ var spit_random := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	super._ready()
+	experience_reward = 150
 	max_health = Wolf.MAX_HEALTH * 1.25 * 5.0
 	attack_damage = roundi(Wolf.ATTACK_DAMAGE * 1.5 * 1.25)
 	health = max_health
