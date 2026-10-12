@@ -59,6 +59,9 @@ var health_heal_accumulator := 0.0
 var mana_heal_accumulator := 0.0
 var potion_ui_timer := 0.0
 var facing := Vector2.DOWN
+var chill_time_remaining := 0.0
+var chill_speed_factor := 1.0
+var knockback_velocity := Vector2.ZERO
 var selected_character := "Warrior"
 var click_destination := Vector2.ZERO
 var click_move_active := false
@@ -107,6 +110,9 @@ func _physics_process(delta: float) -> void:
 	_update_potion_refills(delta)
 	_update_potion_effects(delta)
 	iceball_cooldown_remaining = maxf(iceball_cooldown_remaining - delta, 0.0)
+	chill_time_remaining = maxf(chill_time_remaining - delta, 0.0)
+	if chill_time_remaining == 0.0:
+		chill_speed_factor = 1.0
 	if mouse_move_held and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_finish_mouse_move(get_viewport().get_mouse_position())
 
@@ -144,11 +150,17 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if direction != Vector2.ZERO:
-		velocity = velocity.move_toward(direction * SPEED, ACCELERATION * delta)
+		var movement_velocity := direction * SPEED * chill_speed_factor
+		if knockback_velocity.length_squared() > 0.0:
+			movement_velocity += knockback_velocity
+			knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 900.0 * delta)
+		velocity = velocity.move_toward(movement_velocity, ACCELERATION * delta)
 		facing = _cardinal_direction(direction)
 		animation_time += delta
 	else:
-		velocity = velocity.move_toward(Vector2.ZERO, DECELERATION * delta)
+		var movement_velocity := knockback_velocity
+		knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 900.0 * delta)
+		velocity = velocity.move_toward(movement_velocity, DECELERATION * delta)
 		animation_time = 0.0
 
 	if Input.is_action_just_pressed("ui_accept"):
@@ -266,7 +278,7 @@ func _finish_mouse_move(release_position: Vector2) -> void:
 
 func _open_town_portal() -> void:
 	var current_scene_path := get_tree().current_scene.scene_file_path
-	if current_scene_path not in ["res://main.tscn", "res://desert.tscn"]:
+	if GameState.get_level_id(current_scene_path) == 0:
 		return
 	if is_casting_town_portal:
 		return
@@ -283,7 +295,7 @@ func _open_town_portal() -> void:
 
 func _spawn_town_portal() -> void:
 	var current_scene_path := get_tree().current_scene.scene_file_path
-	if current_scene_path not in ["res://main.tscn", "res://desert.tscn"]:
+	if GameState.get_level_id(current_scene_path) == 0:
 		return
 
 	var current_scene := get_tree().current_scene
@@ -566,6 +578,19 @@ func _damage_wolves_in_swing() -> void:
 
 func _get_primary_attack_damage() -> float:
 	return 1.0 + get_weapon_damage_bonus()
+
+
+func apply_chill(duration: float, speed_factor := 0.55) -> void:
+	chill_time_remaining = maxf(chill_time_remaining, duration)
+	chill_speed_factor = minf(chill_speed_factor, clampf(speed_factor, 0.1, 1.0))
+
+
+func apply_knockback(direction: Vector2, strength: float) -> void:
+	if direction.is_zero_approx():
+		return
+	click_move_active = false
+	mouse_move_held = false
+	knockback_velocity += direction.normalized() * strength
 
 
 func take_damage(amount: int) -> void:

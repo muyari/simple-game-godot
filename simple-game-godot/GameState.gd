@@ -6,6 +6,12 @@ const SAVE_PATH = "user://character_save.json"
 const SAVE_VERSION = 1
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
+const LEVEL_SCENES = {
+	"res://main.tscn": 1,
+	"res://desert.tscn": 2,
+	"res://ice_caves.tscn": 3,
+	"res://futuristic_ai_zone.tscn": 4
+}
 const EQUIPMENT_SLOTS = [
 	"Weapon",
 	"Helm",
@@ -60,6 +66,54 @@ func get_character(character_id: String) -> Dictionary:
 	return {}
 
 
+func get_completed_levels() -> Array[int]:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0:
+		return []
+	var completed_levels: Array[int] = []
+	for level_id in _characters[character_index].get("completed_levels", []):
+		completed_levels.append(int(level_id))
+	return completed_levels
+
+
+func is_level_unlocked(level_id: int) -> bool:
+	var completed_levels := get_completed_levels()
+	match level_id:
+		1:
+			return true
+		2:
+			return completed_levels.has(1)
+		3:
+			return completed_levels.has(2)
+		4:
+			return completed_levels.has(3)
+	return false
+
+
+func get_level_id(scene_path: String) -> int:
+	return int(LEVEL_SCENES.get(scene_path, 0))
+
+
+func complete_level(level_id: int) -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
+		return false
+
+	var character: Dictionary = _characters[character_index]
+	var completed_levels := _validated_completed_levels(character.get("completed_levels", []))
+	if completed_levels.has(level_id):
+		return false
+
+	completed_levels.append(level_id)
+	character["completed_levels"] = completed_levels
+	_characters[character_index] = character
+	if not _save_roster():
+		completed_levels.erase(level_id)
+		_characters[character_index] = character
+		return false
+	return true
+
+
 func create_character(display_name: String, character_class: String) -> String:
 	var clean_name := display_name.strip_edges()
 	if clean_name.is_empty() or character_class not in ["Warrior", "Witch"]:
@@ -85,7 +139,8 @@ func create_character(display_name: String, character_class: String) -> String:
 		"id": character_id,
 		"name": clean_name,
 		"class": character_class,
-		"save_path": save_path
+		"save_path": save_path,
+		"completed_levels": [],
 	})
 	_active_character_id = character_id
 	_active_save_path = save_path
@@ -388,7 +443,8 @@ func _load_roster() -> void:
 			"id": character_id,
 			"name": display_name,
 			"class": character_class,
-			"save_path": save_path
+			"save_path": save_path,
+			"completed_levels": _validated_completed_levels(character.get("completed_levels", []))
 		})
 
 
@@ -415,6 +471,19 @@ func _find_character_index(character_id: String) -> int:
 		if _characters[index]["id"] == character_id:
 			return index
 	return -1
+
+
+func _validated_completed_levels(raw_levels: Variant) -> Array[int]:
+	var completed_levels: Array[int] = []
+	if typeof(raw_levels) != TYPE_ARRAY:
+		return completed_levels
+	for raw_level in raw_levels:
+		if typeof(raw_level) not in [TYPE_INT, TYPE_FLOAT]:
+			continue
+		var level_id := int(raw_level)
+		if level_id >= 1 and level_id <= LEVEL_SCENES.size() and not completed_levels.has(level_id):
+			completed_levels.append(level_id)
+	return completed_levels
 
 
 func _clear_character_data() -> void:

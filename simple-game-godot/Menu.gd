@@ -12,6 +12,9 @@ extends Control
 @onready var character_status: Label = $CenterContainer/MenuPanel/CharacterScreen/CharacterStatus
 @onready var level_subtitle: Label = $CenterContainer/MenuPanel/LevelScreen/Subtitle
 @onready var level_status: Label = $CenterContainer/MenuPanel/LevelScreen/LevelStatus
+@onready var level2_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level2Button
+@onready var level3_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level3Button
+@onready var level4_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level4Button
 @onready var delete_confirmation: ConfirmationDialog = $DeleteConfirmation
 
 var selected_character_id := ""
@@ -68,6 +71,8 @@ func _refresh_character_roster() -> void:
 		var character_class := str(character.get("class", "Warrior"))
 		var character_button := Button.new()
 		character_button.custom_minimum_size = Vector2(0, 52)
+		character_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		character_button.add_theme_font_size_override("font_size", 18)
 		character_button.text = "%s  -  %s" % [character_name, character_class]
 		character_button.pressed.connect(_on_roster_character_selected.bind(character_id))
 		if character_id == selected_character_id:
@@ -115,7 +120,17 @@ func _on_roster_continue_pressed() -> void:
 
 func _show_level_screen() -> void:
 	level_subtitle.text = "%s  -  %s" % [selected_character_name, selected_character_class]
+	_refresh_level_buttons()
 	_show_screen(level_screen)
+
+
+func _refresh_level_buttons() -> void:
+	level2_button.disabled = not GameState.is_level_unlocked(2)
+	level3_button.disabled = not GameState.is_level_unlocked(3)
+	level4_button.disabled = not GameState.is_level_unlocked(4)
+	level2_button.text = "Level 2  -  Sunscorch Sands" if not level2_button.disabled else "Level 2  -  Sunscorch Sands (Locked)"
+	level3_button.text = "Level 3  -  The Ice Caves" if not level3_button.disabled else "Level 3  -  The Ice Caves (Locked)"
+	level4_button.text = "Level 4  -  The Futuristic AI Zone" if not level4_button.disabled else "Level 4  -  The Futuristic AI Zone (Locked)"
 
 
 func _on_roster_create_pressed() -> void:
@@ -198,9 +213,21 @@ func _on_level_2_selected() -> void:
 	_load_level("res://desert.tscn", "Sunscorch Sands")
 
 
+func _on_level_3_selected() -> void:
+	_load_level("res://ice_caves.tscn", "The Ice Caves")
+
+
+func _on_level_4_selected() -> void:
+	_load_level("res://futuristic_ai_zone.tscn", "The Futuristic AI Zone")
+
+
 func _load_level(scene_path: String, level_name: String) -> void:
 	if selected_character_id.is_empty():
 		level_status.text = "Select a character before entering a level."
+		return
+	var level_id := GameState.get_level_id(scene_path)
+	if not GameState.is_level_unlocked(level_id):
+		level_status.text = "Complete the earlier levels to unlock this area."
 		return
 
 	get_tree().set_meta("selected_character", selected_character_class)
