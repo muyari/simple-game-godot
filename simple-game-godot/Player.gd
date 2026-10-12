@@ -81,7 +81,7 @@ func _physics_process(delta: float) -> void:
 	_update_potion_refills(delta)
 	_update_potion_effects(delta)
 
-	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if direction != Vector2.ZERO:
 		velocity = velocity.move_toward(direction * SPEED, ACCELERATION * delta)
 		facing = _cardinal_direction(direction)
