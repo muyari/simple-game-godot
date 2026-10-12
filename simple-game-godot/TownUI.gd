@@ -58,6 +58,17 @@ func _ready() -> void:
 	_on_equipment_changed(player.equipment)
 
 
+func _input(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo or event.keycode != KEY_E:
+		return
+	if dialogue_overlay != null and dialogue_overlay.visible:
+		_open_shop()
+		get_viewport().set_input_as_handled()
+	elif (shop_overlay != null and shop_overlay.visible) \
+			or (waystone_overlay != null and waystone_overlay.visible):
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if waystone_overlay != null and waystone_overlay.visible:
@@ -66,10 +77,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			return
 		if dialogue_overlay != null and dialogue_overlay.visible:
-			if event.keycode == KEY_E:
-				_open_shop()
-				get_viewport().set_input_as_handled()
-			elif event.keycode == KEY_ESCAPE:
+			if event.keycode == KEY_ESCAPE:
 				_close_dialogue()
 				get_viewport().set_input_as_handled()
 			return
