@@ -24,6 +24,7 @@ const SWORD_HIT_DOT_THRESHOLD = 0.2
 const SWORD_HIT_TIME = 0.1
 const MAX_MANA = 100
 const FIREBALL_MANA_COST = 25
+const ICEBALL_MANA_COST = 0
 const MAX_POTIONS = 3
 const POTION_REFILL_TIME = 10.0
 const POTION_EFFECT_TIME = 3.0
@@ -48,6 +49,7 @@ var health_heal_accumulator := 0.0
 var mana_heal_accumulator := 0.0
 var potion_ui_timer := 0.0
 var facing := Vector2.DOWN
+var selected_character := "Warrior"
 var animation_time := 0.0
 var attack_time_remaining := 0.0
 var attack_hit_applied := false
@@ -55,9 +57,13 @@ var town_portal_open := false
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var sword: Node2D = $Sword
+@onready var wand: Node2D = $Wand
 
 
 func _ready() -> void:
+	selected_character = str(get_tree().get_meta("selected_character", "Warrior"))
+	sword.hide()
+	wand.hide()
 	inventory = GameState.get_inventory()
 	equipment = GameState.get_equipment()
 	if get_tree().has_meta("portal_spawn_position"):
@@ -90,12 +96,16 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, DECELERATION * delta)
 		animation_time = 0.0
 
-	if Input.is_action_just_pressed("ui_accept") and attack_time_remaining <= 0.0:
-		attack_time_remaining = ATTACK_DURATION
-		attack_hit_applied = false
+	if Input.is_action_just_pressed("ui_accept"):
+		if selected_character == "Witch":
+			_cast_iceball()
+		elif attack_time_remaining <= 0.0:
+			attack_time_remaining = ATTACK_DURATION
+			attack_hit_applied = false
 
 	_update_sprite(direction != Vector2.ZERO)
 	_update_sword(delta)
+	_update_wand()
 	move_and_slide()
 
 
@@ -136,15 +146,34 @@ func _open_town_portal() -> void:
 
 
 func _cast_fireball() -> void:
-	if mana < FIREBALL_MANA_COST:
+	_cast_projectile(false, FIREBALL_MANA_COST)
+
+
+func _cast_iceball() -> void:
+	_cast_projectile(true, ICEBALL_MANA_COST)
+
+
+func _cast_projectile(is_ice: bool, mana_cost: int) -> void:
+	if mana < mana_cost:
 		return
 
-	mana -= FIREBALL_MANA_COST
-	mana_changed.emit(mana, MAX_MANA)
+	if mana_cost > 0:
+		mana -= mana_cost
+		mana_changed.emit(mana, MAX_MANA)
 	var fireball: Fireball = FIREBALL_SCENE.instantiate()
 	fireball.direction = facing
+	fireball.is_ice = is_ice
 	get_tree().current_scene.add_child(fireball)
 	fireball.global_position = global_position + facing * 20.0
+
+
+func _update_wand() -> void:
+	if selected_character != "Witch":
+		return
+
+	wand.visible = Input.is_action_pressed("ui_accept")
+	wand.position = facing * 8.0 + Vector2(6.0, 0.0)
+	wand.rotation = facing.angle()
 
 
 func try_add_item(item: ItemData) -> bool:

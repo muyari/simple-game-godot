@@ -49,7 +49,48 @@ custom_minimum_size = Vector2(520, 460)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
+[node name="TitleScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Eyebrow" type="Label" parent="CenterContainer/MenuPanel/TitleScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
+theme_override_font_sizes/font_size = 16
+text = "A FRONTIER FANTASY"
+horizontal_alignment = 1
+
+[node name="GameTitle" type="Label" parent="CenterContainer/MenuPanel/TitleScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
+theme_override_font_sizes/font_size = 48
+text = "Exiles Reach"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/TitleScreen"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+text = "Beyond the edge of the known world"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="CenterContainer/MenuPanel/TitleScreen"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="StartButton" type="Button" parent="CenterContainer/MenuPanel/TitleScreen"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Begin Adventure"
+
+[node name="QuitButton" type="Button" parent="CenterContainer/MenuPanel/TitleScreen"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Quit"
+
 [node name="CharacterScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel"]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 14
 
@@ -72,6 +113,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "Warrior"
 
+[node name="WitchButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Witch"
+
 [node name="LockedCharacter" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
@@ -81,7 +128,7 @@ text = "???  -  Coming Soon"
 [node name="CharacterStatus" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
-text = "Choose the Warrior to continue."
+text = "Choose a character to continue."
 horizontal_alignment = 1
 
 [node name="CharacterContinue" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
@@ -131,6 +178,7 @@ layout_mode = 2
 text = "Back to Character Select"
 
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WarriorButton" to="." method="_on_warrior_selected"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WitchButton" to="." method="_on_witch_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CharacterContinue" to="." method="_on_character_continue"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level1Button" to="." method="_on_level_1_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level2Button" to="." method="_on_level_2_selected"]

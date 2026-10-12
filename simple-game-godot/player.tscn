@@ -46,3 +46,21 @@ color = Color(0.39, 0.2, 0.13, 1)
 [node name="Pommel" type="Polygon2D" parent="Sword"]
 polygon = PackedVector2Array(-2, -3, 2, -3, 3, 0, 2, 3, -2, 3, -3, 0)
 color = Color(0.77, 0.55, 0.22, 1)
+
+[node name="Wand" type="Node2D" parent="."]
+visible = false
+z_index = 1
+
+[node name="Shaft" type="Polygon2D" parent="Wand"]
+polygon = PackedVector2Array(-2, -2, 19, -2, 23, 0, 19, 2, -2, 2)
+color = Color(0.34, 0.18, 0.11, 1)
+
+[node name="Crystal" type="Polygon2D" parent="Wand"]
+position = Vector2(24, 0)
+polygon = PackedVector2Array(0, -7, 5, 0, 0, 7, -5, 0)
+color = Color(0.54, 0.84, 0.95, 1)
+
+[node name="CrystalCore" type="Polygon2D" parent="Wand"]
+position = Vector2(24, 0)
+polygon = PackedVector2Array(0, -3, 2, 0, 0, 3, -2, 0)
+color = Color(0.88, 0.97, 1, 1)
