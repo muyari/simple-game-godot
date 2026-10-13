@@ -107,6 +107,8 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if witch_skill_tree != null and witch_skill_tree.visible:
+			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
 		if event.keycode == KEY_ESCAPE:
 			if pause_menu.visible:
 				pause_menu.close_menu()
@@ -150,7 +152,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if (shop_overlay == null or not shop_overlay.visible) \
 					and (dialogue_overlay == null or not dialogue_overlay.visible) \
 					and (waystone_overlay == null or not waystone_overlay.visible):
-				_open_witch_skill_tree()
+				_open_witch_skill_tree("passives")
 				get_viewport().set_input_as_handled()
 
 
@@ -441,10 +443,16 @@ func _build_character_menu() -> void:
 	character_close_button.pressed.connect(_close_character_menu)
 	if player.selected_character == "Witch":
 		var skill_tree_button := Button.new()
-		skill_tree_button.text = "Witch Skill Tree"
+		skill_tree_button.text = "Witch Active Skills"
 		_style_menu_button(skill_tree_button, 42.0)
-		skill_tree_button.pressed.connect(_open_witch_skill_tree)
+		skill_tree_button.pressed.connect(_open_witch_skill_tree.bind("skills"))
 		character_contents.add_child(skill_tree_button)
+
+		var passive_tree_button_menu := Button.new()
+		passive_tree_button_menu.text = "Witch Passive Tree (P)"
+		_style_menu_button(passive_tree_button_menu, 42.0)
+		passive_tree_button_menu.pressed.connect(_open_witch_skill_tree.bind("passives"))
+		character_contents.add_child(passive_tree_button_menu)
 	character_contents.add_child(character_close_button)
 
 	var inventory_contents := VBoxContainer.new()
@@ -499,15 +507,17 @@ func _build_character_menu() -> void:
 		witch_skill_tree.hide()
 		witch_skill_tree.closed.connect(_on_witch_skill_tree_closed)
 		witch_skill_tree.loadout_changed.connect(_refresh_witch_skill_slots)
+		witch_skill_tree.passives_changed.connect(_on_witch_passives_changed)
+
 		_refresh_witch_skill_slots()
 
 
-func _open_witch_skill_tree() -> void:
+func _open_witch_skill_tree(initial_tab: String = "") -> void:
 	if witch_skill_tree == null:
 		return
 	player.set_physics_process(false)
 	player.set_process_unhandled_input(false)
-	witch_skill_tree.open_tree()
+	witch_skill_tree.open_tree(initial_tab)
 
 
 func _on_witch_skill_tree_closed() -> void:
@@ -515,6 +525,12 @@ func _on_witch_skill_tree_closed() -> void:
 		return
 	witch_skill_tree.hide()
 	_close_character_menu()
+	_on_witch_passives_changed()
+
+
+func _on_witch_passives_changed() -> void:
+	player.refresh_passives_and_vitals()
+	_on_equipment_changed(player.equipment)
 	_refresh_witch_skill_slots()
 
 
@@ -616,7 +632,7 @@ func _open_character_menu() -> void:
 
 func _on_passive_tree_button_pressed() -> void:
 	if player.selected_character == "Witch":
-		_open_witch_skill_tree()
+		_open_witch_skill_tree("passives")
 
 
 func _open_inventory_menu() -> void:
@@ -722,10 +738,19 @@ func _on_equip_item_pressed() -> void:
 
 func _on_equipment_changed(equipment: Dictionary) -> void:
 	var attack_name := "Spell damage" if player.selected_character == "Witch" else "Sword damage"
-	equipment_stats_label.text = "%s: %d  |  Damage reduced: %d" % [
+	var base_dmg := (1 + player.get_weapon_damage_bonus())
+	var dmg_str := str(base_dmg)
+	if player.selected_character == "Witch":
+		var mult := player.get_spell_damage_multiplier()
+		dmg_str = "%.1f (x%.2f)" % [float(base_dmg) * mult, mult]
+	var evasion_info := ""
+	if player.selected_character == "Witch":
+		evasion_info = "  |  Evasion: %d%%" % roundi(player.get_evasion() * 100.0)
+	equipment_stats_label.text = "%s: %s  |  Damage reduced: %d%s" % [
 		attack_name,
-		1 + player.get_weapon_damage_bonus(),
-		player.get_damage_reduction()
+		dmg_str,
+		player.get_damage_reduction(),
+		evasion_info
 	]
 	if player.selected_character == "Witch":
 		_refresh_witch_skill_slots()
