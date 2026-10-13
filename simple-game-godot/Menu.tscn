@@ -247,12 +247,23 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Title" type="Label" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=1694365863]
+[node name="LevelHeader" type="HBoxContainer" parent="CenterContainer/MenuPanel/LevelScreen"]
 layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="CenterContainer/MenuPanel/LevelScreen/LevelHeader" unique_id=1694365863]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
 theme_override_font_sizes/font_size = 32
 text = "Choose a Level"
 horizontal_alignment = 0
+
+[node name="TownButton" type="Button" parent="CenterContainer/MenuPanel/LevelScreen/LevelHeader"]
+custom_minimum_size = Vector2(112, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Town"
 
 [node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=2029659198]
 layout_mode = 2
