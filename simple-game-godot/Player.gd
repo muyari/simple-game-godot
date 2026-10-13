@@ -135,9 +135,10 @@ func _physics_process(delta: float) -> void:
 	_update_potion_effects(delta)
 	iceball_cooldown_remaining = maxf(iceball_cooldown_remaining - delta, 0.0)
 	chill_time_remaining = maxf(chill_time_remaining - delta, 0.0)
+	var shield_was_active := arcane_shield_time_remaining > 0.0
 	arcane_shield_time_remaining = maxf(arcane_shield_time_remaining - delta, 0.0)
 	frost_nova_visual_time_remaining = maxf(frost_nova_visual_time_remaining - delta, 0.0)
-	if arcane_shield_time_remaining > 0.0 or frost_nova_visual_time_remaining > 0.0:
+	if shield_was_active or frost_nova_visual_time_remaining > 0.0:
 		queue_redraw()
 	_update_witch_skill_cooldowns(delta)
 	if chill_time_remaining == 0.0:
