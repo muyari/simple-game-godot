@@ -120,7 +120,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 	if witch_skill_tree != null and witch_skill_tree.visible:
-		if event.keycode == KEY_ESCAPE:
+		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
 			_on_witch_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
@@ -136,7 +136,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_player_menu_paused(true)
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_P and witch_skill_tree != null:
-		_open_witch_skill_tree()
+		_open_witch_skill_tree("passives")
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_I:
 		if character_menu.visible and inventory_panel.visible:
@@ -157,30 +157,41 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_witch_skill_tree() -> void:
 	var character_contents: VBoxContainer = $CharacterMenu/Panel/Contents
 	var skill_tree_button := Button.new()
-	skill_tree_button.text = "Witch Skill Tree"
+	skill_tree_button.text = "Witch Active Skills"
 	skill_tree_button.custom_minimum_size.y = 42.0
 	skill_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	skill_tree_button.add_theme_font_size_override("font_size", 18)
-	skill_tree_button.pressed.connect(_open_witch_skill_tree)
+	skill_tree_button.pressed.connect(_open_witch_skill_tree.bind("skills"))
 	var close_button: Button = character_contents.get_node("CloseButton")
 	character_contents.add_child(skill_tree_button)
 	character_contents.move_child(skill_tree_button, close_button.get_index())
+
+	var passive_tree_button := Button.new()
+	passive_tree_button.text = "Witch Passive Tree (P)"
+	passive_tree_button.custom_minimum_size.y = 42.0
+	passive_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	passive_tree_button.add_theme_font_size_override("font_size", 18)
+	passive_tree_button.pressed.connect(_open_witch_skill_tree.bind("passives"))
+	character_contents.add_child(passive_tree_button)
+	character_contents.move_child(passive_tree_button, close_button.get_index())
 
 	witch_skill_tree = WitchSkillTree.new()
 	add_child(witch_skill_tree)
 	witch_skill_tree.hide()
 	witch_skill_tree.closed.connect(_on_witch_skill_tree_closed)
 	witch_skill_tree.loadout_changed.connect(_refresh_witch_skill_slots)
+	witch_skill_tree.passives_changed.connect(_on_witch_passives_changed)
+
 	_refresh_witch_skill_slots()
 
 
-func _open_witch_skill_tree() -> void:
+func _open_witch_skill_tree(initial_tab: String = "") -> void:
 	if witch_skill_tree == null:
 		return
 	var player: Player = get_node("../Player")
 	player.set_physics_process(false)
 	player.set_process_unhandled_input(false)
-	witch_skill_tree.open_tree()
+	witch_skill_tree.open_tree(initial_tab)
 
 
 func _on_witch_skill_tree_closed() -> void:
@@ -189,6 +200,14 @@ func _on_witch_skill_tree_closed() -> void:
 	witch_skill_tree.hide()
 	character_menu.hide()
 	_set_player_menu_paused(false)
+	_on_witch_passives_changed()
+
+
+func _on_witch_passives_changed() -> void:
+	var player: Player = get_node_or_null("../Player")
+	if player != null:
+		player.refresh_passives_and_vitals()
+		_on_equipment_changed(player.equipment)
 	_refresh_witch_skill_slots()
 
 
@@ -303,10 +322,19 @@ func _on_equip_item_pressed() -> void:
 func _on_equipment_changed(equipment: Dictionary) -> void:
 	var player: Player = get_node("../Player")
 	var attack_name := "Spell damage" if player.selected_character == "Witch" else "Sword damage"
-	equipment_stats_label.text = "%s: %d  |  Damage reduced: %d" % [
+	var base_dmg := (1 + player.get_weapon_damage_bonus())
+	var dmg_str := str(base_dmg)
+	if player.selected_character == "Witch":
+		var mult := player.get_spell_damage_multiplier()
+		dmg_str = "%.1f (x%.2f)" % [float(base_dmg) * mult, mult]
+	var evasion_info := ""
+	if player.selected_character == "Witch":
+		evasion_info = "  |  Evasion: %d%%" % roundi(player.get_evasion() * 100.0)
+	equipment_stats_label.text = "%s: %s  |  Damage reduced: %d%s" % [
 		attack_name,
-		1 + player.get_weapon_damage_bonus(),
-		player.get_damage_reduction()
+		dmg_str,
+		player.get_damage_reduction(),
+		evasion_info
 	]
 	for slot_name in equipment_slot_labels:
 		var label: Label = equipment_slot_labels[slot_name]

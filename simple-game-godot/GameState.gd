@@ -6,7 +6,7 @@ signal experience_gained(amount: int)
 signal player_leveled_up(level: int)
 
 const SAVE_PATH = "user://character_save.json"
-const SAVE_VERSION = 4
+const SAVE_VERSION = 5
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
 const LEVEL_SCENES = {
@@ -104,6 +104,440 @@ const WITCH_SKILL_TREE = {
 	}
 }
 const WITCH_SKILL_SLOTS = ["Q", "W", "E", "R"]
+
+const WITCH_PASSIVE_ORDER: Array[String] = [
+	# Spire of Arcana (Elemental)
+	"arcane_spark",
+	"ember_mastery",
+	"frost_affinity",
+	"spell_weaver",
+	"elemental_overload",
+	"ignited_fury",
+	"glacial_focus",
+	"super_archmages_nexus",
+	# Shadow & Siphon (Occult)
+	"soul_tether",
+	"essence_siphon",
+	"shadow_mend",
+	"vital_surge",
+	"decay_aura",
+	"dark_harvest",
+	"spirit_channel",
+	"super_void_ascendancy",
+	# Aegis of Phantoms (Defense)
+	"mist_shroud",
+	"phantom_step",
+	"warding_veil",
+	"evasive_reflex",
+	"iron_will",
+	"hardened_skin",
+	"ethereal_flow",
+	"super_spectral_bastion",
+	# Mystic Wellspring (Mana & Utility)
+	"mana_reservoir",
+	"inner_trance",
+	"crystal_clarity",
+	"sorcerers_cunning",
+	"spell_flux",
+	"abyssal_reserves",
+	"arcane_shielding",
+	"super_infinite_conduit",
+	# Astral Convergence (Apex)
+	"celestial_attunement",
+	"super_celestial_sovereign"
+]
+
+const WITCH_PASSIVE_TREE: Dictionary = {
+	# --- Spire of Arcana (Elemental) ---
+	"arcane_spark": {
+		"name": "Arcane Spark",
+		"branch": "Spire of Arcana",
+		"description": "Increases spell damage by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 1,
+		"prerequisites": [],
+		"stats": {"spell_damage_percent": 0.04},
+		"x": 2, "y": 0
+	},
+	"ember_mastery": {
+		"name": "Ember Mastery",
+		"branch": "Spire of Arcana",
+		"description": "Increases spell damage by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 2,
+		"prerequisites": ["arcane_spark"],
+		"stats": {"spell_damage_percent": 0.04},
+		"x": 1, "y": 1
+	},
+	"frost_affinity": {
+		"name": "Frost Affinity",
+		"branch": "Spire of Arcana",
+		"description": "Increases spell damage by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 2,
+		"prerequisites": ["arcane_spark"],
+		"stats": {"spell_damage_percent": 0.04},
+		"x": 3, "y": 1
+	},
+	"spell_weaver": {
+		"name": "Spell Weaver",
+		"branch": "Spire of Arcana",
+		"description": "Increases spell damage by +5%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 4,
+		"prerequisites": ["ember_mastery", "frost_affinity"],
+		"stats": {"spell_damage_percent": 0.05},
+		"x": 2, "y": 2
+	},
+	"elemental_overload": {
+		"name": "Elemental Overload",
+		"branch": "Spire of Arcana",
+		"description": "Increases spell damage by +5%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 6,
+		"prerequisites": ["spell_weaver"],
+		"stats": {"spell_damage_percent": 0.05},
+		"x": 2, "y": 3
+	},
+	"ignited_fury": {
+		"name": "Ignited Fury",
+		"branch": "Spire of Arcana",
+		"description": "Increases spell damage by +5%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 8,
+		"prerequisites": ["elemental_overload"],
+		"stats": {"spell_damage_percent": 0.05},
+		"x": 1, "y": 4
+	},
+	"glacial_focus": {
+		"name": "Glacial Focus",
+		"branch": "Spire of Arcana",
+		"description": "Increases spell damage by +5%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 8,
+		"prerequisites": ["elemental_overload"],
+		"stats": {"spell_damage_percent": 0.05},
+		"x": 3, "y": 4
+	},
+	"super_archmages_nexus": {
+		"name": "Archmage's Nexus",
+		"branch": "Spire of Arcana",
+		"description": "Super Node: Enhances destructive prowess and evasion.\nGrants +12% spell damage and +6% evasion.",
+		"is_super": true,
+		"point_cost": 1,
+		"required_level": 10,
+		"prerequisites": ["ignited_fury", "glacial_focus"],
+		"stats": {"spell_damage_percent": 0.12, "evasion": 0.06},
+		"x": 2, "y": 5
+	},
+
+	# --- Shadow & Siphon (Occult) ---
+	"soul_tether": {
+		"name": "Soul Tether",
+		"branch": "Shadow & Siphon",
+		"description": "Increases maximum health by +15.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 1,
+		"prerequisites": [],
+		"stats": {"max_health": 15},
+		"x": 0, "y": 2
+	},
+	"essence_siphon": {
+		"name": "Essence Siphon",
+		"branch": "Shadow & Siphon",
+		"description": "Increases maximum health by +15.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 3,
+		"prerequisites": ["soul_tether"],
+		"stats": {"max_health": 15},
+		"x": 0, "y": 3
+	},
+	"shadow_mend": {
+		"name": "Shadow Mend",
+		"branch": "Shadow & Siphon",
+		"description": "Increases maximum health by +20.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 5,
+		"prerequisites": ["essence_siphon"],
+		"stats": {"max_health": 20},
+		"x": 0, "y": 4
+	},
+	"vital_surge": {
+		"name": "Vital Surge",
+		"branch": "Shadow & Siphon",
+		"description": "Increases maximum health by +20.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 7,
+		"prerequisites": ["shadow_mend"],
+		"stats": {"max_health": 20},
+		"x": 0, "y": 5
+	},
+	"decay_aura": {
+		"name": "Decay Aura",
+		"branch": "Shadow & Siphon",
+		"description": "Increases spell damage by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 8,
+		"prerequisites": ["vital_surge"],
+		"stats": {"spell_damage_percent": 0.04},
+		"x": 0, "y": 6
+	},
+	"dark_harvest": {
+		"name": "Dark Harvest",
+		"branch": "Shadow & Siphon",
+		"description": "Reduces damage taken by 3%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 9,
+		"prerequisites": ["vital_surge"],
+		"stats": {"damage_reduction_percent": 0.03},
+		"x": 1, "y": 6
+	},
+	"spirit_channel": {
+		"name": "Spirit Channel",
+		"branch": "Shadow & Siphon",
+		"description": "Increases maximum health by +20.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 10,
+		"prerequisites": ["decay_aura", "dark_harvest"],
+		"stats": {"max_health": 20},
+		"x": 0, "y": 7
+	},
+	"super_void_ascendancy": {
+		"name": "Void Ascendancy",
+		"branch": "Shadow & Siphon",
+		"description": "Super Node: Merges life-force with eldritch defense.\nGrants +45 maximum health and 5% less damage taken.",
+		"is_super": true,
+		"point_cost": 1,
+		"required_level": 12,
+		"prerequisites": ["spirit_channel"],
+		"stats": {"max_health": 45, "damage_reduction_percent": 0.05},
+		"x": 0, "y": 8
+	},
+
+	# --- Aegis of Phantoms (Defense) ---
+	"mist_shroud": {
+		"name": "Mist Shroud",
+		"branch": "Aegis of Phantoms",
+		"description": "Increases evasion by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 1,
+		"prerequisites": [],
+		"stats": {"evasion": 0.04},
+		"x": 4, "y": 2
+	},
+	"phantom_step": {
+		"name": "Phantom Step",
+		"branch": "Aegis of Phantoms",
+		"description": "Increases evasion by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 3,
+		"prerequisites": ["mist_shroud"],
+		"stats": {"evasion": 0.04},
+		"x": 4, "y": 3
+	},
+	"warding_veil": {
+		"name": "Warding Veil",
+		"branch": "Aegis of Phantoms",
+		"description": "Reduces damage taken by 3%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 5,
+		"prerequisites": ["phantom_step"],
+		"stats": {"damage_reduction_percent": 0.03},
+		"x": 4, "y": 4
+	},
+	"evasive_reflex": {
+		"name": "Evasive Reflex",
+		"branch": "Aegis of Phantoms",
+		"description": "Increases evasion by +5%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 7,
+		"prerequisites": ["warding_veil"],
+		"stats": {"evasion": 0.05},
+		"x": 4, "y": 5
+	},
+	"iron_will": {
+		"name": "Iron Will",
+		"branch": "Aegis of Phantoms",
+		"description": "Reduces damage taken by 3%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 8,
+		"prerequisites": ["evasive_reflex"],
+		"stats": {"damage_reduction_percent": 0.03},
+		"x": 3, "y": 6
+	},
+	"hardened_skin": {
+		"name": "Hardened Skin",
+		"branch": "Aegis of Phantoms",
+		"description": "Reduces damage taken by 3%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 8,
+		"prerequisites": ["evasive_reflex"],
+		"stats": {"damage_reduction_percent": 0.03},
+		"x": 4, "y": 6
+	},
+	"ethereal_flow": {
+		"name": "Ethereal Flow",
+		"branch": "Aegis of Phantoms",
+		"description": "Increases evasion by +5%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 10,
+		"prerequisites": ["iron_will", "hardened_skin"],
+		"stats": {"evasion": 0.05},
+		"x": 4, "y": 7
+	},
+	"super_spectral_bastion": {
+		"name": "Spectral Bastion",
+		"branch": "Aegis of Phantoms",
+		"description": "Super Node: Weaves phantasmal wards around your form.\nGrants +6% evasion and 6% less damage taken.",
+		"is_super": true,
+		"point_cost": 1,
+		"required_level": 12,
+		"prerequisites": ["ethereal_flow"],
+		"stats": {"evasion": 0.06, "damage_reduction_percent": 0.06},
+		"x": 4, "y": 8
+	},
+
+	# --- Mystic Wellspring (Mana & Utility) ---
+	"mana_reservoir": {
+		"name": "Mana Reservoir",
+		"branch": "Mystic Wellspring",
+		"description": "Increases maximum mana by +20.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 1,
+		"prerequisites": [],
+		"stats": {"max_mana": 20},
+		"x": 2, "y": 6
+	},
+	"inner_trance": {
+		"name": "Inner Trance",
+		"branch": "Mystic Wellspring",
+		"description": "Increases maximum mana by +20.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 3,
+		"prerequisites": ["mana_reservoir"],
+		"stats": {"max_mana": 20},
+		"x": 2, "y": 7
+	},
+	"crystal_clarity": {
+		"name": "Crystal Clarity",
+		"branch": "Mystic Wellspring",
+		"description": "Increases maximum mana by +25.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 5,
+		"prerequisites": ["inner_trance"],
+		"stats": {"max_mana": 25},
+		"x": 2, "y": 8
+	},
+	"sorcerers_cunning": {
+		"name": "Sorcerer's Cunning",
+		"branch": "Mystic Wellspring",
+		"description": "Increases spell damage by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 7,
+		"prerequisites": ["crystal_clarity"],
+		"stats": {"spell_damage_percent": 0.04},
+		"x": 1, "y": 9
+	},
+	"spell_flux": {
+		"name": "Spell Flux",
+		"branch": "Mystic Wellspring",
+		"description": "Increases spell damage by +4%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 7,
+		"prerequisites": ["crystal_clarity"],
+		"stats": {"spell_damage_percent": 0.04},
+		"x": 3, "y": 9
+	},
+	"abyssal_reserves": {
+		"name": "Abyssal Reserves",
+		"branch": "Mystic Wellspring",
+		"description": "Increases maximum mana by +25.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 9,
+		"prerequisites": ["sorcerers_cunning", "spell_flux"],
+		"stats": {"max_mana": 25},
+		"x": 2, "y": 10
+	},
+	"arcane_shielding": {
+		"name": "Arcane Shielding",
+		"branch": "Mystic Wellspring",
+		"description": "Reduces damage taken by 3%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 11,
+		"prerequisites": ["abyssal_reserves"],
+		"stats": {"damage_reduction_percent": 0.03},
+		"x": 2, "y": 11
+	},
+	"super_infinite_conduit": {
+		"name": "Infinite Conduit",
+		"branch": "Mystic Wellspring",
+		"description": "Super Node: Floods your mind with infinite magical potential.\nGrants +50 maximum mana and +8% spell damage.",
+		"is_super": true,
+		"point_cost": 1,
+		"required_level": 13,
+		"prerequisites": ["arcane_shielding"],
+		"stats": {"max_mana": 50, "spell_damage_percent": 0.08},
+		"x": 2, "y": 12
+	},
+
+	# --- Astral Convergence (Apex) ---
+	"celestial_attunement": {
+		"name": "Celestial Attunement",
+		"branch": "Astral Convergence",
+		"description": "Increases spell damage by +5%.",
+		"is_super": false,
+		"point_cost": 1,
+		"required_level": 14,
+		"prerequisites": ["super_archmages_nexus", "super_infinite_conduit"],
+		"stats": {"spell_damage_percent": 0.05},
+		"x": 2, "y": 13
+	},
+	"super_celestial_sovereign": {
+		"name": "Celestial Sovereign",
+		"branch": "Astral Convergence",
+		"description": "Super Node: Master of heavens, fate, and cosmic arcana.\nGrants +10% spell damage, +30 maximum health, +30 maximum mana, and +5% evasion.",
+		"is_super": true,
+		"point_cost": 1,
+		"required_level": 16,
+		"prerequisites": ["celestial_attunement", "super_void_ascendancy", "super_spectral_bastion"],
+		"stats": {
+			"spell_damage_percent": 0.10,
+			"max_health": 30,
+			"max_mana": 30,
+			"evasion": 0.05
+		},
+		"x": 2, "y": 14
+	}
+}
+
 const MAX_PLAYER_LEVEL = 25
 const LEVEL_XP_THRESHOLDS: Array[int] = [
 	0, 300, 750, 1350, 2100, 3000, 4050, 5250, 6600, 8100,
@@ -140,6 +574,7 @@ var passive_tree_points := 0
 var skill_tree_points := 0
 var witch_skill_ranks: Dictionary = {}
 var witch_skill_loadout: Dictionary = {}
+var witch_unlocked_passives: Array[String] = []
 
 
 func _ready() -> void:
@@ -276,6 +711,91 @@ func assign_witch_skill(skill_id: String, slot: String) -> bool:
 		return false
 	_emit_progression_changed()
 	return true
+
+
+func get_witch_passive_definitions() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	for passive_id in WITCH_PASSIVE_ORDER:
+		var definition: Dictionary = WITCH_PASSIVE_TREE[passive_id].duplicate(true)
+		definition["id"] = passive_id
+		definitions.append(definition)
+	return definitions
+
+
+func get_witch_passive_definition(passive_id: String) -> Dictionary:
+	if not WITCH_PASSIVE_TREE.has(passive_id):
+		return {}
+	var definition: Dictionary = WITCH_PASSIVE_TREE[passive_id].duplicate(true)
+	definition["id"] = passive_id
+	return definition
+
+
+func is_witch_passive_unlocked(passive_id: String) -> bool:
+	return witch_unlocked_passives.has(passive_id)
+
+
+func can_unlock_witch_passive(passive_id: String) -> bool:
+	if _get_active_character_class() != "Witch" or not WITCH_PASSIVE_TREE.has(passive_id):
+		return false
+	if is_witch_passive_unlocked(passive_id):
+		return false
+
+	var node: Dictionary = WITCH_PASSIVE_TREE[passive_id]
+	if player_level < int(node.get("required_level", 1)):
+		return false
+	if passive_tree_points < int(node.get("point_cost", 1)):
+		return false
+
+	var prerequisites: Array = node.get("prerequisites", [])
+	for prerequisite_id in prerequisites:
+		if not is_witch_passive_unlocked(str(prerequisite_id)):
+			return false
+	return true
+
+
+func unlock_witch_passive(passive_id: String) -> bool:
+	if not can_unlock_witch_passive(passive_id):
+		return false
+
+	var node: Dictionary = WITCH_PASSIVE_TREE[passive_id]
+	var cost := int(node.get("point_cost", 1))
+	var previous_passives := witch_unlocked_passives.duplicate()
+	var previous_points := passive_tree_points
+
+	witch_unlocked_passives.append(passive_id)
+	passive_tree_points -= cost
+
+	if not save_character(get_inventory(), get_equipment()):
+		witch_unlocked_passives = previous_passives
+		passive_tree_points = previous_points
+		return false
+
+	_emit_progression_changed()
+	return true
+
+
+func get_witch_passive_stat_totals() -> Dictionary:
+	var totals := {
+		"spell_damage_percent": 0.0,
+		"evasion": 0.0,
+		"max_health": 0,
+		"max_mana": 0,
+		"damage_reduction_percent": 0.0
+	}
+	if _get_active_character_class() != "Witch":
+		return totals
+
+	for passive_id in witch_unlocked_passives:
+		if not WITCH_PASSIVE_TREE.has(passive_id):
+			continue
+		var node: Dictionary = WITCH_PASSIVE_TREE[passive_id]
+		var stats: Dictionary = node.get("stats", {})
+		for stat_name in stats:
+			if stat_name == "max_health" or stat_name == "max_mana":
+				totals[stat_name] = int(totals.get(stat_name, 0)) + int(stats[stat_name])
+			else:
+				totals[stat_name] = float(totals.get(stat_name, 0.0)) + float(stats[stat_name])
+	return totals
 
 
 func get_level_state(level_id: int) -> Dictionary:
@@ -646,6 +1166,7 @@ func save_character(inventory: Array[ItemData], equipment: Dictionary) -> bool:
 		"skill_tree_points": skill_tree_points,
 		"witch_skill_ranks": witch_skill_ranks,
 		"witch_skill_loadout": witch_skill_loadout,
+		"witch_unlocked_passives": witch_unlocked_passives,
 		"inventory": inventory_records,
 		"equipment": equipment_records
 	}
@@ -743,6 +1264,8 @@ func _load_character() -> void:
 		return
 	witch_skill_ranks = _validated_witch_skill_ranks(raw_witch_skill_ranks)
 	witch_skill_loadout = _validated_witch_skill_loadout(raw_witch_skill_loadout)
+	var raw_witch_passives: Variant = save_data.get("witch_unlocked_passives", [])
+	witch_unlocked_passives = _validated_witch_passives(raw_witch_passives)
 
 	var raw_inventory: Variant = save_data.get("inventory", [])
 	var raw_equipment: Variant = save_data.get("equipment", {})
@@ -939,11 +1462,23 @@ func _validated_level_states(raw_states: Variant) -> Dictionary:
 	return level_states
 
 
+func _validated_witch_passives(raw_passives: Variant) -> Array[String]:
+	var valid_passives: Array[String] = []
+	if typeof(raw_passives) != TYPE_ARRAY:
+		return valid_passives
+	for raw_id in raw_passives:
+		var passive_id := str(raw_id)
+		if WITCH_PASSIVE_TREE.has(passive_id) and not valid_passives.has(passive_id):
+			valid_passives.append(passive_id)
+	return valid_passives
+
+
 func _clear_character_data() -> void:
 	_inventory_records.clear()
 	_equipment_records.clear()
 	witch_skill_ranks.clear()
 	witch_skill_loadout.clear()
+	witch_unlocked_passives.clear()
 	gold = 0
 	player_level = 1
 	experience = 0

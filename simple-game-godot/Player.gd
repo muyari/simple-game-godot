@@ -118,12 +118,14 @@ func _ready() -> void:
 					)
 				else:
 					push_error("Saved player position for level %d is invalid." % level_id)
+	health = get_max_health()
+	mana = get_max_mana()
 	if get_tree().has_meta("portal_player_vitals"):
 		var saved_vitals: Variant = get_tree().get_meta("portal_player_vitals")
 		get_tree().remove_meta("portal_player_vitals")
 		if typeof(saved_vitals) == TYPE_DICTIONARY:
-			health = clampi(int(saved_vitals.get("health", health)), 0, MAX_HEALTH)
-			mana = clampi(int(saved_vitals.get("mana", mana)), 0, MAX_MANA)
+			health = clampi(int(saved_vitals.get("health", health)), 0, get_max_health())
+			mana = clampi(int(saved_vitals.get("mana", mana)), 0, get_max_mana())
 		else:
 			push_error("Portal player vitals must be a Dictionary.")
 
@@ -328,18 +330,19 @@ func get_witch_skill_tooltip(skill_id: String) -> String:
 	if definition.is_empty():
 		return ""
 	var damage_bonus := get_weapon_damage_bonus()
+	var spell_mult := get_spell_damage_multiplier()
 	match skill_id:
 		"firebolt":
-			return "Firebolt\nDamage: %.1f per hit" % [1.2 + float(rank) * 0.8 + damage_bonus]
+			return "Firebolt\nDamage: %.1f per hit" % [(1.2 + float(rank) * 0.8 + damage_bonus) * spell_mult]
 		"frost_nova":
-			return "Frost Nova\nDamage: %.2f per enemy\nAlso stuns nearby enemies" % [1.5 + float(rank) * 0.75 + damage_bonus]
+			return "Frost Nova\nDamage: %.2f per enemy\nAlso stuns nearby enemies" % [(1.5 + float(rank) * 0.75 + damage_bonus) * spell_mult]
 		"summon_wisp":
 			return "Summon Wisp\nDamage: %.1f per bolt\nWisp duration: %.0f sec" % [
-				1.0 + float(rank),
+				(1.0 + float(rank)) * spell_mult,
 				9.0 + float(rank - 1) * 3.0
 			]
 		"soul_siphon":
-			return "Soul Siphon\nDamage: %.1f\nRestores health and mana" % [2.0 + float(rank) * 1.5 + damage_bonus]
+			return "Soul Siphon\nDamage: %.1f\nRestores health and mana" % [(2.0 + float(rank) * 1.5 + damage_bonus) * spell_mult]
 		"arcane_shield":
 			return "Arcane Shield\nNo direct damage\nReduces incoming damage by %d%% for %.1f sec" % [
 				roundi((0.5 + float(rank - 1) * 0.1) * 100.0),
@@ -367,7 +370,7 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 		return true
 
 	mana -= mana_cost
-	mana_changed.emit(mana, MAX_MANA)
+	mana_changed.emit(mana, get_max_mana())
 	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.12, 0.5)
 	witch_skill_cooldowns[skill_id] = cooldown
 	match skill_id:
@@ -387,7 +390,7 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 		_:
 			witch_skill_cooldowns.erase(skill_id)
 			mana += mana_cost
-			mana_changed.emit(mana, MAX_MANA)
+			mana_changed.emit(mana, get_max_mana())
 			return false
 	return true
 
@@ -395,7 +398,7 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 func _cast_witch_firebolt(rank: int) -> void:
 	var projectile: Fireball = FIREBALL_SCENE.instantiate()
 	projectile.direction = facing
-	projectile.direct_damage = 1.2 + float(rank) * 0.8 + get_weapon_damage_bonus()
+	projectile.direct_damage = (1.2 + float(rank) * 0.8 + get_weapon_damage_bonus()) * get_spell_damage_multiplier()
 	get_tree().current_scene.add_child(projectile)
 	projectile.global_position = global_position + facing * 20.0
 
@@ -408,7 +411,7 @@ func _cast_witch_frost_nova(rank: int) -> void:
 			continue
 		var enemy_node := enemy as Node2D
 		if global_position.distance_to(enemy_node.global_position) <= radius:
-			enemy.call("take_damage", 1.5 + float(rank) * 0.75 + get_weapon_damage_bonus())
+			enemy.call("take_damage", (1.5 + float(rank) * 0.75 + get_weapon_damage_bonus()) * get_spell_damage_multiplier())
 			if enemy.has_method("apply_stun"):
 				enemy.call("apply_stun", 0.55 + float(rank - 1) * 0.25)
 
@@ -419,7 +422,7 @@ func _cast_witch_summon_wisp(rank: int) -> void:
 			witch_familiar.duration_remaining,
 			9.0 + float(rank - 1) * 3.0
 		)
-		witch_familiar.damage = 1.0 + float(rank)
+		witch_familiar.damage = (1.0 + float(rank)) * get_spell_damage_multiplier()
 		return
 
 	witch_familiar = WITCH_FAMILIAR_SCENE.instantiate() as WitchFamiliar
@@ -428,7 +431,7 @@ func _cast_witch_summon_wisp(rank: int) -> void:
 		return
 	witch_familiar.owner_player = self
 	witch_familiar.duration = 9.0 + float(rank - 1) * 3.0
-	witch_familiar.damage = 1.0 + float(rank)
+	witch_familiar.damage = (1.0 + float(rank)) * get_spell_damage_multiplier()
 	get_tree().current_scene.add_child(witch_familiar)
 	witch_familiar.global_position = global_position + Vector2(32.0, -28.0)
 
@@ -437,11 +440,11 @@ func _cast_witch_soul_siphon(rank: int) -> void:
 	var target_enemy := _find_nearest_enemy(360.0)
 	if target_enemy == null:
 		return
-	target_enemy.call("take_damage", 2.0 + float(rank) * 1.5 + get_weapon_damage_bonus())
-	health = mini(health + 3 + rank * 2, MAX_HEALTH)
-	mana = mini(mana + 5 + rank * 3, MAX_MANA)
-	health_changed.emit(health, MAX_HEALTH)
-	mana_changed.emit(mana, MAX_MANA)
+	target_enemy.call("take_damage", (2.0 + float(rank) * 1.5 + get_weapon_damage_bonus()) * get_spell_damage_multiplier())
+	health = mini(health + 3 + rank * 2, get_max_health())
+	mana = mini(mana + 5 + rank * 3, get_max_mana())
+	health_changed.emit(health, get_max_health())
+	mana_changed.emit(mana, get_max_mana())
 
 
 func _cast_witch_curse(rank: int) -> void:
@@ -548,7 +551,7 @@ func _cast_projectile(is_ice: bool, mana_cost: int) -> void:
 
 	if mana_cost > 0:
 		mana -= mana_cost
-		mana_changed.emit(mana, MAX_MANA)
+		mana_changed.emit(mana, get_max_mana())
 	var fireball: Fireball = FIREBALL_SCENE.instantiate()
 	fireball.direction = facing
 	fireball.is_ice = is_ice
@@ -636,6 +639,52 @@ func equip_inventory_item(inventory_index: int) -> bool:
 	return true
 
 
+func get_max_health() -> int:
+	var total: int = MAX_HEALTH
+	if selected_character == "Witch":
+		var passive_stats := GameState.get_witch_passive_stat_totals()
+		total += int(passive_stats.get("max_health", 0))
+	return total
+
+
+func get_max_mana() -> int:
+	var total: int = MAX_MANA
+	if selected_character == "Witch":
+		var passive_stats := GameState.get_witch_passive_stat_totals()
+		total += int(passive_stats.get("max_mana", 0))
+	return total
+
+
+func get_evasion() -> float:
+	if selected_character != "Witch":
+		return 0.0
+	var passive_stats := GameState.get_witch_passive_stat_totals()
+	return clampf(float(passive_stats.get("evasion", 0.0)), 0.0, 0.75)
+
+
+func get_spell_damage_multiplier() -> float:
+	if selected_character != "Witch":
+		return 1.0
+	var passive_stats := GameState.get_witch_passive_stat_totals()
+	return maxf(1.0 + float(passive_stats.get("spell_damage_percent", 0.0)), 0.1)
+
+
+func get_passive_damage_reduction_percent() -> float:
+	if selected_character != "Witch":
+		return 0.0
+	var passive_stats := GameState.get_witch_passive_stat_totals()
+	return clampf(float(passive_stats.get("damage_reduction_percent", 0.0)), 0.0, 0.8)
+
+
+func refresh_passives_and_vitals() -> void:
+	var max_h := get_max_health()
+	var max_m := get_max_mana()
+	health = mini(health, max_h)
+	mana = mini(mana, max_m)
+	health_changed.emit(health, max_h)
+	mana_changed.emit(mana, max_m)
+
+
 func get_weapon_damage_bonus() -> int:
 	var bonus := 0
 	for slot in ["Weapon", "Ring 1", "Ring 2", "Amulet"]:
@@ -653,7 +702,7 @@ func get_damage_reduction() -> int:
 
 
 func _use_health_potion() -> void:
-	if health_potions <= 0 or health >= MAX_HEALTH or health_potion_time > 0.0:
+	if health_potions <= 0 or health >= get_max_health() or health_potion_time > 0.0:
 		return
 
 	health_potions -= 1
@@ -663,7 +712,7 @@ func _use_health_potion() -> void:
 
 
 func _use_mana_potion() -> void:
-	if mana_potions <= 0 or mana >= MAX_MANA or mana_potion_time > 0.0:
+	if mana_potions <= 0 or mana >= get_max_mana() or mana_potion_time > 0.0:
 		return
 
 	mana_potions -= 1
@@ -696,26 +745,26 @@ func _update_potion_refills(delta: float) -> void:
 
 func _update_potion_effects(delta: float) -> void:
 	if health_potion_time > 0.0:
-		health_heal_accumulator += float(MAX_HEALTH) / POTION_EFFECT_TIME * delta
+		health_heal_accumulator += float(get_max_health()) / POTION_EFFECT_TIME * delta
 		var health_to_restore := int(health_heal_accumulator)
 		health_heal_accumulator -= health_to_restore
-		health = mini(health + health_to_restore, MAX_HEALTH)
+		health = mini(health + health_to_restore, get_max_health())
 		health_potion_time = maxf(health_potion_time - delta, 0.0)
 		if health_potion_time == 0.0:
-			health = MAX_HEALTH
+			health = get_max_health()
 			health_heal_accumulator = 0.0
-		health_changed.emit(health, MAX_HEALTH)
+		health_changed.emit(health, get_max_health())
 
 	if mana_potion_time > 0.0:
-		mana_heal_accumulator += float(MAX_MANA) / POTION_EFFECT_TIME * delta
+		mana_heal_accumulator += float(get_max_mana()) / POTION_EFFECT_TIME * delta
 		var mana_to_restore := int(mana_heal_accumulator)
 		mana_heal_accumulator -= mana_to_restore
-		mana = mini(mana + mana_to_restore, MAX_MANA)
+		mana = mini(mana + mana_to_restore, get_max_mana())
 		mana_potion_time = maxf(mana_potion_time - delta, 0.0)
 		if mana_potion_time == 0.0:
-			mana = MAX_MANA
+			mana = get_max_mana()
 			mana_heal_accumulator = 0.0
-		mana_changed.emit(mana, MAX_MANA)
+		mana_changed.emit(mana, get_max_mana())
 
 
 func _emit_potion_counts() -> void:
@@ -785,7 +834,10 @@ func _damage_wolves_in_swing() -> void:
 
 
 func _get_primary_attack_damage() -> float:
-	return 1.0 + get_weapon_damage_bonus()
+	var base := 1.0 + float(get_weapon_damage_bonus())
+	if selected_character == "Witch":
+		base *= get_spell_damage_multiplier()
+	return base
 
 
 func _draw() -> void:
@@ -815,13 +867,21 @@ func take_damage(amount: int) -> void:
 	if health <= 0:
 		return
 
-	var reduced_damage := maxi(amount - get_damage_reduction(), 0)
+	var evasion_chance := get_evasion()
+	if evasion_chance > 0.0 and randf() < evasion_chance:
+		return
+
+	var flat_reduced := maxi(amount - get_damage_reduction(), 0)
+	var reduced_damage := flat_reduced
+	var passive_reduction_pct := get_passive_damage_reduction_percent()
+	if passive_reduction_pct > 0.0:
+		reduced_damage = roundi(float(reduced_damage) * (1.0 - passive_reduction_pct))
 	if arcane_shield_time_remaining > 0.0:
 		reduced_damage = roundi(float(reduced_damage) * (1.0 - arcane_shield_damage_reduction))
 	if reduced_damage > 0:
 		_cancel_town_portal_cast()
 	health = maxi(health - reduced_damage, 0)
-	health_changed.emit(health, MAX_HEALTH)
+	health_changed.emit(health, get_max_health())
 	if health == 0:
 		velocity = Vector2.ZERO
 		set_physics_process(false)
