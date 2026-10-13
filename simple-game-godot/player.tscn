@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dp3jfuvuykpb7"]
 
 [ext_resource type="Script" uid="uid://b8osi1eosh0mx" path="res://Player.gd" id="1_4flbx"]
-[ext_resource type="Texture2D" path="res://textures/warrior_sheet.svg" id="2_warrior"]
+[ext_resource type="Texture2D" path="res://textures/warrior_sprite_atlas.png" id="2_warrior"]
 [ext_resource type="Script" path="res://PortalCastEffect.gd" id="3_portal_cast"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
@@ -19,7 +19,7 @@ position_smoothing_speed = 6.0
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1892384711]
 texture = ExtResource("2_warrior")
 region_enabled = true
-region_rect = Rect2(0, 0, 64, 64)
+region_rect = Rect2(0, 0, 100, 100)
 
 [node name="PortalCastEffect" type="Node2D" parent="."]
 visible = false

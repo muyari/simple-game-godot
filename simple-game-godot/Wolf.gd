@@ -10,8 +10,13 @@ const ATTACK_DAMAGE = 20
 const WINDUP_TIME = 0.35
 const ATTACK_COOLDOWN = 0.9
 const SWIPE_VISIBLE_TIME = 0.18
-const FRAME_SIZE = 64
+const ATTACK_ANIMATION_DURATION = WINDUP_TIME + SWIPE_VISIBLE_TIME
+const FRAME_WIDTH = 150
+const FRAME_HEIGHT = 100
 const WALK_FRAME_DURATION = 0.15
+const IDLE_FRAME_DURATION = 0.42
+const MOVEMENT_FRAME_START = 2
+const ATTACK_FRAME_START = 8
 const MAX_HEALTH = 3.0
 
 enum State { CHASING, WINDING_UP, COOLDOWN }
@@ -36,10 +41,13 @@ var curse_time_remaining := 0.0
 var curse_damage_multiplier := 1.0
 var facing := Vector2.RIGHT
 var animation_time := 0.0
+var attack_animation_time_remaining := 0.0
+var sprite_base_position := Vector2.ZERO
 
 
 func _ready() -> void:
 	add_to_group("enemies")
+	sprite_base_position = sprite.position
 	health = max_health
 	health_bar.max_value = max_health
 	health_bar.value = health
@@ -60,6 +68,10 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	attack_animation_time_remaining = maxf(
+		attack_animation_time_remaining - delta,
+		0.0
+	)
 	if swipe_timer > 0.0:
 		swipe_timer -= delta
 		if swipe_timer <= 0.0:
@@ -76,6 +88,7 @@ func _physics_process(delta: float) -> void:
 			if to_target.length() <= ATTACK_RANGE:
 				state = State.WINDING_UP
 				state_timer = WINDUP_TIME
+				attack_animation_time_remaining = ATTACK_ANIMATION_DURATION
 				velocity = Vector2.ZERO
 			else:
 				facing = _cardinal_direction(to_target)
@@ -117,13 +130,33 @@ func _update_sprite(delta: float) -> void:
 	elif facing == Vector2.UP:
 		row = 3
 
-	var frame := 0
-	if state == State.CHASING and velocity.length_squared() > 0.0:
-		animation_time += delta
-		frame = 1 + (int(animation_time / WALK_FRAME_DURATION) % 3)
-	else:
-		animation_time = 0.0
-	sprite.region_rect = Rect2(frame * FRAME_SIZE, row * FRAME_SIZE, FRAME_SIZE, FRAME_SIZE)
+	var is_moving := velocity.length_squared() > 0.0 \
+			and attack_animation_time_remaining == 0.0
+	animation_time += delta
+	var frame := int(animation_time / IDLE_FRAME_DURATION) % 2
+	if attack_animation_time_remaining > 0.0:
+		var progress := 1.0 - (
+			attack_animation_time_remaining / ATTACK_ANIMATION_DURATION
+		)
+		var attack_frame_count := 2 if row == 1 or row == 2 else 4
+		frame = ATTACK_FRAME_START + mini(
+			int(progress * attack_frame_count),
+			attack_frame_count - 1
+		)
+	elif is_moving:
+		var movement_frame_count := 2 if row == 1 or row == 2 else 6
+		var movement_frame := int(animation_time / WALK_FRAME_DURATION)
+		movement_frame %= movement_frame_count
+		frame = MOVEMENT_FRAME_START + movement_frame
+	sprite.position = sprite_base_position
+	if is_moving:
+		sprite.position.y += sin(animation_time * TAU / (WALK_FRAME_DURATION * 2.0)) * 1.2
+	sprite.region_rect = Rect2(
+		frame * FRAME_WIDTH,
+		row * FRAME_HEIGHT,
+		FRAME_WIDTH,
+		FRAME_HEIGHT
+	)
 
 
 func take_damage(amount: float) -> void:

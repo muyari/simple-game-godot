@@ -6,7 +6,7 @@ signal experience_gained(amount: int)
 signal player_leveled_up(level: int)
 
 const SAVE_PATH = "user://character_save.json"
-const SAVE_VERSION = 5
+const SAVE_VERSION = 6
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
 const LEVEL_SCENES = {
@@ -104,6 +104,101 @@ const WITCH_SKILL_TREE = {
 	}
 }
 const WITCH_SKILL_SLOTS = ["Q", "W", "E", "R"]
+const WARRIOR_SKILL_ORDER: Array[String] = [
+	"heavy_strike",
+	"shield_bash",
+	"cleave",
+	"leap_slam",
+	"war_cry",
+	"iron_resolve"
+]
+const WARRIOR_SKILL_TREE := {
+	"heavy_strike": {
+		"name": "Heavy Strike",
+		"short_label": "HEAVY",
+		"icon_path": "res://textures/warrior_skills/heavy_strike.svg",
+		"branch": "Single Target",
+		"description": "Deliver a crushing blow to the foe in front of you. Each rank increases damage.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 1,
+		"prerequisites": [],
+		"mana_cost": 0,
+		"cooldown": 1.2,
+		"position": [1, 0]
+	},
+	"shield_bash": {
+		"name": "Shield Bash",
+		"short_label": "BASH",
+		"icon_path": "res://textures/warrior_skills/shield_bash.svg",
+		"branch": "Single Target",
+		"description": "Bash the foe ahead, dealing damage and briefly stunning it.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 3,
+		"prerequisites": ["heavy_strike"],
+		"mana_cost": 8,
+		"cooldown": 7.0,
+		"position": [1, 1]
+	},
+	"cleave": {
+		"name": "Cleave",
+		"short_label": "CLEAVE",
+		"icon_path": "res://textures/warrior_skills/cleave.svg",
+		"branch": "Area",
+		"description": "Sweep your weapon through nearby enemies. Each rank increases damage and reach.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 2,
+		"prerequisites": [],
+		"mana_cost": 10,
+		"cooldown": 5.0,
+		"position": [3, 0]
+	},
+	"leap_slam": {
+		"name": "Leap Slam",
+		"short_label": "LEAP",
+		"icon_path": "res://textures/warrior_skills/leap_slam.svg",
+		"branch": "Area",
+		"description": "Leap toward the nearest foe and slam the ground, damaging and stunning nearby enemies.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 5,
+		"prerequisites": ["cleave"],
+		"mana_cost": 16,
+		"cooldown": 10.0,
+		"position": [3, 1]
+	},
+	"war_cry": {
+		"name": "War Cry",
+		"short_label": "CRY",
+		"icon_path": "res://textures/warrior_skills/war_cry.svg",
+		"branch": "Support",
+		"description": "Roar with resolve, empowering your attacks and reducing incoming damage.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 2,
+		"prerequisites": [],
+		"mana_cost": 12,
+		"cooldown": 12.0,
+		"position": [4, 0]
+	},
+	"iron_resolve": {
+		"name": "Iron Resolve",
+		"short_label": "IRON",
+		"icon_path": "res://textures/warrior_skills/iron_resolve.svg",
+		"branch": "Support",
+		"description": "Brace yourself, gaining a stronger guard and restoring health over time.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 5,
+		"prerequisites": ["war_cry"],
+		"mana_cost": 18,
+		"cooldown": 18.0,
+		"position": [4, 1]
+	}
+}
+const WARRIOR_SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
 
 const WITCH_PASSIVE_ORDER: Array[String] = [
 	# Spire of Arcana (Elemental)
@@ -575,6 +670,8 @@ var skill_tree_points := 0
 var witch_skill_ranks: Dictionary = {}
 var witch_skill_loadout: Dictionary = {}
 var witch_unlocked_passives: Array[String] = []
+var warrior_skill_ranks: Dictionary = {}
+var warrior_skill_loadout: Dictionary = {}
 
 
 func _ready() -> void:
@@ -647,6 +744,81 @@ func get_witch_skill_definitions() -> Array[Dictionary]:
 		definition["id"] = skill_id
 		definitions.append(definition)
 	return definitions
+
+
+func get_warrior_skill_definitions() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	for skill_id in WARRIOR_SKILL_ORDER:
+		var definition: Dictionary = WARRIOR_SKILL_TREE[skill_id].duplicate(true)
+		definition["id"] = skill_id
+		definitions.append(definition)
+	return definitions
+
+
+func get_warrior_skill_definition(skill_id: String) -> Dictionary:
+	if not WARRIOR_SKILL_TREE.has(skill_id):
+		return {}
+	var definition: Dictionary = WARRIOR_SKILL_TREE[skill_id].duplicate(true)
+	definition["id"] = skill_id
+	return definition
+
+
+func get_warrior_skill_rank(skill_id: String) -> int:
+	return int(warrior_skill_ranks.get(skill_id, 0))
+
+
+func get_warrior_equipped_skill(slot: String) -> String:
+	return str(warrior_skill_loadout.get(slot, ""))
+
+
+func can_unlock_warrior_skill(skill_id: String) -> bool:
+	if _get_active_character_class() != "Warrior" or not WARRIOR_SKILL_TREE.has(skill_id):
+		return false
+
+	var skill: Dictionary = WARRIOR_SKILL_TREE[skill_id]
+	var current_rank := get_warrior_skill_rank(skill_id)
+	if player_level < int(skill["required_level"]) \
+			or current_rank >= int(skill["max_rank"]) \
+			or skill_tree_points < int(skill["point_cost"]):
+		return false
+	for prerequisite_id in skill["prerequisites"]:
+		if get_warrior_skill_rank(str(prerequisite_id)) <= 0:
+			return false
+	return true
+
+
+func unlock_or_upgrade_warrior_skill(skill_id: String) -> bool:
+	if not can_unlock_warrior_skill(skill_id):
+		return false
+
+	var previous_rank := get_warrior_skill_rank(skill_id)
+	var previous_points := skill_tree_points
+	warrior_skill_ranks[skill_id] = previous_rank + 1
+	skill_tree_points -= int(WARRIOR_SKILL_TREE[skill_id]["point_cost"])
+	if not save_character(get_inventory(), get_equipment()):
+		warrior_skill_ranks[skill_id] = previous_rank
+		skill_tree_points = previous_points
+		return false
+	_emit_progression_changed()
+	return true
+
+
+func assign_warrior_skill(skill_id: String, slot: String) -> bool:
+	if _get_active_character_class() != "Warrior" \
+			or slot not in WARRIOR_SKILL_SLOTS \
+			or get_warrior_skill_rank(skill_id) < 1:
+		return false
+
+	var previous_loadout := warrior_skill_loadout.duplicate()
+	for assigned_slot in warrior_skill_loadout.keys():
+		if warrior_skill_loadout[assigned_slot] == skill_id:
+			warrior_skill_loadout.erase(assigned_slot)
+	warrior_skill_loadout[slot] = skill_id
+	if not save_character(get_inventory(), get_equipment()):
+		warrior_skill_loadout = previous_loadout
+		return false
+	_emit_progression_changed()
+	return true
 
 
 func get_witch_skill_definition(skill_id: String) -> Dictionary:
@@ -1166,6 +1338,8 @@ func save_character(inventory: Array[ItemData], equipment: Dictionary) -> bool:
 		"skill_tree_points": skill_tree_points,
 		"witch_skill_ranks": witch_skill_ranks,
 		"witch_skill_loadout": witch_skill_loadout,
+		"warrior_skill_ranks": warrior_skill_ranks,
+		"warrior_skill_loadout": warrior_skill_loadout,
 		"witch_unlocked_passives": witch_unlocked_passives,
 		"inventory": inventory_records,
 		"equipment": equipment_records
@@ -1264,6 +1438,14 @@ func _load_character() -> void:
 		return
 	witch_skill_ranks = _validated_witch_skill_ranks(raw_witch_skill_ranks)
 	witch_skill_loadout = _validated_witch_skill_loadout(raw_witch_skill_loadout)
+	var raw_warrior_skill_ranks: Variant = save_data.get("warrior_skill_ranks", {})
+	var raw_warrior_skill_loadout: Variant = save_data.get("warrior_skill_loadout", {})
+	if typeof(raw_warrior_skill_ranks) != TYPE_DICTIONARY \
+			or typeof(raw_warrior_skill_loadout) != TYPE_DICTIONARY:
+		push_error("Character save Warrior skill data is invalid.")
+		return
+	warrior_skill_ranks = _validated_warrior_skill_ranks(raw_warrior_skill_ranks)
+	warrior_skill_loadout = _validated_warrior_skill_loadout(raw_warrior_skill_loadout)
 	var raw_witch_passives: Variant = save_data.get("witch_unlocked_passives", [])
 	witch_unlocked_passives = _validated_witch_passives(raw_witch_passives)
 
@@ -1423,15 +1605,51 @@ func _validated_witch_skill_loadout(raw_loadout: Dictionary) -> Dictionary:
 	return loadout
 
 
+func _validated_warrior_skill_ranks(raw_ranks: Dictionary) -> Dictionary:
+	var ranks: Dictionary = {}
+	for skill_id in raw_ranks:
+		var skill_key := str(skill_id)
+		if not WARRIOR_SKILL_TREE.has(skill_key):
+			continue
+		var raw_rank: Variant = raw_ranks[skill_id]
+		if typeof(raw_rank) not in [TYPE_INT, TYPE_FLOAT] \
+				or float(raw_rank) != float(int(raw_rank)):
+			continue
+		var rank := int(raw_rank)
+		if rank >= 1 and rank <= int(WARRIOR_SKILL_TREE[skill_key]["max_rank"]):
+			ranks[skill_key] = rank
+	return ranks
+
+
+func _validated_warrior_skill_loadout(raw_loadout: Dictionary) -> Dictionary:
+	var loadout: Dictionary = {}
+	for raw_slot in raw_loadout:
+		var slot := str(raw_slot)
+		var skill_id := str(raw_loadout[raw_slot])
+		if slot in WARRIOR_SKILL_SLOTS and warrior_skill_ranks.get(skill_id, 0) > 0:
+			loadout[slot] = skill_id
+	return loadout
+
+
 func _initialize_witch_skill_state() -> void:
 	if _get_active_character_class() != "Witch":
 		witch_skill_ranks.clear()
 		witch_skill_loadout.clear()
-		return
-	if get_witch_skill_rank("firebolt") < 1:
-		witch_skill_ranks["firebolt"] = 1
-	if witch_skill_loadout.is_empty():
-		witch_skill_loadout["Q"] = "firebolt"
+		witch_unlocked_passives.clear()
+	else:
+		if get_witch_skill_rank("firebolt") < 1:
+			witch_skill_ranks["firebolt"] = 1
+		if witch_skill_loadout.is_empty():
+			witch_skill_loadout["Q"] = "firebolt"
+
+	if _get_active_character_class() != "Warrior":
+		warrior_skill_ranks.clear()
+		warrior_skill_loadout.clear()
+	else:
+		if get_warrior_skill_rank("heavy_strike") < 1:
+			warrior_skill_ranks["heavy_strike"] = 1
+		if warrior_skill_loadout.is_empty():
+			warrior_skill_loadout["Q"] = "heavy_strike"
 
 
 func _validated_completed_levels(raw_levels: Variant) -> Array[int]:
@@ -1479,6 +1697,8 @@ func _clear_character_data() -> void:
 	witch_skill_ranks.clear()
 	witch_skill_loadout.clear()
 	witch_unlocked_passives.clear()
+	warrior_skill_ranks.clear()
+	warrior_skill_loadout.clear()
 	gold = 0
 	player_level = 1
 	experience = 0
