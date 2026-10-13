@@ -25,6 +25,7 @@ var experience_feedback_label: Label
 var experience_feedback_time := 0.0
 var witch_skill_tree: WitchSkillTree
 var warrior_skill_tree: WarriorSkillTree
+var warrior_passive_tree: WarriorPassiveTree
 var pause_menu: PauseMenu
 @onready var character_menu: Control = $CharacterMenu
 @onready var character_panel: PanelContainer = $CharacterMenu/Panel
@@ -156,6 +157,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_warrior_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
+	if warrior_passive_tree != null and warrior_passive_tree.visible:
+		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			_on_warrior_passive_tree_closed()
+		get_viewport().set_input_as_handled()
+		return
 
 	if event.keycode == KEY_ESCAPE:
 		if pause_menu.visible:
@@ -182,7 +188,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_open_witch_skill_tree("passives")
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_P and warrior_skill_tree != null:
-		_open_warrior_skill_tree()
+		_open_warrior_passive_tree()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_I:
 		if character_menu.visible and inventory_panel.visible:
@@ -282,17 +288,36 @@ func _build_warrior_skill_tree() -> void:
 	character_contents.add_child(skill_tree_button)
 	character_contents.move_child(skill_tree_button, close_button.get_index())
 
+	var passive_tree_button := Button.new()
+	passive_tree_button.text = "Warrior Passive Tree (P)"
+	passive_tree_button.custom_minimum_size.y = 42.0
+	passive_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	passive_tree_button.add_theme_font_size_override("font_size", 18)
+	passive_tree_button.pressed.connect(_open_warrior_passive_tree)
+	character_contents.add_child(passive_tree_button)
+	character_contents.move_child(passive_tree_button, close_button.get_index())
+
 	warrior_skill_tree = WarriorSkillTree.new()
 	add_child(warrior_skill_tree)
 	warrior_skill_tree.hide()
 	warrior_skill_tree.closed.connect(_on_warrior_skill_tree_closed)
 	warrior_skill_tree.loadout_changed.connect(_refresh_warrior_skill_slots)
+	warrior_skill_tree.passive_tree_requested.connect(_open_warrior_passive_tree)
+
+	warrior_passive_tree = WarriorPassiveTree.new()
+	add_child(warrior_passive_tree)
+	warrior_passive_tree.hide()
+	warrior_passive_tree.closed.connect(_on_warrior_passive_tree_closed)
+	warrior_passive_tree.passives_changed.connect(_on_warrior_passives_changed)
+	warrior_passive_tree.skill_tree_requested.connect(_open_warrior_skill_tree)
 	_refresh_warrior_skill_slots()
 
 
 func _open_warrior_skill_tree() -> void:
 	if warrior_skill_tree == null:
 		return
+	if warrior_passive_tree != null:
+		warrior_passive_tree.hide()
 	var player: Player = get_node("../Player")
 	player.set_physics_process(false)
 	player.set_process_unhandled_input(false)
@@ -305,6 +330,34 @@ func _on_warrior_skill_tree_closed() -> void:
 	warrior_skill_tree.hide()
 	character_menu.hide()
 	_set_player_menu_paused(false)
+
+
+func _open_warrior_passive_tree() -> void:
+	if warrior_passive_tree == null:
+		return
+	if warrior_skill_tree != null:
+		warrior_skill_tree.hide()
+	var player: Player = get_node("../Player")
+	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
+	warrior_passive_tree.open_tree("passives")
+
+
+func _on_warrior_passive_tree_closed() -> void:
+	if warrior_passive_tree == null:
+		return
+	warrior_passive_tree.hide()
+	character_menu.hide()
+	_set_player_menu_paused(false)
+	_on_warrior_passives_changed()
+
+
+func _on_warrior_passives_changed() -> void:
+	var player: Player = get_node_or_null("../Player")
+	if player != null:
+		player.refresh_passives_and_vitals()
+		_on_equipment_changed(player.equipment)
+	_refresh_warrior_skill_slots()
 
 
 func _refresh_warrior_skill_slots() -> void:

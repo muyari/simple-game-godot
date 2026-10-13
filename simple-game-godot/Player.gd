@@ -1062,6 +1062,9 @@ func get_max_health() -> int:
 	if selected_character == "Witch":
 		var passive_stats := GameState.get_witch_passive_stat_totals()
 		total += int(passive_stats.get("max_health", 0))
+	elif selected_character == "Warrior":
+		var passive_stats := GameState.get_warrior_passive_stat_totals()
+		total += int(passive_stats.get("max_health", 0))
 	return total
 
 
@@ -1069,6 +1072,9 @@ func get_max_mana() -> int:
 	var total: int = MAX_MANA
 	if selected_character == "Witch":
 		var passive_stats := GameState.get_witch_passive_stat_totals()
+		total += int(passive_stats.get("max_mana", 0))
+	elif selected_character == "Warrior":
+		var passive_stats := GameState.get_warrior_passive_stat_totals()
 		total += int(passive_stats.get("max_mana", 0))
 	return total
 
@@ -1088,9 +1094,13 @@ func get_spell_damage_multiplier() -> float:
 
 
 func get_passive_damage_reduction_percent() -> float:
-	if selected_character != "Witch":
+	var passive_stats: Dictionary
+	if selected_character == "Witch":
+		passive_stats = GameState.get_witch_passive_stat_totals()
+	elif selected_character == "Warrior":
+		passive_stats = GameState.get_warrior_passive_stat_totals()
+	else:
 		return 0.0
-	var passive_stats := GameState.get_witch_passive_stat_totals()
 	return clampf(float(passive_stats.get("damage_reduction_percent", 0.0)), 0.0, 0.8)
 
 
@@ -1108,6 +1118,8 @@ func get_weapon_damage_bonus() -> int:
 	for slot in ["Weapon", "Ring 1", "Ring 2", "Amulet"]:
 		if equipment.has(slot):
 			bonus += (equipment[slot] as ItemData).damage_bonus
+	if selected_character == "Warrior":
+		bonus += int(GameState.get_warrior_passive_stat_totals().get("weapon_damage_bonus", 0))
 	return bonus
 
 
@@ -1116,6 +1128,8 @@ func get_damage_reduction() -> int:
 	for slot in ["Helm", "Chest", "Legs", "Gloves", "Boots"]:
 		if equipment.has(slot):
 			reduction += (equipment[slot] as ItemData).damage_reduction
+	if selected_character == "Warrior":
+		reduction += int(GameState.get_warrior_passive_stat_totals().get("armor", 0))
 	return reduction
 
 

@@ -6,7 +6,7 @@ signal experience_gained(amount: int)
 signal player_leveled_up(level: int)
 
 const SAVE_PATH = "user://character_save.json"
-const SAVE_VERSION = 6
+const SAVE_VERSION = 7
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
 const LEVEL_SCENES = {
@@ -199,6 +199,105 @@ const WARRIOR_SKILL_TREE := {
 	}
 }
 const WARRIOR_SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
+
+const WARRIOR_PASSIVE_ORDER: Array[String] = [
+	"iron_vitality", "reinforced_armor", "steadfast_guard", "unyielding", "colossus",
+	"battle_training", "enduring_stamina", "heavy_hands", "combat_veteran", "warbringer",
+	"precise_strikes", "weapon_mastery", "savage_force", "executioner", "warlord"
+]
+
+const WARRIOR_PASSIVE_TREE: Dictionary = {
+	"iron_vitality": {
+		"name": "Iron Vitality", "branch": "Tank",
+		"description": "Gain +12 maximum health.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"max_health": 12}, "x": 0, "y": 0
+	},
+	"reinforced_armor": {
+		"name": "Reinforced Armor", "branch": "Tank",
+		"description": "Gain +1 flat damage reduction from armor.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["iron_vitality"],
+		"stats": {"armor": 1}, "x": 0, "y": 1
+	},
+	"steadfast_guard": {
+		"name": "Steadfast Guard", "branch": "Tank",
+		"description": "Reduce incoming damage by 2%.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["reinforced_armor"],
+		"stats": {"damage_reduction_percent": 0.02}, "x": 0, "y": 2
+	},
+	"unyielding": {
+		"name": "Unyielding", "branch": "Tank",
+		"description": "Gain +20 maximum health.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["steadfast_guard"],
+		"stats": {"max_health": 20}, "x": 0, "y": 3
+	},
+	"colossus": {
+		"name": "Colossus", "branch": "Tank",
+		"description": "Gain +25 maximum health and 3% damage reduction.",
+		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["unyielding"],
+		"stats": {"max_health": 25, "damage_reduction_percent": 0.03}, "x": 0, "y": 4
+	},
+	"battle_training": {
+		"name": "Battle Training", "branch": "Bruiser",
+		"description": "Gain +1 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"weapon_damage_bonus": 1}, "x": 2, "y": 0
+	},
+	"enduring_stamina": {
+		"name": "Enduring Stamina", "branch": "Bruiser",
+		"description": "Gain +10 maximum mana for Warrior skills.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["battle_training"],
+		"stats": {"max_mana": 10}, "x": 2, "y": 1
+	},
+	"heavy_hands": {
+		"name": "Heavy Hands", "branch": "Bruiser",
+		"description": "Gain +2 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["enduring_stamina"],
+		"stats": {"weapon_damage_bonus": 2}, "x": 2, "y": 2
+	},
+	"combat_veteran": {
+		"name": "Combat Veteran", "branch": "Bruiser",
+		"description": "Gain +15 maximum health and +5 maximum mana.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["heavy_hands"],
+		"stats": {"max_health": 15, "max_mana": 5}, "x": 2, "y": 3
+	},
+	"warbringer": {
+		"name": "Warbringer", "branch": "Bruiser",
+		"description": "Gain +3 weapon damage.",
+		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["combat_veteran"],
+		"stats": {"weapon_damage_bonus": 3}, "x": 2, "y": 4
+	},
+	"precise_strikes": {
+		"name": "Precise Strikes", "branch": "Slayer",
+		"description": "Gain +2 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"weapon_damage_bonus": 2}, "x": 4, "y": 0
+	},
+	"weapon_mastery": {
+		"name": "Weapon Mastery", "branch": "Slayer",
+		"description": "Gain +2 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["precise_strikes"],
+		"stats": {"weapon_damage_bonus": 2}, "x": 4, "y": 1
+	},
+	"savage_force": {
+		"name": "Savage Force", "branch": "Slayer",
+		"description": "Gain +20 maximum health and +1 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["weapon_mastery"],
+		"stats": {"max_health": 20, "weapon_damage_bonus": 1}, "x": 4, "y": 2
+	},
+	"executioner": {
+		"name": "Executioner", "branch": "Slayer",
+		"description": "Gain +3 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["savage_force"],
+		"stats": {"weapon_damage_bonus": 3}, "x": 4, "y": 3
+	},
+	"warlord": {
+		"name": "Warlord", "branch": "Slayer",
+		"description": "Gain +4 weapon damage and +10 maximum health.",
+		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["executioner"],
+		"stats": {"weapon_damage_bonus": 4, "max_health": 10}, "x": 4, "y": 4
+	}
+}
 
 const WITCH_PASSIVE_ORDER: Array[String] = [
 	# Spire of Arcana (Elemental)
@@ -672,6 +771,7 @@ var witch_skill_loadout: Dictionary = {}
 var witch_unlocked_passives: Array[String] = []
 var warrior_skill_ranks: Dictionary = {}
 var warrior_skill_loadout: Dictionary = {}
+var warrior_unlocked_passives: Array[String] = []
 
 
 func _ready() -> void:
@@ -964,6 +1064,88 @@ func get_witch_passive_stat_totals() -> Dictionary:
 		var stats: Dictionary = node.get("stats", {})
 		for stat_name in stats:
 			if stat_name == "max_health" or stat_name == "max_mana":
+				totals[stat_name] = int(totals.get(stat_name, 0)) + int(stats[stat_name])
+			else:
+				totals[stat_name] = float(totals.get(stat_name, 0.0)) + float(stats[stat_name])
+	return totals
+
+
+func get_warrior_passive_definitions() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	for passive_id in WARRIOR_PASSIVE_ORDER:
+		var definition: Dictionary = WARRIOR_PASSIVE_TREE[passive_id].duplicate(true)
+		definition["id"] = passive_id
+		definitions.append(definition)
+	return definitions
+
+
+func get_warrior_passive_definition(passive_id: String) -> Dictionary:
+	if not WARRIOR_PASSIVE_TREE.has(passive_id):
+		return {}
+	var definition: Dictionary = WARRIOR_PASSIVE_TREE[passive_id].duplicate(true)
+	definition["id"] = passive_id
+	return definition
+
+
+func is_warrior_passive_unlocked(passive_id: String) -> bool:
+	return warrior_unlocked_passives.has(passive_id)
+
+
+func can_unlock_warrior_passive(passive_id: String) -> bool:
+	if _get_active_character_class() != "Warrior" or not WARRIOR_PASSIVE_TREE.has(passive_id):
+		return false
+	if is_warrior_passive_unlocked(passive_id):
+		return false
+
+	var node: Dictionary = WARRIOR_PASSIVE_TREE[passive_id]
+	if player_level < int(node.get("required_level", 1)):
+		return false
+	if passive_tree_points < int(node.get("point_cost", 1)):
+		return false
+
+	for prerequisite_id in node.get("prerequisites", []):
+		if not is_warrior_passive_unlocked(str(prerequisite_id)):
+			return false
+	return true
+
+
+func unlock_warrior_passive(passive_id: String) -> bool:
+	if not can_unlock_warrior_passive(passive_id):
+		return false
+
+	var node: Dictionary = WARRIOR_PASSIVE_TREE[passive_id]
+	var cost := int(node.get("point_cost", 1))
+	var previous_passives := warrior_unlocked_passives.duplicate()
+	var previous_points := passive_tree_points
+	warrior_unlocked_passives.append(passive_id)
+	passive_tree_points -= cost
+
+	if not save_character(get_inventory(), get_equipment()):
+		warrior_unlocked_passives = previous_passives
+		passive_tree_points = previous_points
+		return false
+
+	_emit_progression_changed()
+	return true
+
+
+func get_warrior_passive_stat_totals() -> Dictionary:
+	var totals := {
+		"max_health": 0,
+		"max_mana": 0,
+		"armor": 0,
+		"weapon_damage_bonus": 0,
+		"damage_reduction_percent": 0.0
+	}
+	if _get_active_character_class() != "Warrior":
+		return totals
+
+	for passive_id in warrior_unlocked_passives:
+		if not WARRIOR_PASSIVE_TREE.has(passive_id):
+			continue
+		var stats: Dictionary = WARRIOR_PASSIVE_TREE[passive_id].get("stats", {})
+		for stat_name in stats:
+			if typeof(totals.get(stat_name, 0)) == TYPE_INT:
 				totals[stat_name] = int(totals.get(stat_name, 0)) + int(stats[stat_name])
 			else:
 				totals[stat_name] = float(totals.get(stat_name, 0.0)) + float(stats[stat_name])
@@ -1341,6 +1523,7 @@ func save_character(inventory: Array[ItemData], equipment: Dictionary) -> bool:
 		"warrior_skill_ranks": warrior_skill_ranks,
 		"warrior_skill_loadout": warrior_skill_loadout,
 		"witch_unlocked_passives": witch_unlocked_passives,
+		"warrior_unlocked_passives": warrior_unlocked_passives,
 		"inventory": inventory_records,
 		"equipment": equipment_records
 	}
@@ -1448,6 +1631,8 @@ func _load_character() -> void:
 	warrior_skill_loadout = _validated_warrior_skill_loadout(raw_warrior_skill_loadout)
 	var raw_witch_passives: Variant = save_data.get("witch_unlocked_passives", [])
 	witch_unlocked_passives = _validated_witch_passives(raw_witch_passives)
+	var raw_warrior_passives: Variant = save_data.get("warrior_unlocked_passives", [])
+	warrior_unlocked_passives = _validated_warrior_passives(raw_warrior_passives)
 
 	var raw_inventory: Variant = save_data.get("inventory", [])
 	var raw_equipment: Variant = save_data.get("equipment", {})
@@ -1691,12 +1876,24 @@ func _validated_witch_passives(raw_passives: Variant) -> Array[String]:
 	return valid_passives
 
 
+func _validated_warrior_passives(raw_passives: Variant) -> Array[String]:
+	var valid_passives: Array[String] = []
+	if typeof(raw_passives) != TYPE_ARRAY:
+		return valid_passives
+	for raw_id in raw_passives:
+		var passive_id := str(raw_id)
+		if WARRIOR_PASSIVE_TREE.has(passive_id) and not valid_passives.has(passive_id):
+			valid_passives.append(passive_id)
+	return valid_passives
+
+
 func _clear_character_data() -> void:
 	_inventory_records.clear()
 	_equipment_records.clear()
 	witch_skill_ranks.clear()
 	witch_skill_loadout.clear()
 	witch_unlocked_passives.clear()
+	warrior_unlocked_passives.clear()
 	warrior_skill_ranks.clear()
 	warrior_skill_loadout.clear()
 	gold = 0

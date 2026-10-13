@@ -8,7 +8,7 @@ signal passives_changed
 const BRANCHES_SKILLS = ["All", "Elemental", "Summoner", "Support"]
 const SKILL_SLOTS = ["Q", "W", "E", "R"]
 
-const BRANCHES_PASSIVES = [
+const BRANCHES_PASSIVES: Array[String] = [
 	"All",
 	"Spire of Arcana",
 	"Shadow & Siphon",
@@ -450,7 +450,7 @@ func _build_passives_tab(parent: Control) -> void:
 	var branch_row := HBoxContainer.new()
 	branch_row.add_theme_constant_override("separation", 6)
 	passives_container.add_child(branch_row)
-	for branch in BRANCHES_PASSIVES:
+	for branch in _get_passive_branches():
 		var branch_btn := Button.new()
 		branch_btn.text = branch
 		branch_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -466,10 +466,14 @@ func _build_passives_tab(parent: Control) -> void:
 	passive_scroll_container.custom_minimum_size.y = 260.0
 	passives_container.add_child(passive_scroll_container)
 
+	var max_row := 0
+	for passive_id in _get_passive_order():
+		var definition := _get_passive_definition(passive_id)
+		max_row = maxi(max_row, int(definition.get("y", 0)))
 	node_container = Control.new()
 	node_container.custom_minimum_size = Vector2(
 		PADDING_X * 2.0 + GRID_CELL_W * 5.0,
-		PADDING_Y * 2.0 + GRID_CELL_H * 15.0
+		PADDING_Y * 2.0 + GRID_CELL_H * (max_row + 1)
 	)
 	node_container.draw.connect(_on_node_container_draw)
 	passive_scroll_container.add_child(node_container)
@@ -509,8 +513,43 @@ func _build_passives_tab(parent: Control) -> void:
 	passives_container.add_child(passive_status_label)
 
 
+func _get_passive_order() -> Array[String]:
+	return GameState.WITCH_PASSIVE_ORDER
+
+
+func _get_passive_branches() -> Array[String]:
+	return BRANCHES_PASSIVES
+
+
+func _get_passive_definition(passive_id: String) -> Dictionary:
+	return GameState.get_witch_passive_definition(passive_id)
+
+
+func _get_passive_stat_totals() -> Dictionary:
+	return GameState.get_witch_passive_stat_totals()
+
+
+func _is_passive_unlocked(passive_id: String) -> bool:
+	return GameState.is_witch_passive_unlocked(passive_id)
+
+
+func _can_unlock_passive(passive_id: String) -> bool:
+	return GameState.can_unlock_witch_passive(passive_id)
+
+
+func _unlock_passive(passive_id: String) -> bool:
+	return GameState.unlock_witch_passive(passive_id)
+
+
+func _get_points_text() -> String:
+	return "Skill Points: %d   |   Passive Points: %d" % [
+		GameState.skill_tree_points,
+		GameState.passive_tree_points
+	]
+
+
 func _get_node_center(passive_id: String) -> Vector2:
-	var def := GameState.get_witch_passive_definition(passive_id)
+	var def := _get_passive_definition(passive_id)
 	if def.is_empty():
 		return Vector2.ZERO
 	var gx := float(def.get("x", 0))
@@ -522,8 +561,8 @@ func _get_node_center(passive_id: String) -> Vector2:
 
 
 func _build_passive_nodes() -> void:
-	for passive_id in GameState.WITCH_PASSIVE_ORDER:
-		var def: Dictionary = GameState.get_witch_passive_definition(passive_id)
+	for passive_id in _get_passive_order():
+		var def := _get_passive_definition(passive_id)
 		var is_super := bool(def.get("is_super", false))
 		var center := _get_node_center(passive_id)
 		var node_size := SUPER_NODE_SIZE if is_super else STANDARD_NODE_SIZE
@@ -540,15 +579,15 @@ func _build_passive_nodes() -> void:
 
 
 func _on_node_container_draw() -> void:
-	for passive_id in GameState.WITCH_PASSIVE_ORDER:
-		var def: Dictionary = GameState.get_witch_passive_definition(passive_id)
+	for passive_id in _get_passive_order():
+		var def := _get_passive_definition(passive_id)
 		var p_center := _get_node_center(passive_id)
-		var is_unlocked: bool = GameState.is_witch_passive_unlocked(passive_id)
+		var is_unlocked := _is_passive_unlocked(passive_id)
 		var prereqs: Array = def.get("prerequisites", [])
 
 		for prereq_id in prereqs:
 			var req_center := _get_node_center(str(prereq_id))
-			var prereq_unlocked: bool = GameState.is_witch_passive_unlocked(str(prereq_id))
+			var prereq_unlocked := _is_passive_unlocked(str(prereq_id))
 			var line_color := Color("#73f4e1") if (is_unlocked and prereq_unlocked) else Color(0.24, 0.32, 0.38, 0.7)
 			var line_width := 4.0 if (is_unlocked and prereq_unlocked) else 2.0
 			node_container.draw_line(req_center, p_center, line_color, line_width, true)
@@ -557,8 +596,8 @@ func _on_node_container_draw() -> void:
 func _select_passive_branch(branch: String) -> void:
 	selected_passive_branch = branch
 	if branch != "All":
-		for passive_id in GameState.WITCH_PASSIVE_ORDER:
-			var def: Dictionary = GameState.get_witch_passive_definition(passive_id)
+		for passive_id in _get_passive_order():
+			var def := _get_passive_definition(passive_id)
 			if def.get("branch", "") == branch:
 				selected_passive_id = passive_id
 				break
@@ -574,15 +613,15 @@ func _refresh_passives() -> void:
 	if not is_inside_tree() or node_container == null:
 		return
 
-	for b_name in BRANCHES_PASSIVES:
+	for b_name in _get_passive_branches():
 		var b_btn: Button = passive_branch_buttons[b_name]
 		b_btn.disabled = b_name == selected_passive_branch
 
-	for passive_id in GameState.WITCH_PASSIVE_ORDER:
-		var def: Dictionary = GameState.get_witch_passive_definition(passive_id)
+	for passive_id in _get_passive_order():
+		var def := _get_passive_definition(passive_id)
 		var is_super := bool(def.get("is_super", false))
-		var is_unlocked: bool = GameState.is_witch_passive_unlocked(passive_id)
-		var can_unlock: bool = GameState.can_unlock_witch_passive(passive_id)
+		var is_unlocked := _is_passive_unlocked(passive_id)
+		var can_unlock := _can_unlock_passive(passive_id)
 		var node_btn: Button = passive_node_buttons[passive_id]
 
 		var matches_branch: bool = (selected_passive_branch == "All" or str(def.get("branch", "")) == selected_passive_branch)
@@ -624,7 +663,7 @@ func _refresh_passives() -> void:
 
 
 func _refresh_passive_summary() -> void:
-	var totals := GameState.get_witch_passive_stat_totals()
+	var totals := _get_passive_stat_totals()
 	var spell_pct := roundi(float(totals.get("spell_damage_percent", 0.0)) * 100.0)
 	var evasion_pct := roundi(float(totals.get("evasion", 0.0)) * 100.0)
 	var red_pct := roundi(float(totals.get("damage_reduction_percent", 0.0)) * 100.0)
@@ -641,28 +680,29 @@ func _refresh_passive_summary() -> void:
 
 
 func _refresh_passive_details() -> void:
-	var def: Dictionary = GameState.get_witch_passive_definition(selected_passive_id)
+	var def := _get_passive_definition(selected_passive_id)
 	if def.is_empty():
 		passive_details_label.text = "Select a passive node to inspect it."
 		unlock_passive_button.disabled = true
 		return
 
-	var is_unlocked: bool = GameState.is_witch_passive_unlocked(selected_passive_id)
-	var can_unlock: bool = GameState.can_unlock_witch_passive(selected_passive_id)
+	var is_unlocked := _is_passive_unlocked(selected_passive_id)
+	var can_unlock := _can_unlock_passive(selected_passive_id)
 	var is_super := bool(def.get("is_super", false))
 
 	var prereq_names: Array[String] = []
 	for p_id in def.get("prerequisites", []):
-		var p_def: Dictionary = GameState.get_witch_passive_definition(str(p_id))
+		var p_def := _get_passive_definition(str(p_id))
 		prereq_names.append(str(p_def.get("name", p_id)))
 	var prereqs_text := ", ".join(prereq_names) if not prereq_names.is_empty() else "None"
 
 	var type_label := "SUPER PASSIVE" if is_super else "PASSIVE"
-	passive_details_label.text = "[%s] %s  |  %s\n%s\nCost: 1 Passive Point  |  Requires Level: %d  |  Prerequisites: %s" % [
+	passive_details_label.text = "[%s] %s  |  %s\n%s\nCost: %d Passive Point(s)  |  Requires Level: %d  |  Prerequisites: %s" % [
 		type_label,
 		def.get("name", ""),
 		def.get("branch", ""),
 		def.get("description", ""),
+		int(def.get("point_cost", 1)),
 		def.get("required_level", 1),
 		prereqs_text
 	]
@@ -671,7 +711,7 @@ func _refresh_passive_details() -> void:
 		unlock_passive_button.text = "Allocated"
 		unlock_passive_button.disabled = true
 	elif can_unlock:
-		unlock_passive_button.text = "Allocate Passive (1 Point)"
+		unlock_passive_button.text = "Allocate Passive (%d Point(s))" % int(def.get("point_cost", 1))
 		unlock_passive_button.disabled = false
 	else:
 		unlock_passive_button.text = "Locked (Requires Level, Prerequisites, & 1 Point)"
@@ -679,8 +719,8 @@ func _refresh_passive_details() -> void:
 
 
 func _unlock_selected_passive() -> void:
-	if GameState.unlock_witch_passive(selected_passive_id):
-		var def: Dictionary = GameState.get_witch_passive_definition(selected_passive_id)
+	if _unlock_passive(selected_passive_id):
+		var def := _get_passive_definition(selected_passive_id)
 		passive_status_label.text = "%s allocated!" % def.get("name", "Passive")
 		passives_changed.emit()
 	else:
@@ -694,10 +734,7 @@ func _unlock_selected_passive() -> void:
 func _refresh() -> void:
 	if not is_inside_tree() or points_label == null:
 		return
-	points_label.text = "Skill Points: %d   |   Passive Points: %d" % [
-		GameState.skill_tree_points,
-		GameState.passive_tree_points
-	]
+	points_label.text = _get_points_text()
 	if active_tab == "skills":
 		_refresh_skills()
 	else:

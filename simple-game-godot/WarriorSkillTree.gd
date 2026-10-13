@@ -3,6 +3,7 @@ class_name WarriorSkillTree
 
 signal closed
 signal loadout_changed
+signal passive_tree_requested
 
 const BRANCHES: Array[String] = ["All", "Single Target", "Area", "Support"]
 const SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
@@ -28,6 +29,7 @@ var status_label: Label
 var purchase_button: Button
 var slot_picker: OptionButton
 var assign_button: Button
+var passive_tree_button: Button
 
 
 func _ready() -> void:
@@ -81,6 +83,12 @@ func _build_ui() -> void:
 	active_tab.disabled = true
 	_style_tab_button(active_tab, true)
 	header.add_child(active_tab)
+
+	passive_tree_button = Button.new()
+	passive_tree_button.text = "Passive Tree"
+	passive_tree_button.custom_minimum_size = Vector2(130.0, 36.0)
+	passive_tree_button.pressed.connect(func(): passive_tree_requested.emit())
+	header.add_child(passive_tree_button)
 
 	var title := Label.new()
 	title.text = "Warrior"
