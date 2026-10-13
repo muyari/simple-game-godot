@@ -1,4 +1,7 @@
 extends Control
+class_name SkillSlot
+
+signal skill_activated(slot: String)
 
 @export var key_label := "Q"
 @export var skill_label := ""
@@ -10,11 +13,19 @@ const FIREBOLT_ICON = preload("res://textures/skills/firebolt.svg")
 
 
 func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	if key_label == "Q" and skill_icon == null:
 		skill_icon = FIREBOLT_ICON
 	if key_label == "Q" and skill_tooltip.is_empty():
 		skill_tooltip = "Fireball\nDamage: 50% of target maximum health"
 	tooltip_text = skill_tooltip
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed:
+		skill_activated.emit(key_label)
+		accept_event()
 
 
 func _draw() -> void:

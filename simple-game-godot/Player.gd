@@ -18,8 +18,11 @@ const MAX_INVENTORY_SIZE = 25
 const ACCELERATION = 1200.0
 const DECELERATION = 1600.0
 const MAX_HEALTH = 100
-const FRAME_SIZE = 64
-const WALK_FRAME_DURATION = 0.12
+const WARRIOR_FRAME_SIZE = 100
+const WARRIOR_WALK_FRAME_DURATION = 0.16
+const WITCH_FRAME_SIZE = 100
+const WITCH_WALK_FRAME_DURATION = 0.16
+const WITCH_ATTACK_DURATION = 0.48
 const ATTACK_DURATION = 0.3
 const ATTACK_ARC = 1.35
 const SWORD_REACH = 64.0
@@ -36,8 +39,8 @@ const POTION_EFFECT_TIME = 3.0
 const TOWN_PORTAL_CAST_DURATION = 3.0
 const FIREBALL_SCENE = preload("res://fireball.tscn")
 const WITCH_FAMILIAR_SCENE = preload("res://witch_familiar.tscn")
-const WARRIOR_SHEET = preload("res://textures/warrior_sheet.svg")
-const WITCH_SHEET = preload("res://textures/witch_sheet.svg")
+const WARRIOR_SHEET = preload("res://textures/warrior_sprite_atlas.png")
+const WITCH_SHEET = preload("res://textures/witch_sprite_atlas.png")
 const PORTAL_SCENE = preload("res://portal.tscn")
 const TOWN_SCENE_PATH = "res://town.tscn"
 const TOWN_ARRIVAL_POSITION = Vector2(576, 350)
@@ -60,6 +63,8 @@ var health_heal_accumulator := 0.0
 var mana_heal_accumulator := 0.0
 var potion_ui_timer := 0.0
 var facing := Vector2.DOWN
+var sprite_base_scale := Vector2.ONE
+var witch_attack_time_remaining := 0.0
 var chill_time_remaining := 0.0
 var chill_speed_factor := 1.0
 var knockback_velocity := Vector2.ZERO
@@ -67,6 +72,15 @@ var arcane_shield_time_remaining := 0.0
 var arcane_shield_damage_reduction := 0.0
 var frost_nova_visual_time_remaining := 0.0
 var witch_skill_cooldowns: Dictionary = {}
+var warrior_skill_cooldowns: Dictionary = {}
+var war_cry_time_remaining := 0.0
+var iron_resolve_time_remaining := 0.0
+var iron_resolve_heal_accumulator := 0.0
+var warrior_aoe_visual_time_remaining := 0.0
+var warrior_aoe_visual_radius := 0.0
+var warrior_skill_animation_id := ""
+var warrior_skill_animation_time_remaining := 0.0
+var warrior_skill_animation_tween: Tween
 var witch_familiar: WitchFamiliar
 var selected_character := "Warrior"
 var click_destination := Vector2.ZERO
@@ -91,6 +105,8 @@ var is_casting_town_portal := false
 func _ready() -> void:
 	selected_character = str(get_tree().get_meta("selected_character", "Warrior"))
 	sprite.texture = WITCH_SHEET if selected_character == "Witch" else WARRIOR_SHEET
+	sprite_base_scale = Vector2(0.64, 0.64)
+	sprite.scale = sprite_base_scale
 	sword.hide()
 	wand.hide()
 	inventory = GameState.get_inventory()
@@ -134,13 +150,39 @@ func _physics_process(delta: float) -> void:
 	_update_potion_refills(delta)
 	_update_potion_effects(delta)
 	iceball_cooldown_remaining = maxf(iceball_cooldown_remaining - delta, 0.0)
+	witch_attack_time_remaining = maxf(witch_attack_time_remaining - delta, 0.0)
 	chill_time_remaining = maxf(chill_time_remaining - delta, 0.0)
 	var shield_was_active := arcane_shield_time_remaining > 0.0
 	arcane_shield_time_remaining = maxf(arcane_shield_time_remaining - delta, 0.0)
 	frost_nova_visual_time_remaining = maxf(frost_nova_visual_time_remaining - delta, 0.0)
-	if shield_was_active or frost_nova_visual_time_remaining > 0.0:
+	var war_cry_was_active := war_cry_time_remaining > 0.0
+	war_cry_time_remaining = maxf(war_cry_time_remaining - delta, 0.0)
+	var iron_resolve_was_active := iron_resolve_time_remaining > 0.0
+	iron_resolve_time_remaining = maxf(iron_resolve_time_remaining - delta, 0.0)
+	if iron_resolve_time_remaining > 0.0:
+		iron_resolve_heal_accumulator += (2.0 + float(GameState.get_warrior_skill_rank("iron_resolve"))) * delta
+		var restored_health := int(iron_resolve_heal_accumulator)
+		if restored_health > 0:
+			iron_resolve_heal_accumulator -= restored_health
+			health = mini(health + restored_health, get_max_health())
+			health_changed.emit(health, get_max_health())
+	elif iron_resolve_was_active:
+		iron_resolve_heal_accumulator = 0.0
+	if war_cry_was_active or iron_resolve_was_active \
+			or frost_nova_visual_time_remaining > 0.0 \
+			or shield_was_active or arcane_shield_time_remaining > 0.0 \
+			or warrior_aoe_visual_time_remaining > 0.0 \
+			or warrior_skill_animation_time_remaining > 0.0:
 		queue_redraw()
+	warrior_aoe_visual_time_remaining = maxf(warrior_aoe_visual_time_remaining - delta, 0.0)
+	warrior_skill_animation_time_remaining = maxf(
+		warrior_skill_animation_time_remaining - delta,
+		0.0
+	)
+	if warrior_skill_animation_time_remaining == 0.0:
+		warrior_skill_animation_id = ""
 	_update_witch_skill_cooldowns(delta)
+	_update_warrior_skill_cooldowns(delta)
 	if chill_time_remaining == 0.0:
 		chill_speed_factor = 1.0
 	if mouse_move_held and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -237,24 +279,36 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_2:
 		_use_mana_potion()
 	elif event.keycode == KEY_Q:
-		if selected_character == "Witch":
-			_cast_assigned_witch_skill("Q")
-		else:
-			_cast_fireball()
-	elif event.keycode == KEY_W and selected_character == "Witch":
-		_cast_assigned_witch_skill("W")
+		activate_skill_slot("Q")
+	elif event.keycode == KEY_W:
+		activate_skill_slot("W")
 	elif event.keycode == KEY_E:
 		if not _try_interact():
-			if selected_character == "Witch":
-				if not _cast_assigned_witch_skill("E"):
-					_cast_e_skill()
-			else:
-				_cast_e_skill()
+			activate_skill_slot("E")
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_R and selected_character == "Witch":
-		_cast_assigned_witch_skill("R")
+	elif event.keycode == KEY_R:
+		activate_skill_slot("R")
 	elif event.keycode == KEY_T:
 		_open_town_portal()
+
+
+func activate_skill_slot(slot: String) -> void:
+	if health <= 0 or is_casting_town_portal:
+		return
+	if selected_character == "Witch":
+		if slot == "E":
+			if not _cast_assigned_witch_skill(slot):
+				_cast_e_skill()
+		else:
+			_cast_assigned_witch_skill(slot)
+	elif slot == "Q":
+		if not _cast_assigned_warrior_skill(slot):
+			_cast_fireball()
+	elif slot == "E":
+		if not _cast_assigned_warrior_skill(slot):
+			_cast_e_skill()
+	else:
+		_cast_assigned_warrior_skill(slot)
 
 
 func _try_interact() -> bool:
@@ -308,6 +362,259 @@ func _update_witch_skill_cooldowns(delta: float) -> void:
 			witch_skill_cooldowns.erase(skill_id)
 		else:
 			witch_skill_cooldowns[skill_id] = remaining
+
+
+func _update_warrior_skill_cooldowns(delta: float) -> void:
+	for skill_id in warrior_skill_cooldowns.keys():
+		var remaining := maxf(float(warrior_skill_cooldowns[skill_id]) - delta, 0.0)
+		if remaining == 0.0:
+			warrior_skill_cooldowns.erase(skill_id)
+		else:
+			warrior_skill_cooldowns[skill_id] = remaining
+
+
+func get_warrior_skill_cooldown_ratio(skill_id: String) -> float:
+	var remaining := float(warrior_skill_cooldowns.get(skill_id, 0.0))
+	if remaining <= 0.0:
+		return 0.0
+	var definition := GameState.get_warrior_skill_definition(skill_id)
+	if definition.is_empty():
+		return 0.0
+	var rank := GameState.get_warrior_skill_rank(skill_id)
+	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.3, 0.5)
+	return clampf(remaining / cooldown, 0.0, 1.0)
+
+
+func get_warrior_skill_tooltip(skill_id: String) -> String:
+	var definition := GameState.get_warrior_skill_definition(skill_id)
+	var rank := GameState.get_warrior_skill_rank(skill_id)
+	if definition.is_empty() or rank <= 0:
+		return ""
+	return "%s\n%s\n%d mana  |  %.1f sec cooldown" % [
+		definition["name"],
+		definition["description"],
+		definition["mana_cost"],
+		maxf(float(definition["cooldown"]) - float(rank - 1) * 0.3, 0.5)
+	]
+
+
+func _cast_assigned_warrior_skill(slot: String) -> bool:
+	if selected_character != "Warrior":
+		return false
+	var skill_id := GameState.get_warrior_equipped_skill(slot)
+	var rank := GameState.get_warrior_skill_rank(skill_id)
+	if skill_id.is_empty() or rank <= 0:
+		return false
+	if warrior_skill_cooldowns.has(skill_id):
+		return true
+
+	var definition := GameState.get_warrior_skill_definition(skill_id)
+	if definition.is_empty():
+		return false
+	var mana_cost := int(definition["mana_cost"])
+	if mana < mana_cost:
+		return true
+
+	mana -= mana_cost
+	mana_changed.emit(mana, get_max_mana())
+	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.3, 0.5)
+	warrior_skill_cooldowns[skill_id] = cooldown
+	match skill_id:
+		"heavy_strike":
+			_warrior_heavy_strike(rank)
+		"shield_bash":
+			_warrior_shield_bash(rank)
+		"cleave":
+			_warrior_cleave(rank)
+		"leap_slam":
+			_warrior_leap_slam(rank)
+		"war_cry":
+			war_cry_time_remaining = 8.0 + float(rank - 1) * 2.0
+			queue_redraw()
+		"iron_resolve":
+			iron_resolve_time_remaining = 8.0 + float(rank - 1) * 2.0
+			queue_redraw()
+		_:
+			warrior_skill_cooldowns.erase(skill_id)
+			mana += mana_cost
+			mana_changed.emit(mana, get_max_mana())
+			return false
+	_start_warrior_skill_animation(skill_id)
+	return true
+
+
+func _warrior_heavy_strike(rank: int) -> void:
+	_damage_enemies_in_front(
+		2.0 + float(rank) * 0.65 + float(get_weapon_damage_bonus()),
+		78.0,
+		0.35
+	)
+
+
+func _warrior_shield_bash(rank: int) -> void:
+	var target := _get_facing_enemy(94.0, 0.15)
+	if target == null:
+		return
+	target.call("take_damage", 1.6 + float(rank) * 0.55 + float(get_weapon_damage_bonus()))
+	if target.has_method("apply_stun"):
+		target.call("apply_stun", 0.55 + float(rank - 1) * 0.2)
+
+
+func _warrior_cleave(rank: int) -> void:
+	var radius := 94.0 + float(rank - 1) * 14.0
+	var damage := 0.75 + float(rank) * 0.45 + float(get_weapon_damage_bonus())
+	_damage_enemies_in_radius(radius, damage, true)
+	_show_warrior_aoe(radius)
+
+
+func _warrior_leap_slam(rank: int) -> void:
+	var nearest_enemy: Node2D
+	var nearest_distance := 260.0
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not _is_live_warrior_target(enemy):
+			continue
+		var enemy_node := enemy as Node2D
+		var distance := global_position.distance_to(enemy_node.global_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_enemy = enemy_node
+
+	var leap_direction := facing
+	if nearest_enemy != null:
+		leap_direction = (nearest_enemy.global_position - global_position).normalized()
+	var leap_distance := mini(roundi(nearest_distance - 58.0), 150) if nearest_enemy != null else 110
+	if leap_distance > 0:
+		move_and_collide(leap_direction * float(leap_distance))
+	var radius := 104.0 + float(rank - 1) * 14.0
+	_damage_enemies_in_radius(
+		radius,
+		1.4 + float(rank) * 0.65 + float(get_weapon_damage_bonus()),
+		false
+	)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy is Node2D and global_position.distance_to((enemy as Node2D).global_position) <= radius \
+				and enemy.has_method("apply_stun"):
+			enemy.call("apply_stun", 0.35 + float(rank - 1) * 0.15)
+	_show_warrior_aoe(radius)
+
+
+func _start_warrior_skill_animation(skill_id: String) -> void:
+	warrior_skill_animation_id = skill_id
+	warrior_skill_animation_time_remaining = 0.58
+	queue_redraw()
+
+	if skill_id in ["heavy_strike", "shield_bash", "cleave"]:
+		attack_time_remaining = 0.38
+		attack_hit_applied = true
+
+	if is_instance_valid(warrior_skill_animation_tween):
+		warrior_skill_animation_tween.kill()
+	sprite.position = Vector2.ZERO
+	sprite.scale = sprite_base_scale
+	sprite.modulate = Color.WHITE
+
+	var start_offset := -facing * 4.0
+	var strike_offset := facing * 8.0
+	var tint := Color.WHITE
+	match skill_id:
+		"heavy_strike":
+			strike_offset += facing * 3.0
+			tint = Color("#ffe4a0")
+		"shield_bash":
+			strike_offset += facing * 9.0
+			tint = Color("#9de8ff")
+		"cleave":
+			tint = Color("#ffd08a")
+		"leap_slam":
+			start_offset += Vector2(0.0, -10.0)
+			strike_offset += Vector2(0.0, -16.0)
+			tint = Color("#ffe08a")
+		"war_cry":
+			tint = Color("#ffc95a")
+		"iron_resolve":
+			tint = Color("#c2edab")
+
+	warrior_skill_animation_tween = create_tween()
+	warrior_skill_animation_tween.tween_property(sprite, "position", start_offset, 0.08) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	warrior_skill_animation_tween.tween_property(sprite, "position", strike_offset, 0.12) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	warrior_skill_animation_tween.parallel().tween_property(
+		sprite,
+		"scale",
+		sprite_base_scale * (
+			Vector2(1.16, 0.9) if skill_id != "leap_slam" else Vector2(0.94, 1.16)
+		),
+		0.12
+	)
+	warrior_skill_animation_tween.parallel().tween_property(
+		sprite,
+		"modulate",
+		tint,
+		0.12
+	)
+	warrior_skill_animation_tween.tween_property(sprite, "position", Vector2.ZERO, 0.2) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	warrior_skill_animation_tween.parallel().tween_property(
+		sprite,
+		"scale",
+		sprite_base_scale,
+		0.2
+	)
+	warrior_skill_animation_tween.parallel().tween_property(sprite, "modulate", Color.WHITE, 0.2)
+
+
+func _get_facing_enemy(max_distance: float, min_dot: float) -> Node2D:
+	var nearest_enemy: Node2D
+	var nearest_distance := max_distance
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not _is_live_warrior_target(enemy):
+			continue
+		var enemy_node := enemy as Node2D
+		var to_enemy := enemy_node.global_position - global_position
+		var distance := to_enemy.length()
+		if distance <= nearest_distance and distance > 0.0 \
+				and to_enemy.normalized().dot(facing) >= min_dot:
+			nearest_enemy = enemy_node
+			nearest_distance = distance
+	return nearest_enemy
+
+
+func _damage_enemies_in_front(damage: float, max_distance: float, min_dot: float) -> void:
+	var target := _get_facing_enemy(max_distance, min_dot)
+	if target != null and target.has_method("take_damage"):
+		target.call("take_damage", damage * _get_war_cry_attack_multiplier())
+
+
+func _damage_enemies_in_radius(radius: float, damage: float, facing_only: bool) -> void:
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not _is_live_warrior_target(enemy) or not enemy.has_method("take_damage"):
+			continue
+		var enemy_node := enemy as Node2D
+		var to_enemy := enemy_node.global_position - global_position
+		if to_enemy.length() > radius:
+			continue
+		if facing_only and not to_enemy.is_zero_approx() \
+				and to_enemy.normalized().dot(facing) < -0.25:
+			continue
+		enemy.call("take_damage", damage * _get_war_cry_attack_multiplier())
+
+
+func _is_live_warrior_target(enemy: Node) -> bool:
+	var wolf := enemy as Wolf
+	return wolf != null and wolf.health > 0.0
+
+
+func _show_warrior_aoe(radius: float) -> void:
+	warrior_aoe_visual_radius = radius
+	warrior_aoe_visual_time_remaining = 0.35
+	queue_redraw()
+
+
+func _get_war_cry_attack_multiplier() -> float:
+	if war_cry_time_remaining <= 0.0:
+		return 1.0
+	return 1.25 + float(GameState.get_warrior_skill_rank("war_cry") - 1) * 0.1
 
 
 func get_witch_skill_cooldown_ratio(skill_id: String) -> float:
@@ -386,6 +693,7 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 		"arcane_shield":
 			arcane_shield_time_remaining = 4.0 + float(rank - 1) * 1.5
 			arcane_shield_damage_reduction = 0.5 + float(rank - 1) * 0.1
+			witch_attack_time_remaining = WITCH_ATTACK_DURATION
 		"curse":
 			_cast_witch_curse(rank)
 		_:
@@ -560,15 +868,15 @@ func _cast_projectile(is_ice: bool, mana_cost: int) -> void:
 		fireball.ice_damage = _get_primary_attack_damage()
 	get_tree().current_scene.add_child(fireball)
 	fireball.global_position = global_position + facing * 20.0
+	if selected_character == "Witch":
+		witch_attack_time_remaining = WITCH_ATTACK_DURATION
 
 
 func _update_wand() -> void:
 	if selected_character != "Witch":
 		return
 
-	wand.visible = Input.is_action_pressed("ui_accept")
-	wand.position = facing * 8.0 + Vector2(6.0, 0.0)
-	wand.rotation = facing.angle()
+	wand.hide()
 
 
 func try_add_item(item: ItemData) -> bool:
@@ -638,6 +946,115 @@ func equip_inventory_item(inventory_index: int) -> bool:
 	inventory_changed.emit(inventory)
 	equipment_changed.emit(equipment)
 	return true
+
+
+func equip_best_inventory_items() -> int:
+	var updated_equipment := equipment.duplicate()
+	var changed_slots := 0
+	var equipment_slots: Array[String] = [
+		"Weapon",
+		"Helm",
+		"Chest",
+		"Legs",
+		"Gloves",
+		"Boots",
+		"Amulet"
+	]
+
+	for slot in equipment_slots:
+		var current_item := equipment.get(slot) as ItemData
+		var best_item := current_item
+		var found_better_inventory_item := false
+		var best_score := _get_equipment_item_score(current_item) if current_item != null else -1
+		for inventory_index in range(inventory.size()):
+			var candidate := inventory[inventory_index]
+			if candidate.equipment_slot != slot:
+				continue
+			var candidate_score := _get_equipment_item_score(candidate)
+			if candidate_score > best_score:
+				best_item = candidate
+				found_better_inventory_item = true
+				best_score = candidate_score
+		if found_better_inventory_item:
+			updated_equipment[slot] = best_item
+			changed_slots += 1
+
+	var ring_candidates: Array[Dictionary] = []
+	for slot in ["Ring 1", "Ring 2"]:
+		var equipped_ring := equipment.get(slot) as ItemData
+		if equipped_ring != null:
+			ring_candidates.append({
+				"item": equipped_ring
+			})
+	for inventory_index in range(inventory.size()):
+		if inventory[inventory_index].equipment_slot == "Ring":
+			ring_candidates.append({
+				"item": inventory[inventory_index]
+			})
+
+	var best_rings: Array[Dictionary] = []
+	for ring_index in range(mini(2, ring_candidates.size())):
+		var best_candidate_index := 0
+		var best_score := _get_equipment_item_score(
+			ring_candidates[best_candidate_index]["item"] as ItemData
+		)
+		for candidate_index in range(1, ring_candidates.size()):
+			var candidate_score := _get_equipment_item_score(
+				ring_candidates[candidate_index]["item"] as ItemData
+			)
+			if candidate_score > best_score:
+				best_candidate_index = candidate_index
+				best_score = candidate_score
+		best_rings.append(ring_candidates[best_candidate_index])
+		ring_candidates.remove_at(best_candidate_index)
+
+	for ring_slot_index in range(2):
+		var slot := "Ring %d" % (ring_slot_index + 1)
+		var selected_ring := best_rings[ring_slot_index]["item"] as ItemData \
+			if ring_slot_index < best_rings.size() else null
+		var current_ring := equipment.get(slot) as ItemData
+		if selected_ring == current_ring:
+			continue
+		changed_slots += 1
+		if selected_ring == null:
+			updated_equipment.erase(slot)
+		else:
+			updated_equipment[slot] = selected_ring
+
+	if changed_slots == 0:
+		return 0
+
+	var equipped_item_ids: Dictionary = {}
+	for item in updated_equipment.values():
+		var equipped_item := item as ItemData
+		if equipped_item != null:
+			equipped_item_ids[equipped_item.get_instance_id()] = true
+
+	var updated_inventory: Array[ItemData] = []
+	var inventory_item_ids: Dictionary = {}
+	for item in inventory:
+		if not equipped_item_ids.has(item.get_instance_id()):
+			updated_inventory.append(item)
+			inventory_item_ids[item.get_instance_id()] = true
+	for item in equipment.values():
+		var unequipped_item := item as ItemData
+		if unequipped_item != null \
+				and not equipped_item_ids.has(unequipped_item.get_instance_id()) \
+				and not inventory_item_ids.has(unequipped_item.get_instance_id()):
+			updated_inventory.append(unequipped_item)
+
+	if not GameState.save_character(updated_inventory, updated_equipment):
+		return -1
+
+	inventory = updated_inventory
+	equipment = updated_equipment
+	inventory_changed.emit(inventory)
+	equipment_changed.emit(equipment)
+	return changed_slots
+
+
+func _get_equipment_item_score(item: ItemData) -> int:
+	return item.damage_bonus + item.damage_reduction
 
 
 func get_max_health() -> int:
@@ -802,24 +1219,91 @@ func _update_sprite(is_moving: bool) -> void:
 	elif facing == Vector2.UP:
 		row = 3
 
-	var frame := 0
-	if is_moving:
-		frame = 1 + (int(animation_time / WALK_FRAME_DURATION) % 3)
-	sprite.region_rect = Rect2(frame * FRAME_SIZE, row * FRAME_SIZE, FRAME_SIZE, FRAME_SIZE)
+	if selected_character != "Witch":
+		if facing == Vector2.LEFT:
+			row = 2
+		elif facing == Vector2.RIGHT:
+			row = 1
+		var warrior_frame := 1
+		if attack_time_remaining > 0.0:
+			var attack_duration := 0.38 if warrior_skill_animation_id in [
+				"heavy_strike",
+				"shield_bash",
+				"cleave"
+			] else ATTACK_DURATION
+			var attack_progress := clampf(
+				1.0 - attack_time_remaining / attack_duration,
+				0.0,
+				1.0
+			)
+			warrior_frame = 3 + mini(int(attack_progress * 6.0), 5)
+		elif is_moving:
+			warrior_frame = 1 + (
+				int(animation_time / WARRIOR_WALK_FRAME_DURATION) % 2
+			)
+		sprite.region_rect = Rect2(
+			warrior_frame * WARRIOR_FRAME_SIZE,
+			row * WARRIOR_FRAME_SIZE,
+			WARRIOR_FRAME_SIZE,
+			WARRIOR_FRAME_SIZE
+		)
+		return
+
+	var witch_frame := 0
+	if witch_attack_time_remaining > 0.0:
+		var attack_progress := 1.0 - witch_attack_time_remaining / WITCH_ATTACK_DURATION
+		witch_frame = 3 + mini(int(attack_progress * 6.0), 5)
+	elif is_moving:
+		witch_frame = 1 + (
+			int(animation_time / WITCH_WALK_FRAME_DURATION) % 2
+		)
+	sprite.region_rect = Rect2(
+		witch_frame * WITCH_FRAME_SIZE,
+		row * WITCH_FRAME_SIZE,
+		WITCH_FRAME_SIZE,
+		WITCH_FRAME_SIZE
+	)
 
 
 func _update_sword(delta: float) -> void:
 	sword.position = facing * 8.0
 	if attack_time_remaining > 0.0:
 		attack_time_remaining = maxf(attack_time_remaining - delta, 0.0)
-		var progress := 1.0 - attack_time_remaining / ATTACK_DURATION
-		sword.rotation = facing.angle() + lerpf(-ATTACK_ARC, ATTACK_ARC, progress)
-		sword.show()
+		var special_swing := warrior_skill_animation_id in [
+			"heavy_strike",
+			"shield_bash",
+			"cleave"
+		]
+		var swing_duration := 0.38 if special_swing else ATTACK_DURATION
+		var swing_arc := ATTACK_ARC
+		match warrior_skill_animation_id:
+			"heavy_strike":
+				swing_arc = 2.15
+			"shield_bash":
+				swing_arc = 0.62
+			"cleave":
+				swing_arc = 2.8
+		var progress := 1.0 - attack_time_remaining / swing_duration
+		sword.rotation = facing.angle() + lerpf(-swing_arc, swing_arc, progress)
+		match warrior_skill_animation_id:
+			"heavy_strike":
+				sword.modulate = Color("#ffe4a0")
+			"shield_bash":
+				sword.modulate = Color("#9de8ff")
+			"cleave":
+				sword.modulate = Color("#ffd08a")
+			_:
+				sword.modulate = Color.WHITE
+		if selected_character == "Witch":
+			sword.show()
+		else:
+			sword.hide()
 		if not attack_hit_applied and progress >= SWORD_HIT_TIME:
 			_damage_wolves_in_swing()
 			attack_hit_applied = true
 	else:
 		sword.rotation = facing.angle()
+		sword.modulate = Color.WHITE
 		sword.hide()
 
 
@@ -838,10 +1322,26 @@ func _get_primary_attack_damage() -> float:
 	var base := 1.0 + float(get_weapon_damage_bonus())
 	if selected_character == "Witch":
 		base *= get_spell_damage_multiplier()
+	elif selected_character == "Warrior":
+		base *= _get_war_cry_attack_multiplier()
 	return base
 
 
 func _draw() -> void:
+	if warrior_skill_animation_time_remaining > 0.0:
+		_draw_warrior_skill_animation()
+	if warrior_aoe_visual_time_remaining > 0.0:
+		var progress := 1.0 - warrior_aoe_visual_time_remaining / 0.35
+		var radius := lerpf(36.0, warrior_aoe_visual_radius, progress)
+		draw_arc(
+			Vector2.ZERO,
+			radius,
+			0.0,
+			TAU,
+			64,
+			Color(0.95, 0.72, 0.28, 1.0 - progress),
+			4.0
+		)
 	if frost_nova_visual_time_remaining > 0.0:
 		var progress := 1.0 - frost_nova_visual_time_remaining / 0.55
 		var nova_radius := lerpf(36.0, 168.0, progress)
@@ -849,6 +1349,97 @@ func _draw() -> void:
 	if arcane_shield_time_remaining > 0.0:
 		var shield_alpha := 0.45 + sin(Time.get_ticks_msec() * 0.012) * 0.12
 		draw_arc(Vector2.ZERO, 39.0, 0.0, TAU, 48, Color(0.46, 0.87, 1.0, shield_alpha), 3.0)
+	if war_cry_time_remaining > 0.0:
+		draw_arc(Vector2.ZERO, 46.0, 0.0, TAU, 48, Color("#f3ba45"), 2.5)
+	if iron_resolve_time_remaining > 0.0:
+		draw_arc(Vector2.ZERO, 51.0, 0.0, TAU, 48, Color("#b6d9a0"), 2.5)
+
+
+func _draw_warrior_skill_animation() -> void:
+	var progress := 1.0 - warrior_skill_animation_time_remaining / 0.58
+	var alpha := 1.0 - progress
+	var facing_angle := facing.angle()
+	match warrior_skill_animation_id:
+		"heavy_strike":
+			draw_arc(
+				Vector2.ZERO,
+				lerpf(24.0, 66.0, progress),
+				facing_angle - 0.9,
+				facing_angle + 0.9,
+				32,
+				Color(1.0, 0.82, 0.38, alpha),
+				5.0
+			)
+		"shield_bash":
+			var impact_center := facing * 34.0
+			draw_arc(
+				impact_center,
+				lerpf(5.0, 29.0, progress),
+				0.0,
+				TAU,
+				32,
+				Color(0.55, 0.88, 1.0, alpha),
+				4.0
+			)
+			for ray_index in range(8):
+				var ray_angle := TAU * float(ray_index) / 8.0
+				draw_line(
+					impact_center + Vector2.from_angle(ray_angle) * 9.0,
+					impact_center + Vector2.from_angle(ray_angle) * 31.0,
+					Color(0.7, 0.94, 1.0, alpha),
+					2.5
+				)
+		"cleave":
+			draw_arc(
+				Vector2.ZERO,
+				lerpf(42.0, 92.0, progress),
+				facing_angle - 1.45,
+				facing_angle + 1.45,
+				48,
+				Color(1.0, 0.62, 0.28, alpha),
+				6.0
+			)
+		"leap_slam":
+			draw_arc(
+				Vector2.ZERO,
+				lerpf(18.0, warrior_aoe_visual_radius, progress),
+				0.0,
+				TAU,
+				48,
+				Color(1.0, 0.78, 0.34, alpha),
+				5.0
+			)
+		"war_cry":
+			for wave_index in range(2):
+				var wave_progress := clampf(progress * 1.6 - float(wave_index) * 0.35, 0.0, 1.0)
+				draw_arc(
+					Vector2.ZERO,
+					lerpf(24.0, 88.0, wave_progress),
+					0.0,
+					TAU,
+					48,
+					Color(1.0, 0.73, 0.27, alpha * (1.0 - float(wave_index) * 0.2)),
+					3.0
+				)
+		"iron_resolve":
+			var guard_radius := lerpf(30.0, 56.0, progress)
+			draw_arc(
+				Vector2.ZERO,
+				guard_radius,
+				0.0,
+				TAU,
+				48,
+				Color(0.7, 0.92, 0.62, alpha),
+				4.0
+			)
+			for ray_index in range(4):
+				var ray_angle := TAU * float(ray_index) / 4.0
+				draw_line(
+					Vector2.from_angle(ray_angle) * (guard_radius - 7.0),
+					Vector2.from_angle(ray_angle) * (guard_radius + 9.0),
+					Color(0.82, 1.0, 0.7, alpha),
+					3.0
+				)
 
 
 func apply_chill(duration: float, speed_factor := 0.55) -> void:
@@ -879,6 +1470,9 @@ func take_damage(amount: int) -> void:
 		reduced_damage = roundi(float(reduced_damage) * (1.0 - passive_reduction_pct))
 	if arcane_shield_time_remaining > 0.0:
 		reduced_damage = roundi(float(reduced_damage) * (1.0 - arcane_shield_damage_reduction))
+	var warrior_reduction := _get_warrior_damage_reduction()
+	if warrior_reduction > 0.0:
+		reduced_damage = roundi(float(reduced_damage) * (1.0 - warrior_reduction))
 	if reduced_damage > 0:
 		_cancel_town_portal_cast()
 	health = maxi(health - reduced_damage, 0)
@@ -887,3 +1481,17 @@ func take_damage(amount: int) -> void:
 		velocity = Vector2.ZERO
 		set_physics_process(false)
 		died.emit()
+
+
+func _get_warrior_damage_reduction() -> float:
+	var damage_reduction := 0.0
+	if war_cry_time_remaining > 0.0:
+		var war_cry_rank := GameState.get_warrior_skill_rank("war_cry")
+		damage_reduction = 0.2 + float(war_cry_rank - 1) * 0.05
+	if iron_resolve_time_remaining > 0.0:
+		var resolve_rank := GameState.get_warrior_skill_rank("iron_resolve")
+		damage_reduction = maxf(
+			damage_reduction,
+			0.35 + float(resolve_rank - 1) * 0.05
+		)
+	return clampf(damage_reduction, 0.0, 0.65)

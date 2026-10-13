@@ -31,12 +31,14 @@ var character_overlay: Control
 var character_panel: PanelContainer
 var inventory_panel: PanelContainer
 var witch_skill_tree: WitchSkillTree
+var warrior_skill_tree: WarriorSkillTree
 var equipment_stats_label: Label
 var character_progression_label: Label
 var equipment_slot_labels: Dictionary = {}
 var inventory_grid: GridContainer
 var selected_item_label: Label
 var equip_item_button: Button
+var equip_best_button: Button
 var inventory_gold_label: Label
 var inventory_slots: Array[Button] = []
 var selected_inventory_index := -1
@@ -47,6 +49,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	passive_tree_button.visible = player.selected_character == "Witch"
 	_build_pause_menu()
+	_connect_skill_slot_clicks()
 	_build_experience_bar()
 	_update_gold(GameState.gold)
 	GameState.gold_changed.connect(_update_gold)
@@ -80,7 +83,25 @@ func _ready() -> void:
 	)
 
 
+func _connect_skill_slot_clicks() -> void:
+	for slot in ["Q", "W", "E", "R"]:
+		var skill_slot := get_node_or_null("SkillSlot%s" % slot) as SkillSlot
+		if skill_slot != null:
+			skill_slot.skill_activated.connect(player.activate_skill_slot)
+
+
 func _process(_delta: float) -> void:
+	if player.selected_character == "Warrior":
+		for slot in ["Q", "W", "E", "R"]:
+			var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+			if skill_slot == null:
+				continue
+			var skill_id := GameState.get_warrior_equipped_skill(slot)
+			var cooldown_ratio := player.get_warrior_skill_cooldown_ratio(skill_id)
+			if absf(float(skill_slot.get("cooldown_progress")) - cooldown_ratio) > 0.01:
+				skill_slot.set("cooldown_progress", cooldown_ratio)
+				skill_slot.queue_redraw()
+		return
 	if player.selected_character != "Witch":
 		return
 	for slot in ["Q", "W", "E", "R"]:
@@ -112,10 +133,17 @@ func _unhandled_input(event: InputEvent) -> void:
 				_on_witch_skill_tree_closed()
 			get_viewport().set_input_as_handled()
 			return
+		if warrior_skill_tree != null and warrior_skill_tree.visible:
+			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+				_on_warrior_skill_tree_closed()
+			get_viewport().set_input_as_handled()
+			return
 
 		if event.keycode == KEY_ESCAPE:
 			if pause_menu.visible:
 				pause_menu.close_menu()
+			elif warrior_skill_tree != null and warrior_skill_tree.visible:
+				_on_warrior_skill_tree_closed()
 			elif waystone_overlay != null and waystone_overlay.visible:
 				_close_waystone()
 			elif dialogue_overlay != null and dialogue_overlay.visible:
@@ -130,6 +158,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 		if witch_skill_tree != null and witch_skill_tree.visible:
+			get_viewport().set_input_as_handled()
+			return
+		if warrior_skill_tree != null and warrior_skill_tree.visible:
 			get_viewport().set_input_as_handled()
 			return
 		if waystone_overlay != null and waystone_overlay.visible:
@@ -156,6 +187,9 @@ func _unhandled_input(event: InputEvent) -> void:
 					and (waystone_overlay == null or not waystone_overlay.visible):
 				_open_witch_skill_tree("passives")
 				get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_P and warrior_skill_tree != null:
+			_open_warrior_skill_tree()
+			get_viewport().set_input_as_handled()
 
 
 func _build_pause_menu() -> void:
@@ -455,6 +489,12 @@ func _build_character_menu() -> void:
 		_style_menu_button(passive_tree_button_menu, 42.0)
 		passive_tree_button_menu.pressed.connect(_open_witch_skill_tree.bind("passives"))
 		character_contents.add_child(passive_tree_button_menu)
+	elif player.selected_character == "Warrior":
+		var warrior_skill_tree_button := Button.new()
+		warrior_skill_tree_button.text = "Warrior Skill Tree (P)"
+		_style_menu_button(warrior_skill_tree_button, 42.0)
+		warrior_skill_tree_button.pressed.connect(_open_warrior_skill_tree)
+		character_contents.add_child(warrior_skill_tree_button)
 	character_contents.add_child(character_close_button)
 
 	var inventory_contents := VBoxContainer.new()
@@ -494,7 +534,19 @@ func _build_character_menu() -> void:
 	_style_menu_button(equip_item_button, 42.0)
 	equip_item_button.disabled = true
 	equip_item_button.pressed.connect(_on_equip_item_pressed)
-	inventory_contents.add_child(equip_item_button)
+	var inventory_action_row := HBoxContainer.new()
+	inventory_action_row.add_theme_constant_override("separation", 8)
+	inventory_contents.add_child(inventory_action_row)
+	inventory_action_row.add_child(equip_item_button)
+	equip_item_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	equip_best_button = Button.new()
+	equip_best_button.text = "Equip Best"
+	equip_best_button.tooltip_text = "Upgrade each slot using damage bonus and damage reduction."
+	_style_menu_button(equip_best_button, 42.0)
+	equip_best_button.add_theme_font_size_override("font_size", 18)
+	equip_best_button.pressed.connect(_on_equip_best_pressed)
+	inventory_action_row.add_child(equip_best_button)
 
 	var inventory_close_button := Button.new()
 	inventory_close_button.text = "Close  (I / Esc)"
@@ -512,6 +564,13 @@ func _build_character_menu() -> void:
 		witch_skill_tree.passives_changed.connect(_on_witch_passives_changed)
 
 		_refresh_witch_skill_slots()
+	elif player.selected_character == "Warrior":
+		warrior_skill_tree = WarriorSkillTree.new()
+		add_child(warrior_skill_tree)
+		warrior_skill_tree.hide()
+		warrior_skill_tree.closed.connect(_on_warrior_skill_tree_closed)
+		warrior_skill_tree.loadout_changed.connect(_refresh_warrior_skill_slots)
+		_refresh_warrior_skill_slots()
 
 
 func _open_witch_skill_tree(initial_tab: String = "") -> void:
@@ -520,6 +579,21 @@ func _open_witch_skill_tree(initial_tab: String = "") -> void:
 	player.set_physics_process(false)
 	player.set_process_unhandled_input(false)
 	witch_skill_tree.open_tree(initial_tab)
+
+
+func _open_warrior_skill_tree() -> void:
+	if warrior_skill_tree == null:
+		return
+	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
+	warrior_skill_tree.open_tree()
+
+
+func _on_warrior_skill_tree_closed() -> void:
+	if warrior_skill_tree == null:
+		return
+	warrior_skill_tree.hide()
+	_close_character_menu()
 
 
 func _on_witch_skill_tree_closed() -> void:
@@ -547,6 +621,22 @@ func _refresh_witch_skill_slots() -> void:
 		var icon_path := str(definition.get("icon_path", ""))
 		skill_slot.set("skill_icon", load(icon_path) if not icon_path.is_empty() else null)
 		var skill_tooltip := player.get_witch_skill_tooltip(skill_id)
+		skill_slot.set("skill_tooltip", skill_tooltip)
+		skill_slot.tooltip_text = skill_tooltip
+		skill_slot.queue_redraw()
+
+
+func _refresh_warrior_skill_slots() -> void:
+	for slot in ["Q", "W", "E", "R"]:
+		var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+		if skill_slot == null:
+			continue
+		var skill_id := GameState.get_warrior_equipped_skill(slot)
+		var definition := GameState.get_warrior_skill_definition(skill_id)
+		skill_slot.set("skill_label", str(definition.get("short_label", "")))
+		var icon_path := str(definition.get("icon_path", ""))
+		skill_slot.set("skill_icon", load(icon_path) if not icon_path.is_empty() else null)
+		var skill_tooltip := player.get_warrior_skill_tooltip(skill_id)
 		skill_slot.set("skill_tooltip", skill_tooltip)
 		skill_slot.tooltip_text = skill_tooltip
 		skill_slot.queue_redraw()
@@ -706,6 +796,7 @@ func _on_inventory_changed(items: Array[ItemData]) -> void:
 			slot.tooltip_text = "Empty"
 			slot.add_theme_color_override("font_color", Color(0.52, 0.53, 0.49, 1))
 	_update_selected_item(items)
+	equip_best_button.disabled = items.is_empty()
 	if item_list != null and shop_overlay != null and shop_overlay.visible:
 		_refresh_shop_items()
 
@@ -736,6 +827,17 @@ func _on_equip_item_pressed() -> void:
 	if player.equip_inventory_item(selected_inventory_index):
 		selected_inventory_index = -1
 		_update_selected_item(player.inventory)
+
+
+func _on_equip_best_pressed() -> void:
+	selected_inventory_index = -1
+	var equipped_slots := player.equip_best_inventory_items()
+	if equipped_slots < 0:
+		selected_item_label.text = "Could not equip best gear. See the error log."
+	elif equipped_slots == 0:
+		selected_item_label.text = "You're already wearing your best gear."
+	else:
+		selected_item_label.text = "Equipped best gear in %d slot(s)." % equipped_slots
 
 
 func _on_equipment_changed(equipment: Dictionary) -> void:

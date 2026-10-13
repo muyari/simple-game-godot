@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Wolf.gd" id="1_wolf"]
-[ext_resource type="Texture2D" path="res://textures/wolf.svg" id="2_texture"]
+[ext_resource type="Texture2D" path="res://textures/wolf_sprite_atlas.png" id="2_texture"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_wolf"]
 radius = 12.0
@@ -13,7 +13,7 @@ script = ExtResource("1_wolf")
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_texture")
 region_enabled = true
-region_rect = Rect2(0, 0, 64, 64)
+region_rect = Rect2(0, 0, 150, 100)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_wolf")
