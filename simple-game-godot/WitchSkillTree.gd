@@ -17,12 +17,15 @@ const BRANCHES_PASSIVES: Array[String] = [
 	"Astral Convergence"
 ]
 
-const GRID_CELL_W = 180.0
-const GRID_CELL_H = 110.0
-const PADDING_X = 60.0
-const PADDING_Y = 50.0
-const STANDARD_NODE_SIZE = Vector2(150.0, 68.0)
-const SUPER_NODE_SIZE = Vector2(174.0, 92.0)
+const RING_MARGIN = 12.0
+const RING_START_ANGLE = -PI * 0.5
+const NODE_DIAMETER = 58.0
+const DEPTH_STEP = 105.0
+const CENTER_HOLE = 24.0
+const ZOOM_MIN = 0.4
+const ZOOM_MAX = 2.0
+const ZOOM_STEP = 1.1
+const SUPER_NODE_SCALE = 1.45
 
 var active_tab: String = "passives"
 
@@ -45,6 +48,11 @@ var passive_branch_buttons: Dictionary = {}
 var passive_node_buttons: Dictionary = {}
 var node_container: Control
 var passive_scroll_container: ScrollContainer
+var passive_zoom := 1.0
+var _passive_dragging := false
+var _passive_drag_distance := 0.0
+var _passive_layout: Dictionary = {}
+var _passive_max_depth := 1
 var stats_summary_label: Label
 var passive_details_label: Label
 var passive_status_label: Label
@@ -464,18 +472,15 @@ func _build_passives_tab(parent: Control) -> void:
 	passive_scroll_container = ScrollContainer.new()
 	passive_scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	passive_scroll_container.custom_minimum_size.y = 260.0
+	passive_scroll_container.gui_input.connect(_on_passive_scroll_input)
 	passives_container.add_child(passive_scroll_container)
 
-	var max_row := 0
-	for passive_id in _get_passive_order():
-		var definition := _get_passive_definition(passive_id)
-		max_row = maxi(max_row, int(definition.get("y", 0)))
 	node_container = Control.new()
-	node_container.custom_minimum_size = Vector2(
-		PADDING_X * 2.0 + GRID_CELL_W * 5.0,
-		PADDING_Y * 2.0 + GRID_CELL_H * (max_row + 1)
-	)
+	node_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	node_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	node_container.draw.connect(_on_node_container_draw)
+	node_container.resized.connect(_layout_passive_nodes)
+	node_container.gui_input.connect(_on_passive_scroll_input)
 	passive_scroll_container.add_child(node_container)
 
 	_build_passive_nodes()
@@ -548,35 +553,168 @@ func _get_points_text() -> String:
 	]
 
 
+func _get_ring_radius() -> float:
+	if _passive_layout.is_empty():
+		_build_passive_layout()
+	return CENTER_HOLE + DEPTH_STEP * float(_passive_max_depth + 1)
+
+
+func _get_passive_depth(passive_id: String, depths: Dictionary) -> int:
+	if depths.has(passive_id):
+		return depths[passive_id]
+	depths[passive_id] = 0
+	var depth := 0
+	var branch := str(_get_passive_definition(passive_id).get("branch", ""))
+	for prereq_id in _get_passive_definition(passive_id).get("prerequisites", []):
+		if str(_get_passive_definition(str(prereq_id)).get("branch", "")) != branch:
+			continue
+		depth = maxi(depth, _get_passive_depth(str(prereq_id), depths) + 1)
+	depths[passive_id] = depth
+	return depth
+
+
+# Builds id -> Vector2(angle, depth); each branch gets a sector, depth moves outward.
+func _build_passive_layout() -> void:
+	_passive_layout.clear()
+	var order := _get_passive_order()
+	var depths := {}
+	var branches: Array[String] = []
+	var max_depth := 1
+	for passive_id in order:
+		max_depth = maxi(max_depth, _get_passive_depth(passive_id, depths))
+		var branch := str(_get_passive_definition(passive_id).get("branch", ""))
+		if not branches.has(branch):
+			branches.append(branch)
+	_passive_max_depth = max_depth
+	var sector := TAU / float(maxi(branches.size(), 1))
+	for b_index in branches.size():
+		var by_depth := {}
+		for passive_id in order:
+			if str(_get_passive_definition(passive_id).get("branch", "")) == branches[b_index]:
+				var d: int = depths[passive_id]
+				if not by_depth.has(d):
+					by_depth[d] = []
+				by_depth[d].append(passive_id)
+		var center_angle := RING_START_ANGLE + sector * (float(b_index) + 0.5)
+		for d in by_depth:
+			var group: Array = by_depth[d]
+			for i in group.size():
+				var offset := (float(i) - (group.size() - 1) * 0.5) / float(group.size())
+				_passive_layout[group[i]] = Vector2(center_angle + offset * sector * 0.8, float(d))
+
+
+func _get_radial_step() -> float:
+	return DEPTH_STEP
+
+
+func _get_node_diameter(is_super: bool) -> float:
+	var base := NODE_DIAMETER * passive_zoom
+	return base * SUPER_NODE_SCALE if is_super else base
+
+
 func _get_node_center(passive_id: String) -> Vector2:
-	var def := _get_passive_definition(passive_id)
-	if def.is_empty():
-		return Vector2.ZERO
-	var gx := float(def.get("x", 0))
-	var gy := float(def.get("y", 0))
-	return Vector2(
-		PADDING_X + gx * GRID_CELL_W + GRID_CELL_W * 0.5,
-		PADDING_Y + gy * GRID_CELL_H + GRID_CELL_H * 0.5
-	)
+	if _passive_layout.is_empty():
+		_build_passive_layout()
+	if not _passive_layout.has(passive_id):
+		return node_container.size * 0.5
+	var polar: Vector2 = _passive_layout[passive_id]
+	var radius := (CENTER_HOLE + (polar.y + 1.0) * _get_radial_step()) * passive_zoom
+	return node_container.size * 0.5 + Vector2(cos(polar.x), sin(polar.x)) * radius
 
 
 func _build_passive_nodes() -> void:
+	_build_passive_layout()
+	_update_passive_canvas_size()
 	for passive_id in _get_passive_order():
 		var def := _get_passive_definition(passive_id)
-		var is_super := bool(def.get("is_super", false))
-		var center := _get_node_center(passive_id)
-		var node_size := SUPER_NODE_SIZE if is_super else STANDARD_NODE_SIZE
-
 		var node_btn := Button.new()
 		node_btn.name = "Node_%s" % passive_id
-		node_btn.custom_minimum_size = node_size
-		node_btn.size = node_size
-		node_btn.position = center - node_size * 0.5
-		node_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		node_btn.clip_text = true
+		node_btn.tooltip_text = "%s\n%s" % [def.get("name", ""), def.get("description", "")]
 		node_btn.pressed.connect(_select_passive.bind(passive_id))
+		node_btn.gui_input.connect(_on_passive_scroll_input)
 		node_container.add_child(node_btn)
 		passive_node_buttons[passive_id] = node_btn
+	_layout_passive_nodes()
+	_center_passive_scroll.call_deferred()
 
+
+func _update_passive_canvas_size() -> void:
+	var canvas_side := 2.0 * (_get_ring_radius() + NODE_DIAMETER * SUPER_NODE_SCALE) * passive_zoom
+	node_container.custom_minimum_size = Vector2(canvas_side, canvas_side)
+
+
+func _on_passive_scroll_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and _passive_dragging:
+		_passive_drag_distance += event.relative.length()
+		passive_scroll_container.scroll_horizontal -= int(event.relative.x)
+		passive_scroll_container.scroll_vertical -= int(event.relative.y)
+		return
+	if not (event is InputEventMouseButton):
+		return
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_passive_dragging = event.pressed
+		if event.pressed:
+			_passive_drag_distance = 0.0
+		return
+	if not event.pressed:
+		return
+	if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		_set_passive_zoom(passive_zoom * ZOOM_STEP)
+	elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		_set_passive_zoom(passive_zoom / ZOOM_STEP)
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+func _set_passive_zoom(new_zoom: float) -> void:
+	new_zoom = clampf(new_zoom, ZOOM_MIN, ZOOM_MAX)
+	if is_equal_approx(new_zoom, passive_zoom):
+		return
+	var view := passive_scroll_container.size
+	var scroll := Vector2(passive_scroll_container.scroll_horizontal, passive_scroll_container.scroll_vertical)
+	var focus := (scroll + view * 0.5) / passive_zoom
+	passive_zoom = new_zoom
+	_update_passive_canvas_size()
+	_layout_passive_nodes()
+	var target := focus * passive_zoom - view * 0.5
+	_apply_passive_scroll.call_deferred(target)
+
+
+func _apply_passive_scroll(target: Vector2) -> void:
+	passive_scroll_container.scroll_horizontal = int(target.x)
+	passive_scroll_container.scroll_vertical = int(target.y)
+
+
+func _center_passive_scroll() -> void:
+	passive_scroll_container.scroll_horizontal = int((node_container.custom_minimum_size.x - passive_scroll_container.size.x) * 0.5)
+	passive_scroll_container.scroll_vertical = int((node_container.custom_minimum_size.y - passive_scroll_container.size.y) * 0.5)
+
+
+func _layout_passive_nodes() -> void:
+	if node_container == null:
+		return
+	for passive_id in passive_node_buttons:
+		var def := _get_passive_definition(passive_id)
+		var diameter := _get_node_diameter(bool(def.get("is_super", false)))
+		var node_btn: Button = passive_node_buttons[passive_id]
+		node_btn.custom_minimum_size = Vector2(diameter, diameter)
+		node_btn.size = Vector2(diameter, diameter)
+		node_btn.position = _get_node_center(passive_id) - node_btn.size * 0.5
+		node_btn.add_theme_font_size_override("font_size", clampi(int(diameter * 0.3), 8, 18))
+	if is_inside_tree() and not passive_node_buttons.is_empty():
+		_refresh_node_styles()
+	node_container.queue_redraw()
+
+
+func _get_node_initials(node_name: String) -> String:
+	var initials := ""
+	for word in node_name.split(" ", false):
+		initials += word.substr(0, 1).to_upper()
+		if initials.length() >= 2:
+			break
+	return initials
 
 func _on_node_container_draw() -> void:
 	for passive_id in _get_passive_order():
@@ -588,7 +726,7 @@ func _on_node_container_draw() -> void:
 		for prereq_id in prereqs:
 			var req_center := _get_node_center(str(prereq_id))
 			var prereq_unlocked := _is_passive_unlocked(str(prereq_id))
-			var line_color := Color("#73f4e1") if (is_unlocked and prereq_unlocked) else Color(0.24, 0.32, 0.38, 0.7)
+			var line_color := Color("#73f4e1") if (is_unlocked and prereq_unlocked) else Color(0.36, 0.48, 0.56, 0.85)
 			var line_width := 4.0 if (is_unlocked and prereq_unlocked) else 2.0
 			node_container.draw_line(req_center, p_center, line_color, line_width, true)
 
@@ -605,6 +743,8 @@ func _select_passive_branch(branch: String) -> void:
 
 
 func _select_passive(passive_id: String) -> void:
+	if _passive_drag_distance > 6.0:
+		return
 	selected_passive_id = passive_id
 	_refresh_passives()
 
@@ -617,7 +757,15 @@ func _refresh_passives() -> void:
 		var b_btn: Button = passive_branch_buttons[b_name]
 		b_btn.disabled = b_name == selected_passive_branch
 
+	_refresh_node_styles()
+	_refresh_passive_summary()
+	_refresh_passive_details()
+
+
+func _refresh_node_styles() -> void:
 	for passive_id in _get_passive_order():
+		if not passive_node_buttons.has(passive_id):
+			continue
 		var def := _get_passive_definition(passive_id)
 		var is_super := bool(def.get("is_super", false))
 		var is_unlocked := _is_passive_unlocked(passive_id)
@@ -628,8 +776,13 @@ func _refresh_passives() -> void:
 		node_btn.modulate = Color(1.0, 1.0, 1.0, 1.0 if matches_branch else 0.35)
 
 		var style := StyleBoxFlat.new()
-		style.set_corner_radius_all(8 if is_super else 5)
-		style.set_border_width_all(3 if is_super else 2)
+		style.set_corner_radius_all(int(node_btn.size.x * 0.5))
+		style.set_border_width_all(4 if is_super else 2)
+		style.content_margin_left = 0.0
+		style.content_margin_right = 0.0
+		if is_super:
+			style.shadow_color = Color(1.0, 0.84, 0.35, 0.45)
+			style.shadow_size = 8
 
 		if is_unlocked:
 			style.bg_color = Color(0.08, 0.28, 0.24, 0.95) if not is_super else Color(0.35, 0.24, 0.05, 0.95)
@@ -648,18 +801,12 @@ func _refresh_passives() -> void:
 		node_btn.add_theme_stylebox_override("normal", style)
 		node_btn.add_theme_stylebox_override("hover", style)
 		node_btn.add_theme_stylebox_override("pressed", style)
-
-		var prefix := "[SUPER] " if is_super else ""
-		var status_text := " [Allocated]" if is_unlocked else ""
-		node_btn.text = "%s%s%s" % [prefix, def.get("name", ""), status_text]
-		node_btn.add_theme_font_size_override("font_size", 13 if is_super else 12)
+		node_btn.text = ("★" if is_super else "") + _get_node_initials(str(def.get("name", "")))
 
 		var font_col := Color("#ffd559") if is_super else (Color("#b6f0e2") if is_unlocked else Color("#d6e0df"))
 		node_btn.add_theme_color_override("font_color", font_col)
 
 	node_container.queue_redraw()
-	_refresh_passive_summary()
-	_refresh_passive_details()
 
 
 func _refresh_passive_summary() -> void:
