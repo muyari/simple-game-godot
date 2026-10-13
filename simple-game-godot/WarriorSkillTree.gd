@@ -7,15 +7,6 @@ signal passive_tree_requested
 
 const BRANCHES: Array[String] = ["All", "Single Target", "Area", "Support"]
 const SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
-const SKILL_ICONS := {
-	"heavy_strike": preload("res://textures/warrior_skills/heavy_strike.svg"),
-	"shield_bash": preload("res://textures/warrior_skills/shield_bash.svg"),
-	"cleave": preload("res://textures/warrior_skills/cleave.svg"),
-	"leap_slam": preload("res://textures/warrior_skills/leap_slam.svg"),
-	"war_cry": preload("res://textures/warrior_skills/war_cry.svg"),
-	"iron_resolve": preload("res://textures/warrior_skills/iron_resolve.svg")
-}
-
 var selected_branch := "All"
 var selected_skill_id := "heavy_strike"
 var branch_buttons: Dictionary = {}
@@ -91,7 +82,7 @@ func _build_ui() -> void:
 	header.add_child(passive_tree_button)
 
 	var title := Label.new()
-	title.text = "Warrior"
+	title.text = _get_class_name()
 	title.add_theme_font_size_override("font_size", 16)
 	title.add_theme_color_override("font_color", Color("#d5e5df"))
 	header.add_child(title)
@@ -112,7 +103,7 @@ func _build_ui() -> void:
 	var branch_row := HBoxContainer.new()
 	branch_row.add_theme_constant_override("separation", 8)
 	contents.add_child(branch_row)
-	for branch in BRANCHES:
+	for branch in _get_skill_branches():
 		var branch_button := Button.new()
 		branch_button.text = branch
 		branch_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -156,7 +147,7 @@ func _build_ui() -> void:
 
 	slot_picker = OptionButton.new()
 	slot_picker.custom_minimum_size.x = 96.0
-	for slot in SKILL_SLOTS:
+	for slot in _get_skill_slots():
 		slot_picker.add_item("Slot %s" % slot)
 	action_row.add_child(slot_picker)
 
@@ -191,7 +182,7 @@ func _style_tab_button(button: Button, is_active: bool) -> void:
 
 
 func _build_skill_cards(parent: GridContainer) -> void:
-	for definition in GameState.get_warrior_skill_definitions():
+	for definition in _get_skill_definitions():
 		var skill_id := str(definition["id"])
 		var button := Button.new()
 		button.name = "Card_%s" % skill_id
@@ -216,7 +207,7 @@ func _build_skill_cards(parent: GridContainer) -> void:
 		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.texture = SKILL_ICONS[skill_id]
+		icon.texture = load(str(definition.get("icon_path", ""))) as Texture2D
 		row.add_child(icon)
 		skill_icons[skill_id] = icon
 
@@ -241,11 +232,47 @@ func _build_skill_cards(parent: GridContainer) -> void:
 
 func _select_branch(branch: String) -> void:
 	selected_branch = branch
-	for definition in GameState.get_warrior_skill_definitions():
+	for definition in _get_skill_definitions():
 		if branch == "All" or str(definition["branch"]) == branch:
 			selected_skill_id = str(definition["id"])
 			break
 	_refresh()
+
+
+func _get_class_name() -> String:
+	return "Warrior"
+
+
+func _get_skill_branches() -> Array[String]:
+	return BRANCHES
+
+
+func _get_skill_slots() -> Array[String]:
+	return SKILL_SLOTS
+
+
+func _get_skill_definitions() -> Array[Dictionary]:
+	return GameState.get_warrior_skill_definitions()
+
+
+func _get_skill_definition(skill_id: String) -> Dictionary:
+	return GameState.get_warrior_skill_definition(skill_id)
+
+
+func _get_skill_rank(skill_id: String) -> int:
+	return GameState.get_warrior_skill_rank(skill_id)
+
+
+func _can_unlock_skill(skill_id: String) -> bool:
+	return GameState.can_unlock_warrior_skill(skill_id)
+
+
+func _unlock_or_upgrade_skill(skill_id: String) -> bool:
+	return GameState.unlock_or_upgrade_warrior_skill(skill_id)
+
+
+func _assign_skill(skill_id: String, slot: String) -> bool:
+	return GameState.assign_warrior_skill(skill_id, slot)
 
 
 func _select_skill(skill_id: String) -> void:
@@ -261,7 +288,7 @@ func _refresh() -> void:
 		GameState.skill_tree_points,
 		GameState.player_level
 	]
-	for branch in BRANCHES:
+	for branch in _get_skill_branches():
 		var button: Button = branch_buttons[branch]
 		var is_selected_branch := branch == selected_branch
 		button.disabled = is_selected_branch
@@ -280,11 +307,11 @@ func _refresh() -> void:
 		)
 		button.add_theme_color_override("font_disabled_color", Color("#d6f1e7"))
 
-	for definition in GameState.get_warrior_skill_definitions():
+	for definition in _get_skill_definitions():
 		var skill_id := str(definition["id"])
 		var button: Button = skill_buttons[skill_id]
-		var rank := GameState.get_warrior_skill_rank(skill_id)
-		var can_unlock := GameState.can_unlock_warrior_skill(skill_id)
+		var rank := _get_skill_rank(skill_id)
+		var can_unlock := _can_unlock_skill(skill_id)
 		var is_selected := skill_id == selected_skill_id
 		var matches_branch := selected_branch == "All" \
 			or str(definition["branch"]) == selected_branch
@@ -340,7 +367,7 @@ func _refresh() -> void:
 
 
 func _refresh_details() -> void:
-	var definition := GameState.get_warrior_skill_definition(selected_skill_id)
+	var definition := _get_skill_definition(selected_skill_id)
 	if definition.is_empty():
 		details_label.text = "Select a skill to view its details."
 		purchase_button.disabled = true
@@ -349,10 +376,10 @@ func _refresh_details() -> void:
 
 	var prerequisites: Array[String] = []
 	for prerequisite_id in definition["prerequisites"]:
-		var prerequisite := GameState.get_warrior_skill_definition(str(prerequisite_id))
+		var prerequisite := _get_skill_definition(str(prerequisite_id))
 		prerequisites.append(str(prerequisite.get("name", prerequisite_id)))
 	var prerequisite_text := ", ".join(prerequisites) if not prerequisites.is_empty() else "None"
-	var rank := GameState.get_warrior_skill_rank(selected_skill_id)
+	var rank := _get_skill_rank(selected_skill_id)
 	details_label.text = "%s  |  %s\n%s\nRank %d/%d  |  Level %d  |  %d mana  |  %.1f sec cooldown  |  Requires: %s" % [
 		definition["branch"],
 		definition["name"],
@@ -365,7 +392,7 @@ func _refresh_details() -> void:
 		prerequisite_text
 	]
 
-	purchase_button.disabled = not GameState.can_unlock_warrior_skill(selected_skill_id)
+	purchase_button.disabled = not _can_unlock_skill(selected_skill_id)
 	if rank >= int(definition["max_rank"]):
 		purchase_button.text = "Maximum rank"
 	elif rank == 0:
@@ -376,8 +403,8 @@ func _refresh_details() -> void:
 
 
 func _purchase_selected_skill() -> void:
-	if GameState.unlock_or_upgrade_warrior_skill(selected_skill_id):
-		status_label.text = "%s upgraded." % GameState.get_warrior_skill_definition(
+	if _unlock_or_upgrade_skill(selected_skill_id):
+		status_label.text = "%s upgraded." % _get_skill_definition(
 			selected_skill_id
 		).get("name", "Skill")
 		loadout_changed.emit()
@@ -387,12 +414,13 @@ func _purchase_selected_skill() -> void:
 
 
 func _assign_selected_skill() -> void:
-	if slot_picker.selected < 0 or slot_picker.selected >= SKILL_SLOTS.size():
+	var skill_slots := _get_skill_slots()
+	if slot_picker.selected < 0 or slot_picker.selected >= skill_slots.size():
 		return
-	var slot := SKILL_SLOTS[slot_picker.selected]
-	if GameState.assign_warrior_skill(selected_skill_id, slot):
+	var slot := skill_slots[slot_picker.selected]
+	if _assign_skill(selected_skill_id, slot):
 		status_label.text = "%s assigned to %s." % [
-			GameState.get_warrior_skill_definition(selected_skill_id).get("name", "Skill"),
+			_get_skill_definition(selected_skill_id).get("name", "Skill"),
 			slot
 		]
 		loadout_changed.emit()

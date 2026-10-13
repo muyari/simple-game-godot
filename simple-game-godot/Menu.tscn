@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://jbk3au5dc7f4" path="res://textures/title_campfire_background.svg" id="2_title_background"]
 [ext_resource type="Texture2D" uid="uid://dsvb5prfod3o3" path="res://textures/warrior_sheet.svg" id="3_warrior_sheet"]
 [ext_resource type="Texture2D" uid="uid://ilod5jv1w4t4" path="res://textures/witch_sheet.svg" id="4_witch_sheet"]
+[ext_resource type="Texture2D" path="res://textures/ranger_sprite_atlas.png" id="5_ranger_sheet"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 content_margin_left = 36.0
@@ -56,6 +57,14 @@ scale = Vector2(1.4, 1.4)
 texture = ExtResource("4_witch_sheet")
 region_enabled = true
 region_rect = Rect2(0, 128, 64, 64)
+
+[node name="CampfireRanger" type="Sprite2D" parent="."]
+z_index = 1
+position = Vector2(1238, 524)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("5_ranger_sheet")
+region_enabled = true
+region_rect = Rect2(0, 0, 100, 100)
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=610919099]
 layout_mode = 1
@@ -222,6 +231,13 @@ alignment = 0
 theme_override_font_sizes/font_size = 18
 text = "Witch"
 
+[node name="RangerButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+alignment = 0
+theme_override_font_sizes/font_size = 18
+text = "Ranger"
+
 [node name="CharacterStatus" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=1543352664]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
@@ -318,6 +334,7 @@ dialog_text = "Delete this character? This cannot be undone."
 
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WarriorButton" to="." method="_on_warrior_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WitchButton" to="." method="_on_witch_selected"]
+[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/RangerButton" to="." method="_on_ranger_selected"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CharacterContinue" to="." method="_on_character_continue"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CancelCreationButton" to="." method="_on_creation_cancel_pressed"]
 [connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterActions/ContinueButton" to="." method="_on_roster_continue_pressed"]

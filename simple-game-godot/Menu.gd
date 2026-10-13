@@ -198,6 +198,11 @@ func _on_witch_selected() -> void:
 	character_status.text = "Witch selected"
 
 
+func _on_ranger_selected() -> void:
+	new_character_class = "Ranger"
+	character_status.text = "Ranger selected"
+
+
 func _on_character_continue() -> void:
 	var character_id := GameState.create_character(character_name_input.text, new_character_class)
 	if character_id.is_empty():
