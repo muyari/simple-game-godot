@@ -24,6 +24,7 @@ var experience_tooltip_label: Label
 var experience_feedback_label: Label
 var experience_feedback_time := 0.0
 var witch_skill_tree: WitchSkillTree
+var pause_menu: PauseMenu
 @onready var character_menu: Control = $CharacterMenu
 @onready var character_panel: PanelContainer = $CharacterMenu/Panel
 @onready var inventory_panel: PanelContainer = $CharacterMenu/InventoryPanel
@@ -50,9 +51,11 @@ var selected_inventory_index := -1
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_portal_cast_bar()
 	_build_progression_hud()
 	_build_inventory_slots()
+	_build_pause_menu()
 	equip_item_button.pressed.connect(_on_equip_item_pressed)
 	var player: Player = get_node("../Player")
 	if player.selected_character == "Witch":
@@ -121,7 +124,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if witch_skill_tree != null and witch_skill_tree.visible:
 		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+	if event.keycode == KEY_ESCAPE:
+		if pause_menu.visible:
+			pause_menu.close_menu()
+		elif witch_skill_tree != null and witch_skill_tree.visible:
 			_on_witch_skill_tree_closed()
+		elif character_menu.visible:
+			character_menu.hide()
+			_set_player_menu_paused(false)
+		else:
+			pause_menu.open_menu()
+		get_viewport().set_input_as_handled()
+		return
+
+	if witch_skill_tree != null and witch_skill_tree.visible:
 		get_viewport().set_input_as_handled()
 		return
 
@@ -148,10 +164,49 @@ func _unhandled_input(event: InputEvent) -> void:
 			character_menu.show()
 			_set_player_menu_paused(true)
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_ESCAPE and character_menu.visible:
-		character_menu.hide()
-		_set_player_menu_paused(false)
-		get_viewport().set_input_as_handled()
+
+
+func _build_pause_menu() -> void:
+	pause_menu = PauseMenu.new()
+	pause_menu.return_to_character_selection_requested.connect(
+		_on_return_to_character_selection_requested
+	)
+	pause_menu.close_game_requested.connect(_on_close_game_requested)
+	add_child(pause_menu)
+
+
+func _on_return_to_character_selection_requested() -> void:
+	var level_controller: Node = get_node("../LevelController")
+	if not level_controller.save_current_level_state():
+		push_error("Could not save the current level before returning to character selection.")
+		return
+	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
+		push_error("Could not save the active character before returning to character selection.")
+		return
+
+	get_tree().set_meta("return_to_character_select", true)
+	get_tree().set_meta(
+		"selected_character_id",
+		str(get_tree().get_meta("selected_character_id", ""))
+	)
+	pause_menu.close_menu()
+	var error := get_tree().change_scene_to_file("res://Menu.tscn")
+	if error != OK:
+		get_tree().remove_meta("return_to_character_select")
+		get_tree().remove_meta("selected_character_id")
+		pause_menu.open_menu()
+		push_error("Could not return to character selection: %s" % error_string(error))
+
+
+func _on_close_game_requested() -> void:
+	var level_controller: Node = get_node("../LevelController")
+	if not level_controller.save_current_level_state():
+		push_error("Could not save the current level before closing the game.")
+		return
+	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
+		push_error("Could not save the active character before closing the game.")
+		return
+	get_tree().quit()
 
 
 func _build_witch_skill_tree() -> void:

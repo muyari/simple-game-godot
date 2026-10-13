@@ -40,10 +40,13 @@ var equip_item_button: Button
 var inventory_gold_label: Label
 var inventory_slots: Array[Button] = []
 var selected_inventory_index := -1
+var pause_menu: PauseMenu
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	passive_tree_button.visible = player.selected_character == "Witch"
+	_build_pause_menu()
 	_build_experience_bar()
 	_update_gold(GameState.gold)
 	GameState.gold_changed.connect(_update_gold)
@@ -106,22 +109,32 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if witch_skill_tree != null and witch_skill_tree.visible:
 			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode == KEY_ESCAPE:
+			if pause_menu.visible:
+				pause_menu.close_menu()
+			elif witch_skill_tree != null and witch_skill_tree.visible:
 				_on_witch_skill_tree_closed()
+			elif waystone_overlay != null and waystone_overlay.visible:
+				_close_waystone()
+			elif dialogue_overlay != null and dialogue_overlay.visible:
+				_close_dialogue()
+			elif shop_overlay != null and shop_overlay.visible:
+				_close_shop()
+			elif character_overlay != null and character_overlay.visible:
+				_close_character_menu()
+			else:
+				pause_menu.open_menu()
+			get_viewport().set_input_as_handled()
+			return
+
+		if witch_skill_tree != null and witch_skill_tree.visible:
 			get_viewport().set_input_as_handled()
 			return
 		if waystone_overlay != null and waystone_overlay.visible:
-			if event.keycode == KEY_ESCAPE:
-				_close_waystone()
-				get_viewport().set_input_as_handled()
+			return
 		if dialogue_overlay != null and dialogue_overlay.visible:
-			if event.keycode == KEY_ESCAPE:
-				_close_dialogue()
-				get_viewport().set_input_as_handled()
 			return
 		if shop_overlay != null and shop_overlay.visible:
-			if event.keycode == KEY_ESCAPE:
-				_close_shop()
-				get_viewport().set_input_as_handled()
 			return
 		if event.keycode == KEY_C:
 			if character_overlay.visible and character_panel.visible:
@@ -141,9 +154,41 @@ func _unhandled_input(event: InputEvent) -> void:
 					and (waystone_overlay == null or not waystone_overlay.visible):
 				_open_witch_skill_tree("passives")
 				get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_ESCAPE and character_overlay.visible:
-			_close_character_menu()
-			get_viewport().set_input_as_handled()
+
+
+func _build_pause_menu() -> void:
+	pause_menu = PauseMenu.new()
+	pause_menu.return_to_character_selection_requested.connect(
+		_on_return_to_character_selection_requested
+	)
+	pause_menu.close_game_requested.connect(_on_close_game_requested)
+	add_child(pause_menu)
+
+
+func _on_return_to_character_selection_requested() -> void:
+	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
+		push_error("Could not save the active character before returning to character selection.")
+		return
+
+	get_tree().set_meta("return_to_character_select", true)
+	get_tree().set_meta(
+		"selected_character_id",
+		str(get_tree().get_meta("selected_character_id", ""))
+	)
+	pause_menu.close_menu()
+	var error := get_tree().change_scene_to_file("res://Menu.tscn")
+	if error != OK:
+		get_tree().remove_meta("return_to_character_select")
+		get_tree().remove_meta("selected_character_id")
+		pause_menu.open_menu()
+		push_error("Could not return to character selection: %s" % error_string(error))
+
+
+func _on_close_game_requested() -> void:
+	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
+		push_error("Could not save the active character before closing the game.")
+		return
+	get_tree().quit()
 
 
 func _build_shop() -> void:
