@@ -109,11 +109,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if witch_skill_tree != null and witch_skill_tree.visible:
 			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+				_on_witch_skill_tree_closed()
+			get_viewport().set_input_as_handled()
+			return
+
 		if event.keycode == KEY_ESCAPE:
 			if pause_menu.visible:
 				pause_menu.close_menu()
-			elif witch_skill_tree != null and witch_skill_tree.visible:
-				_on_witch_skill_tree_closed()
 			elif waystone_overlay != null and waystone_overlay.visible:
 				_close_waystone()
 			elif dialogue_overlay != null and dialogue_overlay.visible:

@@ -124,11 +124,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if witch_skill_tree != null and witch_skill_tree.visible:
 		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			_on_witch_skill_tree_closed()
+		get_viewport().set_input_as_handled()
+		return
+
 	if event.keycode == KEY_ESCAPE:
 		if pause_menu.visible:
 			pause_menu.close_menu()
-		elif witch_skill_tree != null and witch_skill_tree.visible:
-			_on_witch_skill_tree_closed()
 		elif character_menu.visible:
 			character_menu.hide()
 			_set_player_menu_paused(false)

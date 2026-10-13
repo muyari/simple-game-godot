@@ -526,13 +526,13 @@ func _build_passive_nodes() -> void:
 		var def: Dictionary = GameState.get_witch_passive_definition(passive_id)
 		var is_super := bool(def.get("is_super", false))
 		var center := _get_node_center(passive_id)
-		var size := SUPER_NODE_SIZE if is_super else STANDARD_NODE_SIZE
+		var node_size := SUPER_NODE_SIZE if is_super else STANDARD_NODE_SIZE
 
 		var node_btn := Button.new()
 		node_btn.name = "Node_%s" % passive_id
-		node_btn.custom_minimum_size = size
-		node_btn.size = size
-		node_btn.position = center - size * 0.5
+		node_btn.custom_minimum_size = node_size
+		node_btn.size = node_size
+		node_btn.position = center - node_size * 0.5
 		node_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		node_btn.pressed.connect(_select_passive.bind(passive_id))
 		node_container.add_child(node_btn)

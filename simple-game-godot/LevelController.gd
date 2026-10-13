@@ -89,7 +89,7 @@ func _ready() -> void:
 		return
 
 	level_id = _get_level_id()
-	var level_state := GameState.get_level_state(level_id)
+	var level_state: Dictionary = GameState.get_level_state(level_id)
 	if level_state.is_empty():
 		region_origin = player.global_position + player_camera.offset / player_camera.zoom
 		current_region = _get_region_for_position(_get_camera_center())
