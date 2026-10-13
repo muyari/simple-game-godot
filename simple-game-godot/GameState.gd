@@ -6,7 +6,7 @@ signal experience_gained(amount: int)
 signal player_leveled_up(level: int)
 
 const SAVE_PATH = "user://character_save.json"
-const SAVE_VERSION = 7
+const SAVE_VERSION = 8
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
 const LEVEL_SCENES = {
@@ -199,6 +199,49 @@ const WARRIOR_SKILL_TREE := {
 	}
 }
 const WARRIOR_SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
+
+const RANGER_SKILL_ORDER: Array[String] = [
+	"power_shot", "multi_shot", "explosive_arrow", "smoke_bomb"
+]
+const RANGER_SKILL_TREE: Dictionary = {
+	"power_shot": {
+		"name": "Power Shot",
+		"short_label": "POWER",
+		"icon_path": "res://textures/ranger_skills/power_shot.svg",
+		"branch": "Precision",
+		"description": "Fire a hard-hitting arrow that pierces through more foes with each rank.",
+		"max_rank": 3, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"mana_cost": 6, "cooldown": 2.5, "position": [1, 0]
+	},
+	"multi_shot": {
+		"name": "Multi-Shot",
+		"short_label": "VOLLEY",
+		"icon_path": "res://textures/ranger_skills/multi_shot.svg",
+		"branch": "Volley",
+		"description": "Loose three arrows in a fan to strike a cluster of enemies.",
+		"max_rank": 3, "point_cost": 1, "required_level": 2, "prerequisites": ["power_shot"],
+		"mana_cost": 14, "cooldown": 5.0, "position": [3, 0]
+	},
+	"explosive_arrow": {
+		"name": "Explosive Arrow",
+		"short_label": "BLAST",
+		"icon_path": "res://textures/ranger_skills/explosive_arrow.svg",
+		"branch": "Control",
+		"description": "Detonate an arrow on impact, damaging enemies around its target.",
+		"max_rank": 3, "point_cost": 1, "required_level": 4, "prerequisites": ["power_shot"],
+		"mana_cost": 18, "cooldown": 7.0, "position": [1, 1]
+	},
+	"smoke_bomb": {
+		"name": "Smoke Bomb",
+		"short_label": "SMOKE",
+		"icon_path": "res://textures/ranger_skills/smoke_bomb.svg",
+		"branch": "Mobility",
+		"description": "Burst into smoke, staggering nearby enemies so you can reposition.",
+		"max_rank": 3, "point_cost": 1, "required_level": 2, "prerequisites": [],
+		"mana_cost": 16, "cooldown": 12.0, "position": [4, 0]
+	}
+}
+const RANGER_SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
 
 const WARRIOR_PASSIVE_ORDER: Array[String] = [
 	"iron_vitality", "reinforced_armor", "steadfast_guard", "unyielding", "colossus",
@@ -732,6 +775,104 @@ const WITCH_PASSIVE_TREE: Dictionary = {
 	}
 }
 
+const RANGER_PASSIVE_ORDER: Array[String] = [
+	"keen_sight", "steady_aim", "critical_focus", "deadly_precision", "eagles_eye",
+	"quickstep", "light_footed", "windrunner", "evasive_reflex", "wind_dancer",
+	"trapcraft", "volatile_payload", "efficient_fletching", "field_rations", "master_trapper"
+]
+const RANGER_PASSIVE_TREE: Dictionary = {
+	"keen_sight": {
+		"name": "Keen Sight", "branch": "Precision",
+		"description": "Improve arrow accuracy by 10%, widening your hit margin and range.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"accuracy": 0.10}, "x": 0, "y": 0
+	},
+	"steady_aim": {
+		"name": "Steady Aim", "branch": "Precision",
+		"description": "Gain +4% critical hit chance.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["keen_sight"],
+		"stats": {"critical_chance": 0.04}, "x": 0, "y": 1
+	},
+	"critical_focus": {
+		"name": "Critical Focus", "branch": "Precision",
+		"description": "Increase critical damage by 20%.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["steady_aim"],
+		"stats": {"critical_damage": 0.20}, "x": 0, "y": 2
+	},
+	"deadly_precision": {
+		"name": "Deadly Precision", "branch": "Precision",
+		"description": "Gain +5% critical hit chance and +10% arrow accuracy.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["critical_focus"],
+		"stats": {"critical_chance": 0.05, "accuracy": 0.10}, "x": 0, "y": 3
+	},
+	"eagles_eye": {
+		"name": "Eagle's Eye", "branch": "Precision",
+		"description": "Super passive: +8% critical chance and +30% critical damage.",
+		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["deadly_precision"],
+		"stats": {"critical_chance": 0.08, "critical_damage": 0.30}, "x": 0, "y": 4
+	},
+	"quickstep": {
+		"name": "Quickstep", "branch": "Skirmisher",
+		"description": "Increase Ranger movement speed by 5%.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"movement_speed": 0.05}, "x": 2, "y": 0
+	},
+	"light_footed": {
+		"name": "Light-Footed", "branch": "Skirmisher",
+		"description": "Gain +5% chance to evade incoming attacks.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["quickstep"],
+		"stats": {"evasion": 0.05}, "x": 2, "y": 1
+	},
+	"windrunner": {
+		"name": "Windrunner", "branch": "Skirmisher",
+		"description": "Increase movement speed by another 5% and projectile speed by 10%.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["light_footed"],
+		"stats": {"movement_speed": 0.05, "projectile_speed": 0.10}, "x": 2, "y": 2
+	},
+	"evasive_reflex": {
+		"name": "Evasive Reflex", "branch": "Skirmisher",
+		"description": "Gain +7% chance to evade incoming attacks.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["windrunner"],
+		"stats": {"evasion": 0.07}, "x": 2, "y": 3
+	},
+	"wind_dancer": {
+		"name": "Wind Dancer", "branch": "Skirmisher",
+		"description": "Super passive: +10% movement speed, +10% projectile speed, and +15 health.",
+		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["evasive_reflex"],
+		"stats": {"movement_speed": 0.10, "projectile_speed": 0.10, "max_health": 15}, "x": 2, "y": 4
+	},
+	"trapcraft": {
+		"name": "Trapcraft", "branch": "Trapper",
+		"description": "Increase Explosive Arrow and Smoke Bomb effectiveness by 10%.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"trap_efficiency": 0.10}, "x": 4, "y": 0
+	},
+	"volatile_payload": {
+		"name": "Volatile Payload", "branch": "Trapper",
+		"description": "Increase trap and explosive area by another 15%.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["trapcraft"],
+		"stats": {"trap_efficiency": 0.15}, "x": 4, "y": 1
+	},
+	"efficient_fletching": {
+		"name": "Efficient Fletching", "branch": "Trapper",
+		"description": "Reduce Ranger skill mana costs by 10%.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["volatile_payload"],
+		"stats": {"mana_cost_reduction": 0.10}, "x": 4, "y": 2
+	},
+	"field_rations": {
+		"name": "Field Rations", "branch": "Trapper",
+		"description": "Gain +15 maximum health and +10 maximum mana.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["efficient_fletching"],
+		"stats": {"max_health": 15, "max_mana": 10}, "x": 4, "y": 3
+	},
+	"master_trapper": {
+		"name": "Master Trapper", "branch": "Trapper",
+		"description": "Super passive: +25% trap effectiveness and +10% Ranger skill mana savings.",
+		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["field_rations"],
+		"stats": {"trap_efficiency": 0.25, "mana_cost_reduction": 0.10}, "x": 4, "y": 4
+	}
+}
+
 const MAX_PLAYER_LEVEL = 25
 const LEVEL_XP_THRESHOLDS: Array[int] = [
 	0, 300, 750, 1350, 2100, 3000, 4050, 5250, 6600, 8100,
@@ -772,6 +913,9 @@ var witch_unlocked_passives: Array[String] = []
 var warrior_skill_ranks: Dictionary = {}
 var warrior_skill_loadout: Dictionary = {}
 var warrior_unlocked_passives: Array[String] = []
+var ranger_skill_ranks: Dictionary = {}
+var ranger_skill_loadout: Dictionary = {}
+var ranger_unlocked_passives: Array[String] = []
 
 
 func _ready() -> void:
@@ -853,6 +997,81 @@ func get_warrior_skill_definitions() -> Array[Dictionary]:
 		definition["id"] = skill_id
 		definitions.append(definition)
 	return definitions
+
+
+func get_ranger_skill_definitions() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	for skill_id in RANGER_SKILL_ORDER:
+		var definition: Dictionary = RANGER_SKILL_TREE[skill_id].duplicate(true)
+		definition["id"] = skill_id
+		definitions.append(definition)
+	return definitions
+
+
+func get_ranger_skill_definition(skill_id: String) -> Dictionary:
+	if not RANGER_SKILL_TREE.has(skill_id):
+		return {}
+	var definition: Dictionary = RANGER_SKILL_TREE[skill_id].duplicate(true)
+	definition["id"] = skill_id
+	return definition
+
+
+func get_ranger_skill_rank(skill_id: String) -> int:
+	return int(ranger_skill_ranks.get(skill_id, 0))
+
+
+func get_ranger_equipped_skill(slot: String) -> String:
+	return str(ranger_skill_loadout.get(slot, ""))
+
+
+func can_unlock_ranger_skill(skill_id: String) -> bool:
+	if _get_active_character_class() != "Ranger" or not RANGER_SKILL_TREE.has(skill_id):
+		return false
+
+	var skill: Dictionary = RANGER_SKILL_TREE[skill_id]
+	var current_rank := get_ranger_skill_rank(skill_id)
+	if player_level < int(skill["required_level"]) \
+			or current_rank >= int(skill["max_rank"]) \
+			or skill_tree_points < int(skill["point_cost"]):
+		return false
+	for prerequisite_id in skill["prerequisites"]:
+		if get_ranger_skill_rank(str(prerequisite_id)) <= 0:
+			return false
+	return true
+
+
+func unlock_or_upgrade_ranger_skill(skill_id: String) -> bool:
+	if not can_unlock_ranger_skill(skill_id):
+		return false
+
+	var previous_rank := get_ranger_skill_rank(skill_id)
+	var previous_points := skill_tree_points
+	ranger_skill_ranks[skill_id] = previous_rank + 1
+	skill_tree_points -= int(RANGER_SKILL_TREE[skill_id]["point_cost"])
+	if not save_character(get_inventory(), get_equipment()):
+		ranger_skill_ranks[skill_id] = previous_rank
+		skill_tree_points = previous_points
+		return false
+	_emit_progression_changed()
+	return true
+
+
+func assign_ranger_skill(skill_id: String, slot: String) -> bool:
+	if _get_active_character_class() != "Ranger" \
+			or slot not in RANGER_SKILL_SLOTS \
+			or get_ranger_skill_rank(skill_id) < 1:
+		return false
+
+	var previous_loadout := ranger_skill_loadout.duplicate()
+	for assigned_slot in ranger_skill_loadout.keys():
+		if ranger_skill_loadout[assigned_slot] == skill_id:
+			ranger_skill_loadout.erase(assigned_slot)
+	ranger_skill_loadout[slot] = skill_id
+	if not save_character(get_inventory(), get_equipment()):
+		ranger_skill_loadout = previous_loadout
+		return false
+	_emit_progression_changed()
+	return true
 
 
 func get_warrior_skill_definition(skill_id: String) -> Dictionary:
@@ -1152,6 +1371,92 @@ func get_warrior_passive_stat_totals() -> Dictionary:
 	return totals
 
 
+func get_ranger_passive_definitions() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = []
+	for passive_id in RANGER_PASSIVE_ORDER:
+		var definition: Dictionary = RANGER_PASSIVE_TREE[passive_id].duplicate(true)
+		definition["id"] = passive_id
+		definitions.append(definition)
+	return definitions
+
+
+func get_ranger_passive_definition(passive_id: String) -> Dictionary:
+	if not RANGER_PASSIVE_TREE.has(passive_id):
+		return {}
+	var definition: Dictionary = RANGER_PASSIVE_TREE[passive_id].duplicate(true)
+	definition["id"] = passive_id
+	return definition
+
+
+func is_ranger_passive_unlocked(passive_id: String) -> bool:
+	return ranger_unlocked_passives.has(passive_id)
+
+
+func can_unlock_ranger_passive(passive_id: String) -> bool:
+	if _get_active_character_class() != "Ranger" or not RANGER_PASSIVE_TREE.has(passive_id):
+		return false
+	if is_ranger_passive_unlocked(passive_id):
+		return false
+
+	var node: Dictionary = RANGER_PASSIVE_TREE[passive_id]
+	if player_level < int(node.get("required_level", 1)):
+		return false
+	if passive_tree_points < int(node.get("point_cost", 1)):
+		return false
+
+	for prerequisite_id in node.get("prerequisites", []):
+		if not is_ranger_passive_unlocked(str(prerequisite_id)):
+			return false
+	return true
+
+
+func unlock_ranger_passive(passive_id: String) -> bool:
+	if not can_unlock_ranger_passive(passive_id):
+		return false
+
+	var node: Dictionary = RANGER_PASSIVE_TREE[passive_id]
+	var cost := int(node.get("point_cost", 1))
+	var previous_passives := ranger_unlocked_passives.duplicate()
+	var previous_points := passive_tree_points
+	ranger_unlocked_passives.append(passive_id)
+	passive_tree_points -= cost
+
+	if not save_character(get_inventory(), get_equipment()):
+		ranger_unlocked_passives = previous_passives
+		passive_tree_points = previous_points
+		return false
+	_emit_progression_changed()
+	return true
+
+
+func get_ranger_passive_stat_totals() -> Dictionary:
+	var totals := {
+		"accuracy": 0.0,
+		"critical_chance": 0.0,
+		"critical_damage": 0.0,
+		"evasion": 0.0,
+		"projectile_speed": 0.0,
+		"trap_efficiency": 0.0,
+		"mana_cost_reduction": 0.0,
+		"movement_speed": 0.0,
+		"max_health": 0,
+		"max_mana": 0
+	}
+	if _get_active_character_class() != "Ranger":
+		return totals
+
+	for passive_id in ranger_unlocked_passives:
+		if not RANGER_PASSIVE_TREE.has(passive_id):
+			continue
+		var stats: Dictionary = RANGER_PASSIVE_TREE[passive_id].get("stats", {})
+		for stat_name in stats:
+			if typeof(totals.get(stat_name, 0)) == TYPE_INT:
+				totals[stat_name] = int(totals.get(stat_name, 0)) + int(stats[stat_name])
+			else:
+				totals[stat_name] = float(totals.get(stat_name, 0.0)) + float(stats[stat_name])
+	return totals
+
+
 func get_level_state(level_id: int) -> Dictionary:
 	var character_index := _find_character_index(_active_character_id)
 	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
@@ -1244,7 +1549,7 @@ func complete_level(level_id: int) -> bool:
 
 func create_character(display_name: String, character_class: String) -> String:
 	var clean_name := display_name.strip_edges()
-	if clean_name.is_empty() or character_class not in ["Warrior", "Witch"]:
+	if clean_name.is_empty() or character_class not in ["Warrior", "Witch", "Ranger"]:
 		return ""
 
 	_load_roster()
@@ -1522,8 +1827,11 @@ func save_character(inventory: Array[ItemData], equipment: Dictionary) -> bool:
 		"witch_skill_loadout": witch_skill_loadout,
 		"warrior_skill_ranks": warrior_skill_ranks,
 		"warrior_skill_loadout": warrior_skill_loadout,
+		"ranger_skill_ranks": ranger_skill_ranks,
+		"ranger_skill_loadout": ranger_skill_loadout,
 		"witch_unlocked_passives": witch_unlocked_passives,
 		"warrior_unlocked_passives": warrior_unlocked_passives,
+		"ranger_unlocked_passives": ranger_unlocked_passives,
 		"inventory": inventory_records,
 		"equipment": equipment_records
 	}
@@ -1629,10 +1937,20 @@ func _load_character() -> void:
 		return
 	warrior_skill_ranks = _validated_warrior_skill_ranks(raw_warrior_skill_ranks)
 	warrior_skill_loadout = _validated_warrior_skill_loadout(raw_warrior_skill_loadout)
+	var raw_ranger_skill_ranks: Variant = save_data.get("ranger_skill_ranks", {})
+	var raw_ranger_skill_loadout: Variant = save_data.get("ranger_skill_loadout", {})
+	if typeof(raw_ranger_skill_ranks) != TYPE_DICTIONARY \
+			or typeof(raw_ranger_skill_loadout) != TYPE_DICTIONARY:
+		push_error("Character save Ranger skill data is invalid.")
+		return
+	ranger_skill_ranks = _validated_ranger_skill_ranks(raw_ranger_skill_ranks)
+	ranger_skill_loadout = _validated_ranger_skill_loadout(raw_ranger_skill_loadout)
 	var raw_witch_passives: Variant = save_data.get("witch_unlocked_passives", [])
 	witch_unlocked_passives = _validated_witch_passives(raw_witch_passives)
 	var raw_warrior_passives: Variant = save_data.get("warrior_unlocked_passives", [])
 	warrior_unlocked_passives = _validated_warrior_passives(raw_warrior_passives)
+	var raw_ranger_passives: Variant = save_data.get("ranger_unlocked_passives", [])
+	ranger_unlocked_passives = _validated_ranger_passives(raw_ranger_passives)
 
 	var raw_inventory: Variant = save_data.get("inventory", [])
 	var raw_equipment: Variant = save_data.get("equipment", {})
@@ -1719,7 +2037,7 @@ func _load_roster() -> void:
 				or typeof(display_name) != TYPE_STRING \
 				or typeof(character_class) != TYPE_STRING \
 				or typeof(save_path) != TYPE_STRING \
-				or character_class not in ["Warrior", "Witch"] \
+				or character_class not in ["Warrior", "Witch", "Ranger"] \
 				or (save_path != SAVE_PATH and not str(save_path).begins_with("user://characters/")):
 			continue
 		_characters.append({
@@ -1816,6 +2134,32 @@ func _validated_warrior_skill_loadout(raw_loadout: Dictionary) -> Dictionary:
 	return loadout
 
 
+func _validated_ranger_skill_ranks(raw_ranks: Dictionary) -> Dictionary:
+	var ranks: Dictionary = {}
+	for skill_id in raw_ranks:
+		var skill_key := str(skill_id)
+		if not RANGER_SKILL_TREE.has(skill_key):
+			continue
+		var raw_rank: Variant = raw_ranks[skill_id]
+		if typeof(raw_rank) not in [TYPE_INT, TYPE_FLOAT] \
+				or float(raw_rank) != float(int(raw_rank)):
+			continue
+		var rank := int(raw_rank)
+		if rank >= 1 and rank <= int(RANGER_SKILL_TREE[skill_key]["max_rank"]):
+			ranks[skill_key] = rank
+	return ranks
+
+
+func _validated_ranger_skill_loadout(raw_loadout: Dictionary) -> Dictionary:
+	var loadout: Dictionary = {}
+	for raw_slot in raw_loadout:
+		var slot := str(raw_slot)
+		var skill_id := str(raw_loadout[raw_slot])
+		if slot in RANGER_SKILL_SLOTS and ranger_skill_ranks.get(skill_id, 0) > 0:
+			loadout[slot] = skill_id
+	return loadout
+
+
 func _initialize_witch_skill_state() -> void:
 	if _get_active_character_class() != "Witch":
 		witch_skill_ranks.clear()
@@ -1835,6 +2179,16 @@ func _initialize_witch_skill_state() -> void:
 			warrior_skill_ranks["heavy_strike"] = 1
 		if warrior_skill_loadout.is_empty():
 			warrior_skill_loadout["Q"] = "heavy_strike"
+
+	if _get_active_character_class() != "Ranger":
+		ranger_skill_ranks.clear()
+		ranger_skill_loadout.clear()
+		ranger_unlocked_passives.clear()
+	else:
+		if get_ranger_skill_rank("power_shot") < 1:
+			ranger_skill_ranks["power_shot"] = 1
+		if ranger_skill_loadout.is_empty():
+			ranger_skill_loadout["Q"] = "power_shot"
 
 
 func _validated_completed_levels(raw_levels: Variant) -> Array[int]:
@@ -1883,6 +2237,17 @@ func _validated_warrior_passives(raw_passives: Variant) -> Array[String]:
 	for raw_id in raw_passives:
 		var passive_id := str(raw_id)
 		if WARRIOR_PASSIVE_TREE.has(passive_id) and not valid_passives.has(passive_id):
+			valid_passives.append(passive_id)
+	return valid_passives
+
+
+func _validated_ranger_passives(raw_passives: Variant) -> Array[String]:
+	var valid_passives: Array[String] = []
+	if typeof(raw_passives) != TYPE_ARRAY:
+		return valid_passives
+	for raw_id in raw_passives:
+		var passive_id := str(raw_id)
+		if RANGER_PASSIVE_TREE.has(passive_id) and not valid_passives.has(passive_id):
 			valid_passives.append(passive_id)
 	return valid_passives
 

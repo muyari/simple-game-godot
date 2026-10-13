@@ -20,6 +20,9 @@ const DECELERATION = 1600.0
 const MAX_HEALTH = 100
 const WARRIOR_FRAME_SIZE = 100
 const WARRIOR_WALK_FRAME_DURATION = 0.16
+const RANGER_FRAME_SIZE = 100
+const RANGER_WALK_FRAME_DURATION = 0.14
+const RANGER_ATTACK_DURATION = 0.42
 const WITCH_FRAME_SIZE = 100
 const WITCH_WALK_FRAME_DURATION = 0.16
 const WITCH_ATTACK_DURATION = 0.48
@@ -41,6 +44,8 @@ const FIREBALL_SCENE = preload("res://fireball.tscn")
 const WITCH_FAMILIAR_SCENE = preload("res://witch_familiar.tscn")
 const WARRIOR_SHEET = preload("res://textures/warrior_sprite_atlas.png")
 const WITCH_SHEET = preload("res://textures/witch_sprite_atlas.png")
+const RANGER_SHEET = preload("res://textures/ranger_sprite_atlas.png")
+const RANGER_ARROW_SCRIPT = preload("res://RangerArrow.gd")
 const PORTAL_SCENE = preload("res://portal.tscn")
 const TOWN_SCENE_PATH = "res://town.tscn"
 const TOWN_ARRIVAL_POSITION = Vector2(576, 350)
@@ -73,6 +78,7 @@ var arcane_shield_damage_reduction := 0.0
 var frost_nova_visual_time_remaining := 0.0
 var witch_skill_cooldowns: Dictionary = {}
 var warrior_skill_cooldowns: Dictionary = {}
+var ranger_skill_cooldowns: Dictionary = {}
 var war_cry_time_remaining := 0.0
 var iron_resolve_time_remaining := 0.0
 var iron_resolve_heal_accumulator := 0.0
@@ -81,6 +87,11 @@ var warrior_aoe_visual_radius := 0.0
 var warrior_skill_animation_id := ""
 var warrior_skill_animation_time_remaining := 0.0
 var warrior_skill_animation_tween: Tween
+var ranger_attack_animation_time_remaining := 0.0
+var ranger_attack_cooldown_remaining := 0.0
+var ranger_walk_distance := 0.0
+var ranger_smoke_visual_time_remaining := 0.0
+var ranger_smoke_visual_radius := 0.0
 var witch_familiar: WitchFamiliar
 var selected_character := "Warrior"
 var click_destination := Vector2.ZERO
@@ -104,7 +115,13 @@ var is_casting_town_portal := false
 
 func _ready() -> void:
 	selected_character = str(get_tree().get_meta("selected_character", "Warrior"))
-	sprite.texture = WITCH_SHEET if selected_character == "Witch" else WARRIOR_SHEET
+	match selected_character:
+		"Witch":
+			sprite.texture = WITCH_SHEET
+		"Ranger":
+			sprite.texture = RANGER_SHEET
+		_:
+			sprite.texture = WARRIOR_SHEET
 	sprite_base_scale = Vector2(0.64, 0.64)
 	sprite.scale = sprite_base_scale
 	sword.hide()
@@ -150,6 +167,12 @@ func _physics_process(delta: float) -> void:
 	_update_potion_refills(delta)
 	_update_potion_effects(delta)
 	iceball_cooldown_remaining = maxf(iceball_cooldown_remaining - delta, 0.0)
+	ranger_attack_cooldown_remaining = maxf(ranger_attack_cooldown_remaining - delta, 0.0)
+	ranger_attack_animation_time_remaining = maxf(
+		ranger_attack_animation_time_remaining - delta,
+		0.0
+	)
+	ranger_smoke_visual_time_remaining = maxf(ranger_smoke_visual_time_remaining - delta, 0.0)
 	witch_attack_time_remaining = maxf(witch_attack_time_remaining - delta, 0.0)
 	chill_time_remaining = maxf(chill_time_remaining - delta, 0.0)
 	var shield_was_active := arcane_shield_time_remaining > 0.0
@@ -172,7 +195,8 @@ func _physics_process(delta: float) -> void:
 			or frost_nova_visual_time_remaining > 0.0 \
 			or shield_was_active or arcane_shield_time_remaining > 0.0 \
 			or warrior_aoe_visual_time_remaining > 0.0 \
-			or warrior_skill_animation_time_remaining > 0.0:
+			or warrior_skill_animation_time_remaining > 0.0 \
+			or ranger_smoke_visual_time_remaining > 0.0:
 		queue_redraw()
 	warrior_aoe_visual_time_remaining = maxf(warrior_aoe_visual_time_remaining - delta, 0.0)
 	warrior_skill_animation_time_remaining = maxf(
@@ -183,6 +207,7 @@ func _physics_process(delta: float) -> void:
 		warrior_skill_animation_id = ""
 	_update_witch_skill_cooldowns(delta)
 	_update_warrior_skill_cooldowns(delta)
+	_update_ranger_skill_cooldowns(delta)
 	if chill_time_remaining == 0.0:
 		chill_speed_factor = 1.0
 	if mouse_move_held and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -222,7 +247,8 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if direction != Vector2.ZERO:
-		var movement_velocity := direction * SPEED * chill_speed_factor
+		var movement_velocity := direction * SPEED * _get_movement_speed_multiplier() \
+			* chill_speed_factor
 		if knockback_velocity.length_squared() > 0.0:
 			movement_velocity += knockback_velocity
 			knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 900.0 * delta)
@@ -238,10 +264,20 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("ui_accept"):
 		_use_primary_attack()
 
-	_update_sprite(direction != Vector2.ZERO)
 	_update_sword(delta)
 	_update_wand()
-	move_and_slide()
+	if selected_character == "Ranger":
+		var previous_position := global_position
+		move_and_slide()
+		var distance_moved := global_position.distance_to(previous_position)
+		if distance_moved > 0.1:
+			ranger_walk_distance += distance_moved
+		else:
+			ranger_walk_distance = 0.0
+		_update_sprite(distance_moved > 0.1)
+	else:
+		_update_sprite(direction != Vector2.ZERO)
+		move_and_slide()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -301,6 +337,8 @@ func activate_skill_slot(slot: String) -> void:
 				_cast_e_skill()
 		else:
 			_cast_assigned_witch_skill(slot)
+	elif selected_character == "Ranger":
+		_cast_assigned_ranger_skill(slot)
 	elif slot == "Q":
 		if not _cast_assigned_warrior_skill(slot):
 			_cast_fireball()
@@ -338,6 +376,14 @@ func _use_primary_attack() -> void:
 		if iceball_cooldown_remaining <= 0.0:
 			_cast_iceball()
 			iceball_cooldown_remaining = ICEBALL_COOLDOWN
+	elif selected_character == "Ranger":
+		if ranger_attack_cooldown_remaining <= 0.0:
+			_spawn_ranger_arrow(
+				facing,
+				_get_ranger_hit_damage(1.5 + float(get_weapon_damage_bonus()) * 0.5)
+			)
+			ranger_attack_cooldown_remaining = 0.42
+			ranger_attack_animation_time_remaining = RANGER_ATTACK_DURATION
 	elif attack_time_remaining <= 0.0:
 		attack_time_remaining = ATTACK_DURATION
 		attack_hit_applied = false
@@ -373,6 +419,15 @@ func _update_warrior_skill_cooldowns(delta: float) -> void:
 			warrior_skill_cooldowns[skill_id] = remaining
 
 
+func _update_ranger_skill_cooldowns(delta: float) -> void:
+	for skill_id in ranger_skill_cooldowns.keys():
+		var remaining := maxf(float(ranger_skill_cooldowns[skill_id]) - delta, 0.0)
+		if remaining == 0.0:
+			ranger_skill_cooldowns.erase(skill_id)
+		else:
+			ranger_skill_cooldowns[skill_id] = remaining
+
+
 func get_warrior_skill_cooldown_ratio(skill_id: String) -> float:
 	var remaining := float(warrior_skill_cooldowns.get(skill_id, 0.0))
 	if remaining <= 0.0:
@@ -396,6 +451,156 @@ func get_warrior_skill_tooltip(skill_id: String) -> String:
 		definition["mana_cost"],
 		maxf(float(definition["cooldown"]) - float(rank - 1) * 0.3, 0.5)
 	]
+
+
+func get_ranger_skill_cooldown_ratio(skill_id: String) -> float:
+	var remaining := float(ranger_skill_cooldowns.get(skill_id, 0.0))
+	if remaining <= 0.0:
+		return 0.0
+	var definition := GameState.get_ranger_skill_definition(skill_id)
+	if definition.is_empty():
+		return 0.0
+	var rank := GameState.get_ranger_skill_rank(skill_id)
+	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.35, 0.5)
+	return clampf(remaining / cooldown, 0.0, 1.0)
+
+
+func get_ranger_skill_tooltip(skill_id: String) -> String:
+	var definition := GameState.get_ranger_skill_definition(skill_id)
+	var rank := GameState.get_ranger_skill_rank(skill_id)
+	if definition.is_empty() or rank <= 0:
+		return ""
+	return "%s\n%s\n%d mana  |  %.1f sec cooldown" % [
+		definition["name"],
+		definition["description"],
+		_get_ranger_mana_cost(int(definition["mana_cost"])),
+		maxf(float(definition["cooldown"]) - float(rank - 1) * 0.35, 0.5)
+	]
+
+
+func _cast_assigned_ranger_skill(slot: String) -> bool:
+	if selected_character != "Ranger":
+		return false
+	var skill_id := GameState.get_ranger_equipped_skill(slot)
+	var rank := GameState.get_ranger_skill_rank(skill_id)
+	if skill_id.is_empty() or rank <= 0:
+		return false
+	if ranger_skill_cooldowns.has(skill_id):
+		return true
+
+	var definition := GameState.get_ranger_skill_definition(skill_id)
+	if definition.is_empty():
+		return false
+	var mana_cost := _get_ranger_mana_cost(int(definition["mana_cost"]))
+	if mana < mana_cost:
+		return true
+
+	mana -= mana_cost
+	mana_changed.emit(mana, get_max_mana())
+	ranger_skill_cooldowns[skill_id] = maxf(
+		float(definition["cooldown"]) - float(rank - 1) * 0.35,
+		0.5
+	)
+	match skill_id:
+		"power_shot":
+			_spawn_ranger_arrow(
+				facing,
+				_get_ranger_hit_damage(
+					4.0 + float(rank) * 1.8 + float(get_weapon_damage_bonus())
+				),
+				rank - 1
+			)
+		"multi_shot":
+			var spread := 0.22
+			var damage := _get_ranger_hit_damage(
+				1.5 + float(rank) * 1.0 + float(get_weapon_damage_bonus()) * 0.5
+			)
+			_spawn_ranger_arrow(facing.rotated(-spread), damage)
+			_spawn_ranger_arrow(facing, damage)
+			_spawn_ranger_arrow(facing.rotated(spread), damage)
+		"explosive_arrow":
+			var trap_multiplier := 1.0 + float(
+				GameState.get_ranger_passive_stat_totals().get("trap_efficiency", 0.0)
+			)
+			_spawn_ranger_arrow(
+				facing,
+				_get_ranger_hit_damage(
+					2.5 + float(rank) * 1.2 + float(get_weapon_damage_bonus())
+				),
+				0,
+				(74.0 + float(rank - 1) * 18.0) * trap_multiplier,
+				_get_ranger_hit_damage(
+					1.5 + float(rank) * 1.1 + float(get_weapon_damage_bonus()) * 0.5
+				)
+			)
+		"smoke_bomb":
+			_cast_ranger_smoke_bomb(rank)
+		_:
+			ranger_skill_cooldowns.erase(skill_id)
+			mana += mana_cost
+			mana_changed.emit(mana, get_max_mana())
+			return false
+	ranger_attack_animation_time_remaining = RANGER_ATTACK_DURATION
+	return true
+
+
+func _spawn_ranger_arrow(
+	direction: Vector2,
+	arrow_damage: float,
+	pierce_count: int = 0,
+	explosion_radius: float = 0.0,
+	explosion_damage: float = 0.0
+) -> void:
+	var arrow: RangerArrow = RANGER_ARROW_SCRIPT.new()
+	arrow.direction = direction.normalized()
+	var passive_stats := GameState.get_ranger_passive_stat_totals()
+	arrow.speed = RangerArrow.BASE_SPEED * (
+		1.0 + float(passive_stats.get("projectile_speed", 0.0))
+	)
+	arrow.hit_radius = RangerArrow.BASE_HIT_RADIUS * (
+		1.0 + float(passive_stats.get("accuracy", 0.0))
+	)
+	arrow.max_range = RangerArrow.BASE_MAX_RANGE * (
+		1.0 + float(passive_stats.get("accuracy", 0.0))
+	)
+	arrow.damage = arrow_damage
+	arrow.pierce_count = pierce_count
+	arrow.explosion_radius = explosion_radius
+	arrow.explosion_damage = explosion_damage
+	get_tree().current_scene.add_child(arrow)
+	arrow.global_position = global_position + direction.normalized() * 24.0
+
+
+func _cast_ranger_smoke_bomb(rank: int) -> void:
+	var trap_multiplier := 1.0 + float(
+		GameState.get_ranger_passive_stat_totals().get("trap_efficiency", 0.0)
+	)
+	var radius := (92.0 + float(rank - 1) * 18.0) * trap_multiplier
+	var stagger_duration := (0.55 + float(rank - 1) * 0.2) * trap_multiplier
+	ranger_smoke_visual_radius = radius
+	ranger_smoke_visual_time_remaining = 0.9
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy is Node2D or not enemy.has_method("apply_stun"):
+			continue
+		var enemy_node := enemy as Node2D
+		if global_position.distance_to(enemy_node.global_position) <= radius:
+			enemy.call("apply_stun", stagger_duration)
+	queue_redraw()
+
+
+func _get_ranger_mana_cost(base_cost: int) -> int:
+	var reduction := float(
+		GameState.get_ranger_passive_stat_totals().get("mana_cost_reduction", 0.0)
+	)
+	return maxi(roundi(float(base_cost) * (1.0 - clampf(reduction, 0.0, 0.6))), 0)
+
+
+func _get_ranger_hit_damage(base_damage: float) -> float:
+	var stats := GameState.get_ranger_passive_stat_totals()
+	var crit_chance := clampf(0.05 + float(stats.get("critical_chance", 0.0)), 0.0, 0.75)
+	if randf() < crit_chance:
+		return base_damage * (1.5 + float(stats.get("critical_damage", 0.0)))
+	return base_damage
 
 
 func _cast_assigned_warrior_skill(slot: String) -> bool:
@@ -1065,6 +1270,9 @@ func get_max_health() -> int:
 	elif selected_character == "Warrior":
 		var passive_stats := GameState.get_warrior_passive_stat_totals()
 		total += int(passive_stats.get("max_health", 0))
+	elif selected_character == "Ranger":
+		var passive_stats := GameState.get_ranger_passive_stat_totals()
+		total += int(passive_stats.get("max_health", 0))
 	return total
 
 
@@ -1076,13 +1284,20 @@ func get_max_mana() -> int:
 	elif selected_character == "Warrior":
 		var passive_stats := GameState.get_warrior_passive_stat_totals()
 		total += int(passive_stats.get("max_mana", 0))
+	elif selected_character == "Ranger":
+		var passive_stats := GameState.get_ranger_passive_stat_totals()
+		total += int(passive_stats.get("max_mana", 0))
 	return total
 
 
 func get_evasion() -> float:
-	if selected_character != "Witch":
+	var passive_stats: Dictionary
+	if selected_character == "Witch":
+		passive_stats = GameState.get_witch_passive_stat_totals()
+	elif selected_character == "Ranger":
+		passive_stats = GameState.get_ranger_passive_stat_totals()
+	else:
 		return 0.0
-	var passive_stats := GameState.get_witch_passive_stat_totals()
 	return clampf(float(passive_stats.get("evasion", 0.0)), 0.0, 0.75)
 
 
@@ -1102,6 +1317,13 @@ func get_passive_damage_reduction_percent() -> float:
 	else:
 		return 0.0
 	return clampf(float(passive_stats.get("damage_reduction_percent", 0.0)), 0.0, 0.8)
+
+
+func _get_movement_speed_multiplier() -> float:
+	if selected_character != "Ranger":
+		return 1.0
+	var passive_stats := GameState.get_ranger_passive_stat_totals()
+	return 1.0 + float(passive_stats.get("movement_speed", 0.0))
 
 
 func refresh_passives_and_vitals() -> void:
@@ -1232,6 +1454,24 @@ func _update_sprite(is_moving: bool) -> void:
 		row = 2
 	elif facing == Vector2.UP:
 		row = 3
+
+	if selected_character == "Ranger":
+		var ranger_frame := 0
+		if ranger_attack_animation_time_remaining > 0.0:
+			var attack_progress := 1.0 - (
+				ranger_attack_animation_time_remaining / RANGER_ATTACK_DURATION
+			)
+			ranger_frame = 3 + mini(int(attack_progress * 3.0), 2)
+		elif is_moving:
+			var distance_per_frame := SPEED * RANGER_WALK_FRAME_DURATION
+			ranger_frame = 1 + int(ranger_walk_distance / distance_per_frame) % 2
+		sprite.region_rect = Rect2(
+			ranger_frame * RANGER_FRAME_SIZE,
+			row * RANGER_FRAME_SIZE,
+			RANGER_FRAME_SIZE,
+			RANGER_FRAME_SIZE
+		)
+		return
 
 	if selected_character != "Witch":
 		if facing == Vector2.LEFT:
@@ -1367,6 +1607,17 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO, 46.0, 0.0, TAU, 48, Color("#f3ba45"), 2.5)
 	if iron_resolve_time_remaining > 0.0:
 		draw_arc(Vector2.ZERO, 51.0, 0.0, TAU, 48, Color("#b6d9a0"), 2.5)
+	if ranger_smoke_visual_time_remaining > 0.0:
+		var smoke_progress := 1.0 - ranger_smoke_visual_time_remaining / 0.9
+		var smoke_alpha := 0.5 * (1.0 - smoke_progress)
+		for smoke_index in range(5):
+			var angle := smoke_progress * TAU + float(smoke_index) * TAU / 5.0
+			var smoke_center := Vector2.from_angle(angle) * ranger_smoke_visual_radius * 0.35
+			draw_circle(
+				smoke_center,
+				ranger_smoke_visual_radius * 0.24,
+				Color(0.68, 0.73, 0.72, smoke_alpha)
+			)
 
 
 func _draw_warrior_skill_animation() -> void:

@@ -26,6 +26,8 @@ var experience_feedback_time := 0.0
 var witch_skill_tree: WitchSkillTree
 var warrior_skill_tree: WarriorSkillTree
 var warrior_passive_tree: WarriorPassiveTree
+var ranger_skill_tree: RangerSkillTree
+var ranger_passive_tree: RangerPassiveTree
 var pause_menu: PauseMenu
 @onready var character_menu: Control = $CharacterMenu
 @onready var character_panel: PanelContainer = $CharacterMenu/Panel
@@ -67,6 +69,8 @@ func _ready() -> void:
 		_build_witch_skill_tree()
 	elif player.selected_character == "Warrior":
 		_build_warrior_skill_tree()
+	elif player.selected_character == "Ranger":
+		_build_ranger_skill_tree()
 	health_orb.maximum = player.MAX_HEALTH
 	health_orb.value = player.health
 	mana_orb.maximum = player.MAX_MANA
@@ -131,6 +135,17 @@ func _update_witch_skill_cooldowns() -> void:
 				skill_slot.set("cooldown_progress", cooldown_ratio)
 				skill_slot.queue_redraw()
 		return
+	if player.selected_character == "Ranger":
+		for slot in ["Q", "W", "E", "R"]:
+			var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+			if skill_slot == null:
+				continue
+			var skill_id := GameState.get_ranger_equipped_skill(slot)
+			var cooldown_ratio := player.get_ranger_skill_cooldown_ratio(skill_id)
+			if absf(float(skill_slot.get("cooldown_progress")) - cooldown_ratio) > 0.01:
+				skill_slot.set("cooldown_progress", cooldown_ratio)
+				skill_slot.queue_redraw()
+		return
 	if player.selected_character != "Witch":
 		return
 	for slot in ["Q", "W", "E", "R"]:
@@ -162,6 +177,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_warrior_passive_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
+	if ranger_skill_tree != null and ranger_skill_tree.visible:
+		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			_on_ranger_skill_tree_closed()
+		get_viewport().set_input_as_handled()
+		return
+	if ranger_passive_tree != null and ranger_passive_tree.visible:
+		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			_on_ranger_passive_tree_closed()
+		get_viewport().set_input_as_handled()
+		return
 
 	if event.keycode == KEY_ESCAPE:
 		if pause_menu.visible:
@@ -189,6 +214,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_P and warrior_skill_tree != null:
 		_open_warrior_passive_tree()
+		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_P and ranger_skill_tree != null:
+		_open_ranger_passive_tree()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_I:
 		if character_menu.visible and inventory_panel.visible:
@@ -311,6 +339,107 @@ func _build_warrior_skill_tree() -> void:
 	warrior_passive_tree.passives_changed.connect(_on_warrior_passives_changed)
 	warrior_passive_tree.skill_tree_requested.connect(_open_warrior_skill_tree)
 	_refresh_warrior_skill_slots()
+
+
+func _build_ranger_skill_tree() -> void:
+	var character_contents: VBoxContainer = $CharacterMenu/Panel/Contents
+	var close_button: Button = character_contents.get_node("CloseButton")
+	var skill_tree_button := Button.new()
+	skill_tree_button.text = "Ranger Active Skills"
+	skill_tree_button.custom_minimum_size.y = 42.0
+	skill_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	skill_tree_button.add_theme_font_size_override("font_size", 18)
+	skill_tree_button.pressed.connect(_open_ranger_skill_tree)
+	character_contents.add_child(skill_tree_button)
+	character_contents.move_child(skill_tree_button, close_button.get_index())
+
+	var passive_tree_button := Button.new()
+	passive_tree_button.text = "Ranger Passive Tree (P)"
+	passive_tree_button.custom_minimum_size.y = 42.0
+	passive_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	passive_tree_button.add_theme_font_size_override("font_size", 18)
+	passive_tree_button.pressed.connect(_open_ranger_passive_tree)
+	character_contents.add_child(passive_tree_button)
+	character_contents.move_child(passive_tree_button, close_button.get_index())
+
+	ranger_skill_tree = RangerSkillTree.new()
+	add_child(ranger_skill_tree)
+	ranger_skill_tree.hide()
+	ranger_skill_tree.closed.connect(_on_ranger_skill_tree_closed)
+	ranger_skill_tree.loadout_changed.connect(_refresh_ranger_skill_slots)
+	ranger_skill_tree.passive_tree_requested.connect(_open_ranger_passive_tree)
+
+	ranger_passive_tree = RangerPassiveTree.new()
+	add_child(ranger_passive_tree)
+	ranger_passive_tree.hide()
+	ranger_passive_tree.closed.connect(_on_ranger_passive_tree_closed)
+	ranger_passive_tree.passives_changed.connect(_on_ranger_passives_changed)
+	ranger_passive_tree.skill_tree_requested.connect(_open_ranger_skill_tree)
+	_refresh_ranger_skill_slots()
+
+
+func _open_ranger_skill_tree() -> void:
+	if ranger_skill_tree == null:
+		return
+	if ranger_passive_tree != null:
+		ranger_passive_tree.hide()
+	var player: Player = get_node("../Player")
+	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
+	ranger_skill_tree.open_tree()
+
+
+func _on_ranger_skill_tree_closed() -> void:
+	if ranger_skill_tree == null:
+		return
+	ranger_skill_tree.hide()
+	character_menu.hide()
+	_set_player_menu_paused(false)
+
+
+func _open_ranger_passive_tree() -> void:
+	if ranger_passive_tree == null:
+		return
+	if ranger_skill_tree != null:
+		ranger_skill_tree.hide()
+	var player: Player = get_node("../Player")
+	player.set_physics_process(false)
+	player.set_process_unhandled_input(false)
+	ranger_passive_tree.open_tree("passives")
+
+
+func _on_ranger_passive_tree_closed() -> void:
+	if ranger_passive_tree == null:
+		return
+	ranger_passive_tree.hide()
+	character_menu.hide()
+	_set_player_menu_paused(false)
+	_on_ranger_passives_changed()
+
+
+func _on_ranger_passives_changed() -> void:
+	var player: Player = get_node_or_null("../Player")
+	if player != null:
+		player.refresh_passives_and_vitals()
+		_on_equipment_changed(player.equipment)
+	_refresh_ranger_skill_slots()
+
+
+func _refresh_ranger_skill_slots() -> void:
+	var player: Player = get_node("../Player")
+	for slot in ["Q", "W", "E", "R"]:
+		var skill_slot := get_node_or_null("SkillSlot%s" % slot)
+		if skill_slot == null:
+			continue
+		var skill_id := GameState.get_ranger_equipped_skill(slot)
+		var definition := GameState.get_ranger_skill_definition(skill_id)
+		skill_slot.set("skill_label", str(definition.get("short_label", "")))
+		var icon_path := str(definition.get("icon_path", ""))
+		skill_slot.set("skill_icon", load(icon_path) if not icon_path.is_empty() else null)
+		var skill_tooltip := player.get_ranger_skill_tooltip(skill_id)
+		skill_slot.set("skill_tooltip", skill_tooltip)
+		skill_slot.tooltip_text = skill_tooltip
+		skill_slot.queue_redraw()
 
 
 func _open_warrior_skill_tree() -> void:
@@ -544,14 +673,16 @@ func _on_equip_best_pressed() -> void:
 
 func _on_equipment_changed(equipment: Dictionary) -> void:
 	var player: Player = get_node("../Player")
-	var attack_name := "Spell damage" if player.selected_character == "Witch" else "Sword damage"
+	var attack_name := "Spell damage" if player.selected_character == "Witch" \
+		else "Bow damage" if player.selected_character == "Ranger" \
+		else "Sword damage"
 	var base_dmg := (1 + player.get_weapon_damage_bonus())
 	var dmg_str := str(base_dmg)
 	if player.selected_character == "Witch":
 		var mult := player.get_spell_damage_multiplier()
 		dmg_str = "%.1f (x%.2f)" % [float(base_dmg) * mult, mult]
 	var evasion_info := ""
-	if player.selected_character == "Witch":
+	if player.selected_character in ["Witch", "Ranger"]:
 		evasion_info = "  |  Evasion: %d%%" % roundi(player.get_evasion() * 100.0)
 	equipment_stats_label.text = "%s: %s  |  Damage reduced: %d%s" % [
 		attack_name,
