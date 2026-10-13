@@ -15,6 +15,7 @@ extends Control
 @onready var level2_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level2Button
 @onready var level3_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level3Button
 @onready var level4_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level4Button
+@onready var start_in_town_button: Button = $CenterContainer/MenuPanel/LevelScreen/LevelHeader/TownButton
 @onready var delete_confirmation: ConfirmationDialog = $DeleteConfirmation
 
 var selected_character_id := ""
@@ -27,9 +28,16 @@ var pending_delete_id := ""
 func _ready() -> void:
 	$CenterContainer/MenuPanel/TitleScreen/StartButton.pressed.connect(_on_start_pressed)
 	$CenterContainer/MenuPanel/TitleScreen/QuitButton.pressed.connect(_on_quit_pressed)
+	start_in_town_button.pressed.connect(_on_start_in_town_pressed)
 	delete_confirmation.confirmed.connect(_on_delete_confirmed)
 
-	if get_tree().has_meta("return_to_level_select"):
+	if get_tree().has_meta("return_to_character_select"):
+		get_tree().remove_meta("return_to_character_select")
+		selected_character_id = str(get_tree().get_meta("selected_character_id", ""))
+		get_tree().remove_meta("selected_character_id")
+		_refresh_character_roster()
+		_show_screen(roster_screen)
+	elif get_tree().has_meta("return_to_level_select"):
 		get_tree().remove_meta("return_to_level_select")
 		selected_character_id = str(get_tree().get_meta("selected_character_id", ""))
 		if not selected_character_id.is_empty() and GameState.select_character(selected_character_id):
@@ -235,6 +243,21 @@ func _load_level(scene_path: String, level_name: String) -> void:
 	var error := get_tree().change_scene_to_file(scene_path)
 	if error != OK:
 		push_error("Could not load %s: %s" % [level_name, error_string(error)])
+
+
+func _on_start_in_town_pressed() -> void:
+	if selected_character_id.is_empty():
+		level_status.text = "Select a character before entering town."
+		return
+	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
+		level_status.text = "Could not save your character before entering town."
+		return
+
+	get_tree().set_meta("selected_character", selected_character_class)
+	get_tree().set_meta("selected_character_id", selected_character_id)
+	var error := get_tree().change_scene_to_file("res://town.tscn")
+	if error != OK:
+		push_error("Could not load town: %s" % error_string(error))
 
 
 func _on_back_to_characters() -> void:
