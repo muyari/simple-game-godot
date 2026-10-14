@@ -2,27 +2,18 @@
 
 [ext_resource type="Script" uid="uid://chr42swgvurj2" path="res://Menu.gd" id="1_menu"]
 [ext_resource type="Texture2D" uid="uid://jbk3au5dc7f4" path="res://textures/title_campfire_background.svg" id="2_title_background"]
-[ext_resource type="Texture2D" uid="uid://dsvb5prfod3o3" path="res://textures/warrior_sheet.svg" id="3_warrior_sheet"]
-[ext_resource type="Texture2D" uid="uid://ilod5jv1w4t4" path="res://textures/witch_sheet.svg" id="4_witch_sheet"]
-[ext_resource type="Texture2D" uid="uid://bo5m6ovnf45jq" path="res://textures/ranger_sprite_atlas.png" id="5_ranger_sheet"]
+[ext_resource type="Script" uid="uid://d2neieinsiiei" path="res://TitleCampfire.gd" id="3_campfire"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-content_margin_left = 36.0
-content_margin_top = 30.0
-content_margin_right = 36.0
-content_margin_bottom = 30.0
-bg_color = Color(0.075, 0.09, 0.075, 0.68)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.62, 0.49, 0.29, 0.78)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
+[sub_resource type="Gradient" id="Gradient_vignette"]
+offsets = PackedFloat32Array(0, 0.45, 0.75)
+colors = PackedColorArray(0.02, 0.03, 0.03, 0.72, 0.02, 0.03, 0.03, 0.35, 0.02, 0.03, 0.03, 0)
 
-[node name="Menu" type="Control" unique_id=305147108]
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_vignette"]
+gradient = SubResource("Gradient_vignette")
+width = 256
+height = 4
+
+[node name="Menu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -31,306 +22,356 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="Backdrop" type="TextureRect" parent="." unique_id=1955178488]
+[node name="Backdrop" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 texture = ExtResource("2_title_background")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="CampfireWarrior" type="Sprite2D" parent="." unique_id=933118891]
-z_index = 1
-position = Vector2(907.00006, 524)
-scale = Vector2(1.4, 1.4)
-texture = ExtResource("3_warrior_sheet")
-region_enabled = true
-region_rect = Rect2(0, 128, 64, 64)
+[node name="Campfire" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_campfire")
 
-[node name="CampfireWitch" type="Sprite2D" parent="." unique_id=1517107116]
-z_index = 1
-position = Vector2(1071.0001, 511)
-scale = Vector2(1.4, 1.4)
-texture = ExtResource("4_witch_sheet")
-region_enabled = true
-region_rect = Rect2(0, 128, 64, 64)
-
-[node name="CampfireRanger" type="Sprite2D" parent="." unique_id=1576661018]
-z_index = 1
-position = Vector2(983.0001, 593)
-scale = Vector2(0.9, 0.9)
-texture = ExtResource("5_ranger_sheet")
-region_enabled = true
-region_rect = Rect2(0, 0, 100, 100)
-
-[node name="CenterContainer" type="CenterContainer" parent="." unique_id=610919099]
+[node name="Vignette" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_vignette")
+expand_mode = 1
+stretch_mode = 0
 
-[node name="MenuPanel" type="PanelContainer" parent="CenterContainer" unique_id=888232533]
-custom_minimum_size = Vector2(600, 560)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+[node name="Layout" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
 
-[node name="TitleScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel" unique_id=5594720]
+[node name="Row" type="HBoxContainer" parent="Layout"]
 layout_mode = 2
-theme_override_constants/separation = 16
 
-[node name="Eyebrow" type="Label" parent="CenterContainer/MenuPanel/TitleScreen" unique_id=694475746]
+[node name="MenuPanel" type="PanelContainer" parent="Layout/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(540, 540)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
-theme_override_font_sizes/font_size = 16
+size_flags_vertical = 4
+theme_type_variation = &"MenuPanel"
+
+[node name="TitleScreen" type="VBoxContainer" parent="Layout/Row/MenuPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Eyebrow" type="Label" parent="Layout/Row/MenuPanel/TitleScreen"]
+layout_mode = 2
+theme_type_variation = &"EyebrowLabel"
 text = "A FRONTIER FANTASY"
 
-[node name="GameTitle" type="Label" parent="CenterContainer/MenuPanel/TitleScreen" unique_id=1558721400]
+[node name="GameTitle" type="Label" parent="Layout/Row/MenuPanel/TitleScreen"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
-theme_override_font_sizes/font_size = 48
+theme_type_variation = &"HeroTitleLabel"
 text = "Exiles Reach"
 
-[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/TitleScreen" unique_id=1272712797]
+[node name="Subtitle" type="Label" parent="Layout/Row/MenuPanel/TitleScreen"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+theme_type_variation = &"SubtitleLabel"
 text = "Beyond the edge of the known world"
 
-[node name="Spacer" type="Control" parent="CenterContainer/MenuPanel/TitleScreen" unique_id=1106432162]
-custom_minimum_size = Vector2(0, 28)
+[node name="Divider" type="HSeparator" parent="Layout/Row/MenuPanel/TitleScreen"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="Layout/Row/MenuPanel/TitleScreen"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="StartButton" type="Button" parent="CenterContainer/MenuPanel/TitleScreen" unique_id=1694738379]
-custom_minimum_size = Vector2(0, 52)
+[node name="StartButton" type="Button" parent="Layout/Row/MenuPanel/TitleScreen"]
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
 text = "Begin Adventure"
 alignment = 0
 
-[node name="QuitButton" type="Button" parent="CenterContainer/MenuPanel/TitleScreen" unique_id=597441297]
-custom_minimum_size = Vector2(0, 52)
+[node name="QuitButton" type="Button" parent="Layout/Row/MenuPanel/TitleScreen"]
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"DangerButton"
 text = "Quit"
 alignment = 0
 
-[node name="RosterScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel" unique_id=424410180]
+[node name="Hint" type="Label" parent="Layout/Row/MenuPanel/TitleScreen"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Gather by the fire, exile. The frontier awaits."
+
+[node name="RosterScreen" type="VBoxContainer" parent="Layout/Row/MenuPanel"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="CenterContainer/MenuPanel/RosterScreen" unique_id=2013454049]
+[node name="Eyebrow" type="Label" parent="Layout/Row/MenuPanel/RosterScreen"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
-theme_override_font_sizes/font_size = 32
+theme_type_variation = &"EyebrowLabel"
+text = "THE ROSTER"
+
+[node name="Title" type="Label" parent="Layout/Row/MenuPanel/RosterScreen"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
 text = "Your Characters"
 
-[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/RosterScreen" unique_id=303154515]
+[node name="Subtitle" type="Label" parent="Layout/Row/MenuPanel/RosterScreen"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+theme_type_variation = &"SubtitleLabel"
 text = "Choose a hero to continue your adventure."
 
-[node name="CharacterScroll" type="ScrollContainer" parent="CenterContainer/MenuPanel/RosterScreen" unique_id=431656029]
+[node name="Divider" type="HSeparator" parent="Layout/Row/MenuPanel/RosterScreen"]
+layout_mode = 2
+
+[node name="CharacterScroll" type="ScrollContainer" parent="Layout/Row/MenuPanel/RosterScreen"]
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="CharacterList" type="VBoxContainer" parent="CenterContainer/MenuPanel/RosterScreen/CharacterScroll" unique_id=647549193]
+[node name="CharacterList" type="VBoxContainer" parent="Layout/Row/MenuPanel/RosterScreen/CharacterScroll"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 6
 
-[node name="RosterStatus" type="Label" parent="CenterContainer/MenuPanel/RosterScreen" unique_id=267354295]
+[node name="RosterStatus" type="Label" parent="Layout/Row/MenuPanel/RosterScreen"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
+theme_type_variation = &"StatusLabel"
 text = "No character selected."
 
-[node name="RosterActions" type="HBoxContainer" parent="CenterContainer/MenuPanel/RosterScreen" unique_id=2140942191]
+[node name="RosterActions" type="HBoxContainer" parent="Layout/Row/MenuPanel/RosterScreen"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ContinueButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen/RosterActions" unique_id=107187074]
-custom_minimum_size = Vector2(0, 52)
+[node name="ContinueButton" type="Button" parent="Layout/Row/MenuPanel/RosterScreen/RosterActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 18
 disabled = true
 text = "Continue"
-alignment = 0
 
-[node name="DeleteButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen/RosterActions" unique_id=1124379689]
-custom_minimum_size = Vector2(0, 52)
+[node name="CreateButton" type="Button" parent="Layout/Row/MenuPanel/RosterScreen/RosterActions"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 18
+text = "New Hero"
+
+[node name="DeleteButton" type="Button" parent="Layout/Row/MenuPanel/RosterScreen/RosterActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"DangerButton"
 disabled = true
-text = "Delete Selected"
-alignment = 0
+text = "Delete"
 
-[node name="CreateButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen/RosterActions" unique_id=580533509]
-custom_minimum_size = Vector2(0, 52)
+[node name="RosterBackButton" type="Button" parent="Layout/Row/MenuPanel/RosterScreen"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 18
-text = "Create Character"
-alignment = 0
-
-[node name="RosterBackButton" type="Button" parent="CenterContainer/MenuPanel/RosterScreen" unique_id=1482067659]
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
 text = "Back"
 alignment = 0
 
-[node name="CharacterScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel" unique_id=633969023]
+[node name="CharacterScreen" type="VBoxContainer" parent="Layout/Row/MenuPanel"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 10
 
-[node name="Title" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=1405304389]
+[node name="Eyebrow" type="Label" parent="Layout/Row/MenuPanel/CharacterScreen"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
-theme_override_font_sizes/font_size = 32
+theme_type_variation = &"EyebrowLabel"
+text = "A NEW EXILE"
+
+[node name="Title" type="Label" parent="Layout/Row/MenuPanel/CharacterScreen"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
 text = "Create a Character"
 
-[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=2119354544]
+[node name="Subtitle" type="Label" parent="Layout/Row/MenuPanel/CharacterScreen"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+theme_type_variation = &"SubtitleLabel"
 text = "Name your hero and choose a class."
 
-[node name="CharacterNameInput" type="LineEdit" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=949094495]
-custom_minimum_size = Vector2(0, 48)
+[node name="Divider" type="HSeparator" parent="Layout/Row/MenuPanel/CharacterScreen"]
+layout_mode = 2
+
+[node name="CharacterNameInput" type="LineEdit" parent="Layout/Row/MenuPanel/CharacterScreen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 placeholder_text = "Character name"
 max_length = 24
 
-[node name="WarriorButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=506950426]
-custom_minimum_size = Vector2(0, 52)
+[node name="WarriorButton" type="Button" parent="Layout/Row/MenuPanel/CharacterScreen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Warrior"
+theme_type_variation = &"ChoiceButton"
+toggle_mode = true
+text = "Warrior
+Sword and shield. Holds the line."
 alignment = 0
 
-[node name="WitchButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=169029068]
-custom_minimum_size = Vector2(0, 52)
+[node name="WitchButton" type="Button" parent="Layout/Row/MenuPanel/CharacterScreen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Witch"
+theme_type_variation = &"ChoiceButton"
+toggle_mode = true
+text = "Witch
+Fire, frost and familiars."
 alignment = 0
 
-[node name="RangerButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=588746652]
-custom_minimum_size = Vector2(0, 52)
+[node name="RangerButton" type="Button" parent="Layout/Row/MenuPanel/CharacterScreen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Ranger"
+theme_type_variation = &"ChoiceButton"
+toggle_mode = true
+text = "Ranger
+Swift arrows from afar."
 alignment = 0
 
-[node name="CharacterStatus" type="Label" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=1543352664]
+[node name="CharacterStatus" type="Label" parent="Layout/Row/MenuPanel/CharacterScreen"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
+theme_type_variation = &"StatusLabel"
 text = "Choose a class for your character."
 
-[node name="CharacterContinue" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=420303589]
-custom_minimum_size = Vector2(0, 52)
+[node name="CreationActions" type="HBoxContainer" parent="Layout/Row/MenuPanel/CharacterScreen"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Create Character"
-alignment = 0
+theme_override_constants/separation = 8
 
-[node name="CancelCreationButton" type="Button" parent="CenterContainer/MenuPanel/CharacterScreen" unique_id=129231547]
-custom_minimum_size = Vector2(0, 52)
+[node name="CancelCreationButton" type="Button" parent="Layout/Row/MenuPanel/CharacterScreen/CreationActions"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+size_flags_horizontal = 3
 text = "Cancel"
-alignment = 0
 
-[node name="LevelScreen" type="VBoxContainer" parent="CenterContainer/MenuPanel" unique_id=1255282867]
+[node name="CharacterContinue" type="Button" parent="Layout/Row/MenuPanel/CharacterScreen/CreationActions"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.6
+text = "Create Character"
+
+[node name="LevelScreen" type="VBoxContainer" parent="Layout/Row/MenuPanel"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 10
 
-[node name="LevelHeader" type="HBoxContainer" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=1981068111]
+[node name="Eyebrow" type="Label" parent="Layout/Row/MenuPanel/LevelScreen"]
+layout_mode = 2
+theme_type_variation = &"EyebrowLabel"
+text = "CHOOSE YOUR PATH"
+
+[node name="LevelHeader" type="HBoxContainer" parent="Layout/Row/MenuPanel/LevelScreen"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="CenterContainer/MenuPanel/LevelScreen/LevelHeader" unique_id=1694365863]
+[node name="Title" type="Label" parent="Layout/Row/MenuPanel/LevelScreen/LevelHeader"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.91, 0.78, 0.52, 1)
-theme_override_font_sizes/font_size = 32
+theme_type_variation = &"TitleLabel"
 text = "Choose a Level"
 
-[node name="TownButton" type="Button" parent="CenterContainer/MenuPanel/LevelScreen/LevelHeader" unique_id=788973296]
+[node name="TownButton" type="Button" parent="Layout/Row/MenuPanel/LevelScreen/LevelHeader"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(112, 44)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+size_flags_vertical = 4
 text = "Town"
 
-[node name="Subtitle" type="Label" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=2029659198]
+[node name="LevelSubtitle" type="Label" parent="Layout/Row/MenuPanel/LevelScreen"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.78, 0.8, 0.73, 1)
+theme_type_variation = &"SubtitleLabel"
 text = "Your selected hero: Warrior"
 
-[node name="Level1Button" type="Button" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=256514118]
-custom_minimum_size = Vector2(0, 52)
+[node name="Divider" type="HSeparator" parent="Layout/Row/MenuPanel/LevelScreen"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Level 1  -  Forest Outskirts"
+
+[node name="Level1Button" type="Button" parent="Layout/Row/MenuPanel/LevelScreen"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "I.   Forest Outskirts"
 alignment = 0
 
-[node name="Level2Button" type="Button" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=813758172]
-custom_minimum_size = Vector2(0, 52)
+[node name="Level2Button" type="Button" parent="Layout/Row/MenuPanel/LevelScreen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Level 2  -  Sunscorch Sands"
+text = "II.   Sunscorch Sands"
 alignment = 0
 
-[node name="Level3Button" type="Button" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=1591575320]
-custom_minimum_size = Vector2(0, 52)
+[node name="Level3Button" type="Button" parent="Layout/Row/MenuPanel/LevelScreen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Level 3  -  The Ice Caves (Locked)"
+text = "III.   The Ice Caves"
 alignment = 0
 
-[node name="Level4Button" type="Button" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=996950493]
-custom_minimum_size = Vector2(0, 52)
+[node name="Level4Button" type="Button" parent="Layout/Row/MenuPanel/LevelScreen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Level 4  -  The Futuristic AI Zone (Locked)"
+text = "IV.   The Futuristic AI Zone"
 alignment = 0
 
-[node name="LevelStatus" type="Label" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=44299679]
+[node name="LevelStatus" type="Label" parent="Layout/Row/MenuPanel/LevelScreen"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.76, 0.84, 0.66, 1)
+theme_type_variation = &"StatusLabel"
 text = "Defeat every enemy to clear an area and unlock new regions."
+autowrap_mode = 3
 
-[node name="BackButton" type="Button" parent="CenterContainer/MenuPanel/LevelScreen" unique_id=933499780]
-custom_minimum_size = Vector2(0, 52)
+[node name="BackButton" type="Button" parent="Layout/Row/MenuPanel/LevelScreen"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
 text = "Back to Characters"
 alignment = 0
 
-[node name="DeleteConfirmation" type="ConfirmationDialog" parent="." unique_id=1246994583]
+[node name="DeleteConfirmation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
 title = "Delete Character"
 dialog_text = "Delete this character? This cannot be undone."
 
-[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterActions/ContinueButton" to="." method="_on_roster_continue_pressed"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterActions/DeleteButton" to="." method="_on_roster_delete_pressed"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterActions/CreateButton" to="." method="_on_roster_create_pressed"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/RosterScreen/RosterBackButton" to="." method="_on_roster_back_pressed"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WarriorButton" to="." method="_on_warrior_selected"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/WitchButton" to="." method="_on_witch_selected"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/RangerButton" to="." method="_on_ranger_selected"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CharacterContinue" to="." method="_on_character_continue"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/CharacterScreen/CancelCreationButton" to="." method="_on_creation_cancel_pressed"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level1Button" to="." method="_on_level_1_selected"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level2Button" to="." method="_on_level_2_selected"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level3Button" to="." method="_on_level_3_selected"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/Level4Button" to="." method="_on_level_4_selected"]
-[connection signal="pressed" from="CenterContainer/MenuPanel/LevelScreen/BackButton" to="." method="_on_back_to_characters"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/TitleScreen/StartButton" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/TitleScreen/QuitButton" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/RosterScreen/RosterActions/ContinueButton" to="." method="_on_roster_continue_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/RosterScreen/RosterActions/CreateButton" to="." method="_on_roster_create_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/RosterScreen/RosterActions/DeleteButton" to="." method="_on_roster_delete_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/RosterScreen/RosterBackButton" to="." method="_on_roster_back_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/CharacterScreen/WarriorButton" to="." method="_on_warrior_selected"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/CharacterScreen/WitchButton" to="." method="_on_witch_selected"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/CharacterScreen/RangerButton" to="." method="_on_ranger_selected"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/CharacterScreen/CreationActions/CancelCreationButton" to="." method="_on_creation_cancel_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/CharacterScreen/CreationActions/CharacterContinue" to="." method="_on_character_continue"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/LevelScreen/LevelHeader/TownButton" to="." method="_on_start_in_town_pressed"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/LevelScreen/Level1Button" to="." method="_on_level_1_selected"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/LevelScreen/Level2Button" to="." method="_on_level_2_selected"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/LevelScreen/Level3Button" to="." method="_on_level_3_selected"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/LevelScreen/Level4Button" to="." method="_on_level_4_selected"]
+[connection signal="pressed" from="Layout/Row/MenuPanel/LevelScreen/BackButton" to="." method="_on_back_to_characters"]

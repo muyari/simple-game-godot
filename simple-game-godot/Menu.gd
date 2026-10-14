@@ -1,22 +1,32 @@
 extends Control
 
-@onready var title_screen: VBoxContainer = $CenterContainer/MenuPanel/TitleScreen
-@onready var roster_screen: VBoxContainer = $CenterContainer/MenuPanel/RosterScreen
-@onready var character_screen: VBoxContainer = $CenterContainer/MenuPanel/CharacterScreen
-@onready var level_screen: VBoxContainer = $CenterContainer/MenuPanel/LevelScreen
-@onready var character_list: VBoxContainer = $CenterContainer/MenuPanel/RosterScreen/CharacterScroll/CharacterList
-@onready var roster_status: Label = $CenterContainer/MenuPanel/RosterScreen/RosterStatus
-@onready var roster_continue_button: Button = $CenterContainer/MenuPanel/RosterScreen/RosterActions/ContinueButton
-@onready var roster_delete_button: Button = $CenterContainer/MenuPanel/RosterScreen/RosterActions/DeleteButton
-@onready var character_name_input: LineEdit = $CenterContainer/MenuPanel/CharacterScreen/CharacterNameInput
-@onready var character_status: Label = $CenterContainer/MenuPanel/CharacterScreen/CharacterStatus
-@onready var level_subtitle: Label = $CenterContainer/MenuPanel/LevelScreen/Subtitle
-@onready var level_status: Label = $CenterContainer/MenuPanel/LevelScreen/LevelStatus
-@onready var level2_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level2Button
-@onready var level3_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level3Button
-@onready var level4_button: Button = $CenterContainer/MenuPanel/LevelScreen/Level4Button
-@onready var start_in_town_button: Button = $CenterContainer/MenuPanel/LevelScreen/LevelHeader/TownButton
-@onready var delete_confirmation: ConfirmationDialog = $DeleteConfirmation
+const LEVEL_NAMES = {
+	2: "II.   Sunscorch Sands",
+	3: "III.   The Ice Caves",
+	4: "IV.   The Futuristic AI Zone",
+}
+
+@onready var backdrop: TextureRect = $Backdrop
+@onready var campfire: TitleCampfire = %Campfire
+@onready var title_screen: VBoxContainer = %TitleScreen
+@onready var roster_screen: VBoxContainer = %RosterScreen
+@onready var character_screen: VBoxContainer = %CharacterScreen
+@onready var level_screen: VBoxContainer = %LevelScreen
+@onready var character_list: VBoxContainer = %CharacterList
+@onready var roster_status: Label = %RosterStatus
+@onready var roster_continue_button: Button = %ContinueButton
+@onready var roster_delete_button: Button = %DeleteButton
+@onready var character_name_input: LineEdit = %CharacterNameInput
+@onready var character_status: Label = %CharacterStatus
+@onready var warrior_button: Button = %WarriorButton
+@onready var witch_button: Button = %WitchButton
+@onready var ranger_button: Button = %RangerButton
+@onready var level_subtitle: Label = %LevelSubtitle
+@onready var level_status: Label = %LevelStatus
+@onready var level2_button: Button = %Level2Button
+@onready var level3_button: Button = %Level3Button
+@onready var level4_button: Button = %Level4Button
+@onready var delete_confirmation: ConfirmationDialog = %DeleteConfirmation
 
 var selected_character_id := ""
 var selected_character_name := ""
@@ -26,10 +36,11 @@ var pending_delete_id := ""
 
 
 func _ready() -> void:
-	$CenterContainer/MenuPanel/TitleScreen/StartButton.pressed.connect(_on_start_pressed)
-	$CenterContainer/MenuPanel/TitleScreen/QuitButton.pressed.connect(_on_quit_pressed)
-	start_in_town_button.pressed.connect(_on_start_in_town_pressed)
+	theme = MenuStyle.get_theme()
+	resized.connect(_fit_campfire)
+	_fit_campfire()
 	delete_confirmation.confirmed.connect(_on_delete_confirmed)
+	_setup_class_buttons()
 
 	if get_tree().has_meta("return_to_character_select"):
 		get_tree().remove_meta("return_to_character_select")
@@ -58,12 +69,27 @@ func _on_start_pressed() -> void:
 	_show_screen(roster_screen)
 
 
+func _fit_campfire() -> void:
+	campfire.fit_to_backdrop(backdrop.size)
+
+
+func _setup_class_buttons() -> void:
+	var class_group := ButtonGroup.new()
+	for entry in [[warrior_button, "Warrior"], [witch_button, "Witch"], [ranger_button, "Ranger"]]:
+		var button: Button = entry[0]
+		button.button_group = class_group
+		button.icon = MenuStyle.class_portrait(entry[1])
+		button.expand_icon = false
+
+
 func _show_screen(screen_to_show: Control) -> void:
 	title_screen.hide()
 	roster_screen.hide()
 	character_screen.hide()
 	level_screen.hide()
 	screen_to_show.show()
+	screen_to_show.modulate.a = 0.0
+	create_tween().tween_property(screen_to_show, "modulate:a", 1.0, 0.18)
 
 
 func _refresh_character_roster() -> void:
@@ -78,13 +104,15 @@ func _refresh_character_roster() -> void:
 		var character_name := str(character.get("name", "Adventurer"))
 		var character_class := str(character.get("class", "Warrior"))
 		var character_button := Button.new()
-		character_button.custom_minimum_size = Vector2(0, 52)
+		character_button.theme_type_variation = &"ChoiceButton"
+		character_button.custom_minimum_size = Vector2(0, 56)
 		character_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		character_button.add_theme_font_size_override("font_size", 18)
-		character_button.text = "%s  -  %s" % [character_name, character_class]
+		character_button.toggle_mode = true
+		character_button.icon = MenuStyle.class_portrait(character_class)
+		character_button.text = "%s\n%s" % [character_name, character_class]
 		character_button.pressed.connect(_on_roster_character_selected.bind(character_id))
 		if character_id == selected_character_id:
-			character_button.add_theme_color_override("font_color", Color(0.91, 0.78, 0.52, 1))
+			character_button.set_pressed_no_signal(true)
 			selected_character_exists = true
 		character_list.add_child(character_button)
 
@@ -133,17 +161,17 @@ func _show_level_screen() -> void:
 
 
 func _refresh_level_buttons() -> void:
-	level2_button.disabled = not GameState.is_level_unlocked(2)
-	level3_button.disabled = not GameState.is_level_unlocked(3)
-	level4_button.disabled = not GameState.is_level_unlocked(4)
-	level2_button.text = "Level 2  -  Sunscorch Sands" if not level2_button.disabled else "Level 2  -  Sunscorch Sands (Locked)"
-	level3_button.text = "Level 3  -  The Ice Caves" if not level3_button.disabled else "Level 3  -  The Ice Caves (Locked)"
-	level4_button.text = "Level 4  -  The Futuristic AI Zone" if not level4_button.disabled else "Level 4  -  The Futuristic AI Zone (Locked)"
+	for entry in [[level2_button, 2], [level3_button, 3], [level4_button, 4]]:
+		var button: Button = entry[0]
+		var level_id: int = entry[1]
+		button.disabled = not GameState.is_level_unlocked(level_id)
+		button.text = LEVEL_NAMES[level_id] + ("   (Locked)" if button.disabled else "")
 
 
 func _on_roster_create_pressed() -> void:
 	character_name_input.text = ""
 	new_character_class = "Warrior"
+	warrior_button.button_pressed = true
 	character_status.text = "Choose a class for your character."
 	_show_screen(character_screen)
 	character_name_input.grab_focus()
