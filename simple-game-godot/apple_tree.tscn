@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://AppleTree.gd" id="1_apple_script"]
+[ext_resource type="Texture2D" uid="uid://cwphpy57p0ns5" path="res://textures/town_apple_tree.png" id="2_apple_texture"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_apple_trunk"]
+radius = 11.0
+
+[node name="AppleTree" type="StaticBody2D"]
+collision_mask = 0
+script = ExtResource("1_apple_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("2_apple_texture")
+offset = Vector2(0, -96)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -9)
+shape = SubResource("CircleShape2D_apple_trunk")

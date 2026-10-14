@@ -2,6 +2,9 @@ extends Node
 
 signal progress_changed(defeated: int, total: int)
 signal level_completed
+signal boss_incoming
+signal boss_progress_changed(defeated: int, total: int)
+signal chest_loot_opened(chest: TreasureChest)
 
 const WOLF_SCENE = preload("res://wolf.tscn")
 const SCORPION_SCENE = preload("res://scorpion.tscn")
@@ -16,8 +19,59 @@ const PHASE_SHIFT_INFILTRATOR_SCENE = preload("res://phase_shift_infiltrator.tsc
 const DESERT_BOSS_SCENE = preload("res://desert_boss.tscn")
 const ITEM_PICKUP_SCENE = preload("res://item_pickup.tscn")
 const GOLD_PICKUP_SCENE = preload("res://gold_pickup.tscn")
-const TREE_TEXTURE = preload("res://textures/forest_tree.svg")
-const POND_TEXTURE = preload("res://textures/forest_pond.svg")
+const TREASURE_CHEST_SCENE = preload("res://treasure_chest.tscn")
+const APPLE_TREE_SCENE = preload("res://apple_tree.tscn")
+const FOREST_GROUND_TEXTURE = preload("res://textures/town_grass.png")
+const FOREST_GROUND_TINT := Color(0.84, 0.92, 0.8)
+## Forest trees share Oblath's art. Scale range is picked per tree; trunk is the collision radius in world pixels.
+const FOREST_TREES: Array[Dictionary] = [
+	{"texture": preload("res://textures/town_tree_pine.png"), "scale": Vector2(0.55, 0.72), "trunk": 10.0},
+	{"texture": preload("res://textures/town_tree_spruce.png"), "scale": Vector2(0.68, 0.85), "trunk": 9.0},
+	{"texture": preload("res://textures/forest_tree_pine_tall.png"), "scale": Vector2(0.6, 0.75), "trunk": 8.0},
+	{"texture": preload("res://textures/forest_tree_oak.png"), "scale": Vector2(0.55, 0.68), "trunk": 14.0},
+	{"texture": preload("res://textures/forest_tree_maple.png"), "scale": Vector2(0.62, 0.78), "trunk": 11.0},
+	{"texture": preload("res://textures/forest_tree_willow.png"), "scale": Vector2(0.62, 0.75), "trunk": 11.0},
+	{"texture": preload("res://textures/forest_tree_cedar.png"), "scale": Vector2(0.78, 0.95), "trunk": 7.0},
+]
+## Big set pieces, at most one per region. Footprint and collision are in world pixels at scale 1.
+const FOREST_LANDMARKS: Array[Dictionary] = [
+	{"texture": preload("res://textures/forest_cliff_spire.png"), "scale": Vector2(0.62, 0.78), "collision": 48.0},
+	{"texture": preload("res://textures/forest_cliff_block.png"), "scale": Vector2(0.6, 0.72), "collision": 62.0},
+	{"texture": preload("res://textures/forest_boulder_mossy.png"), "scale": Vector2(0.45, 0.55), "collision": 70.0},
+	{"texture": preload("res://textures/forest_cave_mine.png"), "scale": Vector2(0.62, 0.7), "collision": 92.0},
+	{"texture": preload("res://textures/forest_cavern.png"), "scale": Vector2(0.58, 0.66), "collision": 96.0},
+]
+const FOREST_DEBRIS: Array[Dictionary] = [
+	{"texture": preload("res://textures/town_stump.png"), "scale": Vector2(0.34, 0.4), "collision": 12.0},
+	{"texture": preload("res://textures/forest_stump_small.png"), "scale": Vector2(0.5, 0.6), "collision": 9.0},
+	{"texture": preload("res://textures/town_logs.png"), "scale": Vector2(0.42, 0.48), "collision": 14.0},
+	{"texture": preload("res://textures/forest_log.png"), "scale": Vector2(0.48, 0.56), "collision": 14.0},
+	{"texture": preload("res://textures/town_rock_mossy.png"), "scale": Vector2(0.4, 0.5), "collision": 16.0},
+]
+const FOREST_UNDERGROWTH: Array[Dictionary] = [
+	{"texture": preload("res://textures/town_fern.png"), "scale": Vector2(0.4, 0.5)},
+	{"texture": preload("res://textures/town_fern.png"), "scale": Vector2(0.4, 0.5)},
+	{"texture": preload("res://textures/town_shrub_green.png"), "scale": Vector2(0.45, 0.6)},
+	{"texture": preload("res://textures/town_shrub_round.png"), "scale": Vector2(0.45, 0.6)},
+	{"texture": preload("res://textures/town_shrub_conifer.png"), "scale": Vector2(0.45, 0.58)},
+	{"texture": preload("res://textures/town_shrub_autumn.png"), "scale": Vector2(0.4, 0.5)},
+	{"texture": preload("res://textures/town_sapling.png"), "scale": Vector2(0.45, 0.55)},
+]
+const FOREST_GROUND_COVER: Array[Dictionary] = [
+	{"texture": preload("res://textures/town_grass_clump.png"), "scale": Vector2(0.34, 0.44)},
+	{"texture": preload("res://textures/town_grass_clump.png"), "scale": Vector2(0.34, 0.44)},
+	{"texture": preload("res://textures/town_flowers.png"), "scale": Vector2(0.34, 0.42)},
+	{"texture": preload("res://textures/town_rocks_small.png"), "scale": Vector2(0.3, 0.38)},
+]
+## Regions (relative to the start) that each hold one apple tree, so there are exactly ten across the map.
+## The index in this list becomes the tree's AppleTree.tree_index.
+const FOREST_APPLE_TREE_REGIONS: Array[Vector2i] = [
+	Vector2i(1, 0), Vector2i(-1, 1), Vector2i(0, -1), Vector2i(2, -1), Vector2i(-2, 0),
+	Vector2i(1, 2), Vector2i(-1, -2), Vector2i(3, 1), Vector2i(-3, -1), Vector2i(0, 3),
+]
+const FOREST_APPLE_TREE_SCALE := 0.68
+## Nothing solid is placed this close to where the player enters the forest.
+const FOREST_SPAWN_CLEARING := 150.0
 const BOULDERS_TEXTURE = preload("res://textures/forest_boulders.svg")
 const CAVE_TEXTURE = preload("res://textures/forest_cave.svg")
 const DESERT_CACTUS_TEXTURE = preload("res://textures/desert_cactus.svg")
@@ -38,6 +92,15 @@ const SPAWN_EDGE_MARGIN = 128.0
 const SCENERY_PRELOAD_RADIUS = 1
 const ITEM_DROP_CHANCE = 0.1
 const SCENERY_CLEARANCE = 24.0
+const FOREST_BOSS_PACK_SIZE = 3
+const BOSS_PACK_SPREAD = 90.0
+const ALPHA_WOLF_SCALE = 1.25
+const ALPHA_WOLF_HEALTH_MULTIPLIER = 3.0
+const ALPHA_WOLF_DAMAGE_MULTIPLIER = 1.25
+const ALPHA_WOLF_EXPERIENCE = 60
+const BOSS_ROLE_META = "boss_role"
+const CHEST_MIN_ITEMS = 1
+const CHEST_MAX_ITEMS = 2
 
 @export var player_path: NodePath = NodePath("../Player")
 @export_enum("Forest", "Desert", "Ice Caves", "Futuristic AI Zone") var biome := 0
@@ -53,6 +116,7 @@ var last_player_position := Vector2.ZERO
 var enemies_spawned := 0
 var enemies_defeated := 0
 var boss_spawned := false
+var boss_wolves_defeated := 0
 var level_is_complete := false
 var spawned_enemy_regions: Dictionary = {}
 var generated_scenery_regions: Dictionary = {}
@@ -65,7 +129,12 @@ var loot_random := RandomNumberGenerator.new()
 func _ready() -> void:
 	var ground := get_node_or_null("../Background/Sprite2D") as Sprite2D
 	if ground != null:
-		if biome == 2:
+		if biome == 0:
+			# Same grass as Oblath, a shade darker under the canopy.
+			ground.texture = FOREST_GROUND_TEXTURE
+			ground.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			ground.modulate = FOREST_GROUND_TINT
+		elif biome == 2:
 			ground.texture = ICE_GROUND_TEXTURE
 		elif biome == 3:
 			ground.texture = AI_GROUND_TEXTURE
@@ -98,6 +167,7 @@ func _ready() -> void:
 		enemies_spawned = 0
 		enemies_defeated = 0
 		boss_spawned = false
+		boss_wolves_defeated = 0
 		spawned_enemy_regions.clear()
 	last_player_position = player.global_position
 	_create_item_pool()
@@ -107,11 +177,15 @@ func _ready() -> void:
 		call_deferred("_restore_active_enemies", level_state.get("enemies", []))
 		call_deferred("_restore_level_drops", level_state.get("drops", []))
 	player.died.connect(_on_player_died)
+	if biome == 0:
+		get_parent().add_child.call_deferred(ForestAmbience.new())
 	call_deferred("_emit_initial_progress")
 
 
 func _emit_initial_progress() -> void:
 	progress_changed.emit(enemies_defeated, _get_max_enemies())
+	if biome == 0 and boss_spawned:
+		boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
 
 
 func _notification(what: int) -> void:
@@ -133,6 +207,9 @@ func _restore_level_state(level_state: Dictionary) -> bool:
 	enemies_spawned = clampi(int(saved_spawned), 0, _get_max_enemies())
 	enemies_defeated = clampi(int(saved_defeated), 0, enemies_spawned)
 	boss_spawned = bool(level_state.get("boss_spawned", false))
+	var saved_boss_defeated: Variant = level_state.get("boss_wolves_defeated", 0)
+	if typeof(saved_boss_defeated) in [TYPE_INT, TYPE_FLOAT]:
+		boss_wolves_defeated = clampi(int(saved_boss_defeated), 0, FOREST_BOSS_PACK_SIZE)
 	var saved_origin: Variant = _vector_from_record(
 		level_state.get("region_origin", []),
 		"region origin"
@@ -180,7 +257,8 @@ func save_current_level_state() -> bool:
 		enemy_records.append({
 			"scene_path": enemy.scene_file_path,
 			"position": [enemy.global_position.x, enemy.global_position.y],
-			"health": enemy.health
+			"health": enemy.health,
+			"boss_role": str(enemy.get_meta(BOSS_ROLE_META, ""))
 		})
 
 	var drop_records: Array[Dictionary] = []
@@ -215,6 +293,7 @@ func save_current_level_state() -> bool:
 		"enemies_spawned": enemies_spawned,
 		"enemies_defeated": enemies_defeated,
 		"boss_spawned": boss_spawned,
+		"boss_wolves_defeated": boss_wolves_defeated,
 		"player_position": [player.global_position.x, player.global_position.y],
 		"region_origin": [region_origin.x, region_origin.y],
 		"current_region": [current_region.x, current_region.y],
@@ -248,6 +327,15 @@ func _restore_active_enemies(raw_enemies: Variant) -> void:
 		if typeof(scene_path) != TYPE_STRING \
 				or typeof(saved_health) not in [TYPE_INT, TYPE_FLOAT]:
 			push_error("Ignoring saved enemy with invalid fields.")
+			continue
+		var boss_role := str(enemy_record.get("boss_role", ""))
+		if boss_role in ["alpha", "pack"]:
+			var boss_position: Variant = _vector_from_record(
+				enemy_record.get("position", []),
+				"boss wolf position"
+			)
+			if boss_position != null:
+				_spawn_boss_wolf(boss_position, boss_role == "alpha", float(saved_health))
 			continue
 		var enemy_scene := _get_enemy_scene(str(scene_path))
 		if enemy_scene == null:
@@ -474,43 +562,133 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 	if biome == 3:
 		_generate_ai_scenery(random, region_center, safe_area)
 		return
+	_generate_forest_scenery(random, region, region_center)
 
-	for _tree_index in range(random.randi_range(3, 5)):
-		_add_scenery_sprite(
-			TREE_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.15),
-			24.0,
-			Vector2(0.0, 62.0)
+
+func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, region_center: Vector2) -> void:
+	# Regions tile edge to edge, so forest props may use the whole region.
+	var spread := region_size * 0.48
+	var floor_detail := ForestFloor.new()
+	floor_detail.seed_value = random.randi()
+	floor_detail.half_extents = region_size * 0.5
+	floor_detail.position = region_center
+	floor_detail.z_index = -8
+	get_parent().call_deferred("add_child", floor_detail)
+
+	var apple_index := FOREST_APPLE_TREE_REGIONS.find(region)
+	if apple_index >= 0:
+		_add_forest_apple_tree(random, apple_index, region_center, spread)
+
+	if random.randf() < 0.5:
+		var landmark: Dictionary = FOREST_LANDMARKS[random.randi() % FOREST_LANDMARKS.size()]
+		var collision: float = landmark["collision"]
+		_try_add_forest_prop(random, landmark, region_center, spread * 0.8, Vector2(collision, collision * 0.5), collision)
+
+	for _tree_index in random.randi_range(6, 9):
+		var tree: Dictionary = FOREST_TREES[random.randi() % FOREST_TREES.size()]
+		var trunk: float = tree["trunk"]
+		_try_add_forest_prop(random, tree, region_center, spread, Vector2(trunk + 30.0, 16.0), trunk)
+
+	for _debris_index in random.randi_range(1, 3):
+		var debris: Dictionary = FOREST_DEBRIS[random.randi() % FOREST_DEBRIS.size()]
+		var collision: float = debris["collision"]
+		_try_add_forest_prop(random, debris, region_center, spread, Vector2(collision + 10.0, 10.0), collision)
+
+	for _plant_index in random.randi_range(4, 7):
+		var plant: Dictionary = FOREST_UNDERGROWTH[random.randi() % FOREST_UNDERGROWTH.size()]
+		_try_add_forest_prop(random, plant, region_center, spread, Vector2(12.0, 8.0))
+
+	for _cover_index in random.randi_range(6, 10):
+		var cover: Dictionary = FOREST_GROUND_COVER[random.randi() % FOREST_GROUND_COVER.size()]
+		var scale_range: Vector2 = cover["scale"]
+		_add_forest_sprite(
+			cover["texture"],
+			region_center + _random_region_offset(random, spread),
+			random.randf_range(scale_range.x, scale_range.y),
+			-4
 		)
 
-	for _boulder_index in range(random.randi_range(2, 3)):
-		_add_random_scenery_sprite(
-			random,
-			BOULDERS_TEXTURE,
-			region_center,
-			safe_area,
-			random.randf_range(0.7, 1.1),
-			47.0,
-			Vector2(0.0, 16.0)
-		)
 
-	if random.randf() < 0.45:
-		_add_scenery_sprite(
-			POND_TEXTURE,
-			region_center + _random_region_offset(random, safe_area * 0.7),
-			random.randf_range(0.75, 1.1)
-		)
+func _add_forest_apple_tree(random: RandomNumberGenerator, apple_index: int, region_center: Vector2, spread: Vector2) -> void:
+	for _attempt in 32:
+		var base_position := region_center + _random_region_offset(random, spread * 0.8)
+		if not _claim_forest_spot(base_position, Vector2(34.0, 14.0)):
+			continue
+		var apple_tree := APPLE_TREE_SCENE.instantiate() as AppleTree
+		apple_tree.tree_index = apple_index
+		apple_tree.position = base_position
+		apple_tree.get_node("Sprite2D").scale = Vector2.ONE * FOREST_APPLE_TREE_SCALE
+		get_parent().call_deferred("add_child", apple_tree)
+		return
+	push_warning("No room for forest apple tree %d." % apple_index)
 
-	_add_random_scenery_sprite(
-		random,
-		CAVE_TEXTURE,
-		region_center,
-		safe_area * 0.7,
-		random.randf_range(0.8, 1.15),
-		70.0,
-		Vector2(0.0, 47.0)
-	)
+
+## Places a standing prop at a free random spot, with a solid base when collision_radius > 0.
+func _try_add_forest_prop(
+	random: RandomNumberGenerator,
+	prop: Dictionary,
+	region_center: Vector2,
+	spread: Vector2,
+	footprint: Vector2,
+	collision_radius := 0.0
+) -> void:
+	var scale_range: Vector2 = prop["scale"]
+	var uniform_scale := random.randf_range(scale_range.x, scale_range.y)
+	for _attempt in 12:
+		var base_position := region_center + _random_region_offset(random, spread)
+		if not _claim_forest_spot(base_position, footprint * maxf(uniform_scale, 0.6), collision_radius > 0.0):
+			continue
+		var sprite := _make_forest_sprite(prop["texture"], uniform_scale)
+		if collision_radius <= 0.0:
+			sprite.position = base_position
+			get_parent().call_deferred("add_child", sprite)
+			return
+		var obstacle := StaticBody2D.new()
+		obstacle.collision_mask = 0
+		obstacle.position = base_position
+		var collision := CollisionShape2D.new()
+		var shape := CircleShape2D.new()
+		shape.radius = collision_radius * maxf(uniform_scale, 0.6)
+		collision.shape = shape
+		# The circle sits on the ground just behind the prop's base.
+		collision.position = Vector2(0.0, -shape.radius * 0.6)
+		obstacle.add_child(collision)
+		obstacle.add_child(sprite)
+		get_parent().call_deferred("add_child", obstacle)
+		return
+
+
+## Flat ground cover drawn below characters; it may overlap anything.
+func _add_forest_sprite(texture: Texture2D, world_position: Vector2, uniform_scale: float, z := 0) -> void:
+	var sprite := _make_forest_sprite(texture, uniform_scale)
+	sprite.position = world_position
+	sprite.z_index = z
+	get_parent().call_deferred("add_child", sprite)
+
+
+## A sprite whose node origin is the bottom of the art, so y-sorting treats it as standing on the ground.
+func _make_forest_sprite(texture: Texture2D, uniform_scale: float) -> Sprite2D:
+	var sprite := Sprite2D.new()
+	sprite.texture = texture
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.scale = Vector2.ONE * uniform_scale
+	sprite.offset = Vector2(0.0, -texture.get_height() * 0.5)
+	return sprite
+
+
+## Reserves a footprint (half size, resting on base_position) if it is clear of other props and,
+## for solid props, of the player's entry point.
+func _claim_forest_spot(base_position: Vector2, footprint: Vector2, solid := true) -> bool:
+	var center := base_position - Vector2(0.0, footprint.y)
+	var entry_point := region_origin - player_camera.offset / player_camera.zoom
+	if solid and center.distance_to(entry_point) < FOREST_SPAWN_CLEARING + footprint.x:
+		return false
+	if not _has_scenery_clearance(center, footprint):
+		return false
+	var placements: Array = scenery_placements_by_region.get(active_scenery_region, [])
+	placements.append({"position": center, "half_size": footprint})
+	scenery_placements_by_region[active_scenery_region] = placements
+	return true
 
 
 func _generate_desert_scenery(
@@ -818,10 +996,13 @@ func _on_enemy_died(enemy: Wolf) -> void:
 	_drop_enemy_loot(enemy)
 
 	var max_enemies := _get_max_enemies()
-	if biome == 1 and enemies_defeated == max_enemies and not boss_spawned:
+	if biome == 0 and enemies_defeated == max_enemies and not boss_spawned:
+		_spawn_wolf_boss_pack()
+		_save_level_state()
+	elif biome == 1 and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_desert_boss()
 		_save_level_state()
-	elif biome != 1 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
+	elif biome > 1 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
 		_complete_current_level()
 	else:
 		_save_level_state()
@@ -833,6 +1014,89 @@ func _on_desert_boss_died(boss: Wolf) -> void:
 		push_error("Could not award %d XP for defeating the desert boss." % experience_reward)
 	_drop_enemy_loot(boss, true)
 	_complete_current_level()
+
+
+func _spawn_wolf_boss_pack() -> void:
+	boss_spawned = true
+	boss_wolves_defeated = 0
+	boss_incoming.emit()
+	var spawn_direction := player.facing
+	if spawn_direction.is_zero_approx():
+		spawn_direction = Vector2.RIGHT
+	var pack_center := player.global_position \
+			+ spawn_direction * _get_spawn_distance(spawn_direction)
+	var flank := Vector2(-spawn_direction.y, spawn_direction.x) * BOSS_PACK_SPREAD
+	_spawn_boss_wolf(pack_center, true)
+	_spawn_boss_wolf(pack_center + flank, false)
+	_spawn_boss_wolf(pack_center - flank, false)
+	boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
+
+
+## Spawns one wolf of the forest boss pack. Pass saved_health >= 0 when restoring a save.
+func _spawn_boss_wolf(world_position: Vector2, is_alpha: bool, saved_health := -1.0) -> void:
+	var wolf := WOLF_SCENE.instantiate() as Wolf
+	if wolf == null:
+		push_error("The wolf scene root must use the Wolf script.")
+		return
+
+	wolf.target_path = NodePath("../Player")
+	wolf.set_meta(BOSS_ROLE_META, "alpha" if is_alpha else "pack")
+	if is_alpha:
+		wolf.name = "AlphaWolf"
+		wolf.scale = Vector2.ONE * ALPHA_WOLF_SCALE
+		wolf.max_health = Wolf.MAX_HEALTH * ALPHA_WOLF_HEALTH_MULTIPLIER
+		wolf.attack_damage = roundi(Wolf.ATTACK_DAMAGE * ALPHA_WOLF_DAMAGE_MULTIPLIER)
+		wolf.experience_reward = ALPHA_WOLF_EXPERIENCE
+	wolf.died.connect(_on_boss_wolf_died.bind(wolf))
+	get_parent().add_child(wolf)
+	wolf.global_position = world_position
+	if saved_health >= 0.0:
+		wolf.health = clampf(saved_health, 0.0, wolf.max_health)
+		wolf.health_bar.value = wolf.health
+
+
+func _on_boss_wolf_died(wolf: Wolf) -> void:
+	var experience_reward := _get_scaled_experience_reward(wolf)
+	if not player.gain_experience(experience_reward):
+		push_error("Could not award %d XP for defeating %s." % [experience_reward, wolf.name])
+	_drop_enemy_loot(wolf)
+	boss_wolves_defeated = mini(boss_wolves_defeated + 1, FOREST_BOSS_PACK_SIZE)
+	boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
+	if boss_wolves_defeated < FOREST_BOSS_PACK_SIZE:
+		_save_level_state()
+		return
+
+	_spawn_treasure_chest(wolf.global_position)
+	_complete_current_level()
+
+
+func _spawn_treasure_chest(world_position: Vector2) -> void:
+	var chest := TREASURE_CHEST_SCENE.instantiate() as TreasureChest
+	if chest == null:
+		push_error("The treasure chest scene root must use the TreasureChest script.")
+		return
+
+	chest.opened.connect(_on_treasure_chest_opened.bind(chest))
+	get_parent().call_deferred("add_child", chest)
+	chest.position = world_position
+
+
+func _on_treasure_chest_opened(chest: TreasureChest) -> void:
+	if not chest.loot_rolled:
+		chest.loot_rolled = true
+		# Quest items (like Rendel's coat) come first, and only while their quest is at the right stage.
+		chest.loot.append_array(Quests.create_chest_quest_items())
+		if item_pool.is_empty():
+			push_error("The treasure chest has no loot table to draw from.")
+		else:
+			var item_count := mini(
+				loot_random.randi_range(CHEST_MIN_ITEMS, CHEST_MAX_ITEMS),
+				item_pool.size()
+			)
+			var candidates := item_pool.duplicate()
+			for _index in item_count:
+				chest.loot.append(candidates.pop_at(loot_random.randi_range(0, candidates.size() - 1)))
+	chest_loot_opened.emit(chest)
 
 
 func _complete_current_level() -> void:

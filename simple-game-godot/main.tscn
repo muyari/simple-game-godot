@@ -235,11 +235,11 @@ text = "T  Open Town Portal"
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -250.0
+offset_left = -340.0
 offset_top = 16.0
 offset_right = -20.0
 offset_bottom = 40.0
-text = "C  Character   I  Inventory"
+text = "C  Character   I  Inventory   J  Quests"
 horizontal_alignment = 2
 
 [node name="CharacterMenu" type="Control" parent="UI" unique_id=263802651]
