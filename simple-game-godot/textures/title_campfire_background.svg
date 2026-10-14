@@ -11,22 +11,14 @@
       <stop offset="0.35" stop-color="#344c3a"/>
       <stop offset="1" stop-color="#152a25"/>
     </linearGradient>
-    <linearGradient id="fire" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#ed522f"/>
-      <stop offset="0.55" stop-color="#ff9b36"/>
-      <stop offset="1" stop-color="#ffe39a"/>
-    </linearGradient>
-    <linearGradient id="fire_inner" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#ff8a2d"/>
-      <stop offset="1" stop-color="#fff0aa"/>
-    </linearGradient>
-    <radialGradient id="firelight" cx="50%" cy="55%" r="50%">
-      <stop offset="0" stop-color="#f8aa4e" stop-opacity="0.36"/>
-      <stop offset="1" stop-color="#f8aa4e" stop-opacity="0"/>
-    </radialGradient>
     <pattern id="grass_marks" width="64" height="42" patternUnits="userSpaceOnUse">
       <path d="M8 42l5-12m12 12l-2-9m23 9l6-15m6 15l-1-7" fill="none" stroke="#a4b779" stroke-opacity="0.18" stroke-width="2"/>
     </pattern>
+    <radialGradient id="clearing" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#3d3526" stop-opacity="0.85"/>
+      <stop offset="0.55" stop-color="#2f2c21" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#2b2a20" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
   <rect width="1600" height="900" fill="url(#sky)"/>
@@ -61,35 +53,7 @@
     <path d="M1540 716l31-77 31 77h-20l29 44h-80l29-44z"/>
   </g>
 
-  <g stroke-linecap="round" stroke-linejoin="round">
-    <path d="M1164 789l93 3M1170 799l88 2" stroke="#684934" stroke-width="10"/>
-    <path d="M1170 788l80 2" stroke="#b27a4c" stroke-opacity="0.7" stroke-width="2"/>
-  </g>
-
-  <ellipse cx="1370" cy="727" rx="190" ry="128" fill="url(#firelight)"/>
-  <g stroke-linecap="round" stroke-linejoin="round">
-    <path d="M1315 743l111 34M1327 778l91-53" stroke="#241c17" stroke-width="19"/>
-    <path d="M1320 740l102 32M1330 776l85-48" stroke="#79503a" stroke-width="8"/>
-    <g transform="translate(1370 0) scale(0.65 1) translate(-1370 0)">
-      <path d="M1360 758c-30-37 12-57 12-91 27 22 19 39 20 47 29-28 19-53 18-70 47 39 43 82 13 114z" fill="url(#fire)" transform="translate(-32 -8)"/>
-      <path d="M1380 758c-18-23 7-37 12-58 14 13 13 26 13 31 16-16 14-29 13-39 28 28 23 51 8 66z" fill="url(#fire_inner)" transform="translate(-32 -8)"/>
-    </g>
-  </g>
-  <g fill="#74634b" stroke="#b7a17a" stroke-opacity="0.45" stroke-width="2">
-    <ellipse cx="1304" cy="789" rx="15" ry="9"/>
-    <ellipse cx="1331" cy="808" rx="17" ry="10"/>
-    <ellipse cx="1368" cy="815" rx="16" ry="9"/>
-    <ellipse cx="1410" cy="807" rx="17" ry="10"/>
-    <ellipse cx="1440" cy="789" rx="15" ry="9"/>
-    <ellipse cx="1287" cy="770" rx="12" ry="8"/>
-    <ellipse cx="1455" cy="769" rx="12" ry="8"/>
-  </g>
-  <g fill="#ffd982">
-    <path d="M1364 655l4-13 4 13-4 5z"/>
-    <path d="M1438 677l3-10 3 10-3 4z"/>
-    <path d="M1320 689l3-9 3 9-3 3z"/>
-    <path d="M1401 646l3-10 3 10-3 4z"/>
-  </g>
+  <ellipse cx="1372" cy="800" rx="230" ry="56" fill="url(#clearing)"/>
 
   <g fill="none" stroke="#a2b37b" stroke-linecap="round" opacity="0.58">
     <path d="M88 900q4-44 18-67m-18 67q-7-38-19-50m28 50q10-31 28-42" stroke-width="3"/>

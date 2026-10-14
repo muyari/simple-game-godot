@@ -5,6 +5,8 @@ signal return_to_character_selection_requested
 signal close_game_requested
 
 var backdrop: ColorRect
+var panel: PanelContainer
+var resume_button: Button
 
 
 func _ready() -> void:
@@ -18,6 +20,15 @@ func open_menu() -> void:
 		return
 	show()
 	get_tree().paused = true
+	backdrop.modulate.a = 0.0
+	panel.modulate.a = 0.0
+	panel.pivot_offset = panel.size * 0.5
+	panel.scale = Vector2(0.96, 0.96)
+	var tween := create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(backdrop, "modulate:a", 1.0, 0.16)
+	tween.tween_property(panel, "modulate:a", 1.0, 0.18)
+	tween.tween_property(panel, "scale", Vector2.ONE, 0.18)
+	resume_button.grab_focus()
 
 
 func close_menu() -> void:
@@ -26,43 +37,47 @@ func close_menu() -> void:
 
 
 func _build_menu() -> void:
+	var root := Control.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.theme = MenuStyle.get_theme()
+	add_child(root)
+
 	backdrop = ColorRect.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.02, 0.018, 0.78)
+	backdrop.color = Color(0.015, 0.02, 0.018, 0.72)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(backdrop)
+	root.add_child(backdrop)
 
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(420.0, 0.0)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.offset_left = -210.0
-	panel.offset_top = -180.0
-	panel.offset_right = 210.0
-	panel.offset_bottom = 180.0
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#131a17")
-	panel_style.set_border_width_all(3)
-	panel_style.border_color = Color("#9e7d4a")
-	panel_style.set_corner_radius_all(8)
-	panel_style.content_margin_left = 28.0
-	panel_style.content_margin_right = 28.0
-	panel_style.content_margin_top = 24.0
-	panel_style.content_margin_bottom = 24.0
-	panel.add_theme_stylebox_override("panel", panel_style)
-	add_child(panel)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(center)
+
+	panel = PanelContainer.new()
+	panel.theme_type_variation = &"MenuPanel"
+	panel.custom_minimum_size = Vector2(460.0, 0.0)
+	center.add_child(panel)
 
 	var contents := VBoxContainer.new()
 	contents.add_theme_constant_override("separation", 12)
 	panel.add_child(contents)
 
+	var eyebrow := Label.new()
+	eyebrow.text = "THE JOURNEY WAITS"
+	eyebrow.theme_type_variation = &"EyebrowLabel"
+	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	contents.add_child(eyebrow)
+
 	var title := Label.new()
-	title.text = "PAUSED"
+	title.text = "Paused"
+	title.theme_type_variation = &"TitleLabel"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 30)
-	title.add_theme_color_override("font_color", Color("#e8c77e"))
 	contents.add_child(title)
 
-	var resume_button := _create_button("Resume")
+	contents.add_child(HSeparator.new())
+
+	resume_button = _create_button("Resume")
 	resume_button.pressed.connect(close_menu)
 	contents.add_child(resume_button)
 
@@ -71,21 +86,22 @@ func _build_menu() -> void:
 	contents.add_child(character_button)
 
 	var close_button := _create_button("Close Game")
+	close_button.theme_type_variation = &"DangerButton"
 	close_button.pressed.connect(_on_close_game_pressed)
 	contents.add_child(close_button)
 
 	var hint := Label.new()
 	hint.text = "Press Esc to resume"
+	hint.theme_type_variation = &"HintLabel"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_color_override("font_color", Color("#c4c9c0"))
 	contents.add_child(hint)
 
 
 func _create_button(button_text: String) -> Button:
 	var button := Button.new()
 	button.text = button_text
-	button.custom_minimum_size.y = 48.0
-	button.add_theme_font_size_override("font_size", 18)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size.y = 50.0
 	return button
 
 
