@@ -8,6 +8,8 @@ const MAX_RANGE = 600.0
 @export var damage := 20
 
 var direction := Vector2.DOWN
+## Monster that fired this, told about hits so on-hit modifiers like Vampiric work.
+var source_monster: Wolf
 var distance_travelled := 0.0
 var animation_time := 0.0
 
@@ -17,7 +19,7 @@ func _process(delta: float) -> void:
 	var step_distance := SPEED * delta
 	var to_player := _find_hit_player(step_distance)
 	if to_player != null:
-		to_player.take_damage(damage)
+		_report_hit(to_player.take_damage(damage))
 		queue_free()
 		return
 
@@ -29,6 +31,11 @@ func _process(delta: float) -> void:
 
 	rotation = direction.angle()
 	queue_redraw()
+
+
+func _report_hit(damage_dealt: int) -> void:
+	if is_instance_valid(source_monster):
+		source_monster.register_hit(damage_dealt)
 
 
 func _find_hit_player(step_distance: float) -> Player:

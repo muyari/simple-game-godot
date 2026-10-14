@@ -30,15 +30,16 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	spit_cooldown_remaining = maxf(spit_cooldown_remaining - delta, 0.0)
-	burrow_cooldown_remaining = maxf(burrow_cooldown_remaining - delta, 0.0)
+	var action_delta := get_action_delta(delta)
+	spit_cooldown_remaining = maxf(spit_cooldown_remaining - action_delta, 0.0)
+	burrow_cooldown_remaining = maxf(burrow_cooldown_remaining - action_delta, 0.0)
 	trail_interval_remaining = maxf(trail_interval_remaining - delta, 0.0)
 	if target == null or not is_instance_valid(target):
 		velocity = Vector2.ZERO
 		return
 
 	if serpent_burrowed:
-		burrow_time_remaining -= delta
+		burrow_time_remaining -= action_delta
 		if burrow_time_remaining <= 0.0:
 			_emerge_and_strike()
 		return
@@ -49,7 +50,7 @@ func _physics_process(delta: float) -> void:
 		_start_burrow()
 		return
 
-	velocity = to_target.normalized() * SERPENT_SPEED
+	velocity = to_target.normalized() * SERPENT_SPEED * get_speed_multiplier()
 	if trail_interval_remaining <= 0.0 and velocity.length_squared() > 0.0:
 		_leave_frost_trail()
 		trail_interval_remaining = TRAIL_INTERVAL
@@ -84,7 +85,7 @@ func _emerge_and_strike() -> void:
 	sprite.show()
 	health_bar.show()
 	facing = _cardinal_direction(-direction)
-	target.take_damage(EMERGE_DAMAGE)
+	deal_damage(EMERGE_DAMAGE)
 	target.apply_chill(1.0, 0.62)
 	_spit_shards(direction)
 
@@ -95,7 +96,8 @@ func _spit_shards(direction: Vector2) -> void:
 		if shard == null:
 			push_error("The FrostShard scene root must use the FrostShard script.")
 			return
-		shard.damage = 6
+		shard.damage = get_outgoing_damage(6)
+		shard.source_monster = self
 		shard.chill_duration = 1.4
 		shard.direction = direction.rotated(spread)
 		get_tree().current_scene.add_child(shard)

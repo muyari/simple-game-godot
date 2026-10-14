@@ -48,10 +48,10 @@ func _physics_process(delta: float) -> void:
 				exo_timer = SLAM_WINDUP
 				velocity = Vector2.ZERO
 			else:
-				velocity = to_target.normalized() * 48.0
+				velocity = to_target.normalized() * 48.0 * get_speed_multiplier()
 		ExoMode.WINDING_UP:
 			velocity = Vector2.ZERO
-			exo_timer -= delta
+			exo_timer -= get_action_delta(delta)
 			if exo_timer <= 0.0:
 				if to_target.length() <= SLAM_RANGE + 18.0:
 					_explode_slam(to_target)
@@ -59,7 +59,7 @@ func _physics_process(delta: float) -> void:
 				exo_timer = 1.6
 		ExoMode.RECOVERING:
 			velocity = Vector2.ZERO
-			exo_timer -= delta
+			exo_timer -= get_action_delta(delta)
 			if exo_timer <= 0.0:
 				exo_mode = ExoMode.ADVANCING
 
@@ -70,7 +70,7 @@ func _physics_process(delta: float) -> void:
 
 func _explode_slam(to_target: Vector2) -> void:
 	if to_target.length() <= SLAM_RANGE:
-		target.take_damage(SLAM_DAMAGE)
+		deal_damage(SLAM_DAMAGE)
 		target.apply_knockback(to_target.normalized(), SLAM_KNOCKBACK)
 	swipe.rotation = 0.0
 	swipe.show()

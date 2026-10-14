@@ -22,7 +22,7 @@ func _physics_process(delta: float) -> void:
 	if not hover_origin_set:
 		hover_origin_y = global_position.y
 		hover_origin_set = true
-	pulse_cooldown_remaining = maxf(pulse_cooldown_remaining - delta, 0.0)
+	pulse_cooldown_remaining = maxf(pulse_cooldown_remaining - get_action_delta(delta), 0.0)
 	hover_time += delta
 	if target == null or not is_instance_valid(target):
 		velocity = Vector2.ZERO
@@ -31,11 +31,11 @@ func _physics_process(delta: float) -> void:
 	var to_target := target.global_position - global_position
 	facing = _cardinal_direction(to_target)
 	if to_target.length() > DETECT_RANGE:
-		velocity = to_target.normalized() * 86.0
+		velocity = to_target.normalized() * 86.0 * get_speed_multiplier()
 	else:
-		velocity = Vector2(-to_target.y, to_target.x).normalized() * 42.0
+		velocity = Vector2(-to_target.y, to_target.x).normalized() * 42.0 * get_speed_multiplier()
 		if to_target.length() < 180.0:
-			velocity = -to_target.normalized() * 78.0
+			velocity = -to_target.normalized() * 78.0 * get_speed_multiplier()
 		if pulse_cooldown_remaining <= 0.0:
 			_fire_homing_pulse()
 			pulse_cooldown_remaining = PULSE_COOLDOWN
@@ -53,7 +53,8 @@ func _fire_homing_pulse() -> void:
 		return
 
 	pulse.target = target
-	pulse.damage = PULSE_DAMAGE
+	pulse.damage = get_outgoing_damage(PULSE_DAMAGE)
+	pulse.source_monster = self
 	pulse.global_position = global_position
 	pulse.initial_direction = (target.global_position + target.velocity * 0.45 - global_position).normalized()
 	get_tree().current_scene.add_child(pulse)

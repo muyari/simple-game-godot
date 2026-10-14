@@ -11,6 +11,8 @@ const TRACK_DURATION = 1.25
 var target: Player
 var damage := 13
 var initial_direction := Vector2.DOWN
+## Monster that fired this, told about hits so on-hit modifiers like Vampiric work.
+var source_monster: Wolf
 var direction := Vector2.DOWN
 var last_known_position := Vector2.ZERO
 var windup_remaining := WINDUP_DURATION
@@ -49,7 +51,7 @@ func _process(delta: float) -> void:
 	var step_distance := SPEED * delta
 	var hit_player := _find_hit_player(step_distance)
 	if hit_player != null:
-		hit_player.take_damage(damage)
+		_report_hit(hit_player.take_damage(damage))
 		hit_player.apply_chill(0.7, 0.78)
 		queue_free()
 		return
@@ -61,6 +63,11 @@ func _process(delta: float) -> void:
 		return
 	rotation = direction.angle()
 	queue_redraw()
+
+
+func _report_hit(damage_dealt: int) -> void:
+	if is_instance_valid(source_monster):
+		source_monster.register_hit(damage_dealt)
 
 
 func _find_hit_player(step_distance: float) -> Player:

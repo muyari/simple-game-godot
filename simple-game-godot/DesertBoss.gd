@@ -11,13 +11,10 @@ var spit_random := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
-	super._ready()
 	experience_reward = 150
 	max_health = Wolf.MAX_HEALTH * 1.25 * 5.0
 	attack_damage = roundi(Wolf.ATTACK_DAMAGE * 1.5 * 1.25)
-	health = max_health
-	health_bar.max_value = max_health
-	health_bar.value = health
+	super._ready()
 	spit_random.randomize()
 	spit_timer = spit_random.randf_range(MIN_SPIT_INTERVAL, MAX_SPIT_INTERVAL)
 
@@ -27,7 +24,7 @@ func _physics_process(delta: float) -> void:
 	if target == null or not is_instance_valid(target) or health <= 0.0:
 		return
 
-	spit_timer -= delta
+	spit_timer -= get_action_delta(delta)
 	if spit_timer > 0.0:
 		return
 
@@ -48,6 +45,7 @@ func _spit_venom() -> void:
 		return
 
 	venom.direction = direction
-	venom.damage = attack_damage
+	venom.damage = get_outgoing_damage(attack_damage)
+	venom.source_monster = self
 	get_tree().current_scene.add_child(venom)
 	venom.global_position = global_position + direction * 42.0
