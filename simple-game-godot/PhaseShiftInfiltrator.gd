@@ -24,7 +24,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	phase_cooldown_remaining = maxf(phase_cooldown_remaining - delta, 0.0)
+	var action_delta := get_action_delta(delta)
+	phase_cooldown_remaining = maxf(phase_cooldown_remaining - action_delta, 0.0)
 	if target == null or not is_instance_valid(target):
 		velocity = Vector2.ZERO
 		return
@@ -36,15 +37,15 @@ func _physics_process(delta: float) -> void:
 			if to_target.length() <= PHASE_RANGE and phase_cooldown_remaining <= 0.0:
 				_start_phase()
 			else:
-				velocity = to_target.normalized() * (CHASE_SPEED * 1.22)
+				velocity = to_target.normalized() * (CHASE_SPEED * 1.22 * get_speed_multiplier())
 		InfiltratorMode.PHASING:
 			velocity = Vector2.ZERO
-			phase_timer -= delta
+			phase_timer -= action_delta
 			if phase_timer <= 0.0:
 				_ambush_from_phase()
 		InfiltratorMode.RECOVERING:
 			velocity = Vector2.ZERO
-			phase_timer -= delta
+			phase_timer -= action_delta
 			if phase_timer <= 0.0:
 				infiltrator_mode = InfiltratorMode.STALKING
 
@@ -74,7 +75,7 @@ func _ambush_from_phase() -> void:
 	sprite.show()
 	health_bar.show()
 	if target.global_position.distance_to(global_position) <= PHASE_RANGE:
-		target.take_damage(AMBUSH_DAMAGE)
+		deal_damage(AMBUSH_DAMAGE)
 		swipe.rotation = facing.angle()
 		swipe.show()
 		swipe_timer = SWIPE_VISIBLE_TIME

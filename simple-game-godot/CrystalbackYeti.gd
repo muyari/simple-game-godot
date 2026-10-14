@@ -25,6 +25,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var action_delta := get_action_delta(delta)
 	if target == null or not is_instance_valid(target):
 		velocity = Vector2.ZERO
 		move_and_slide()
@@ -41,24 +42,24 @@ func _physics_process(delta: float) -> void:
 				velocity = Vector2.ZERO
 				sprite.modulate = Color("#f4e4bd")
 			else:
-				velocity = to_target.normalized() * CHASE_SPEED * 0.52
+				velocity = to_target.normalized() * CHASE_SPEED * 0.52 * get_speed_multiplier()
 				facing = _cardinal_direction(to_target)
 				_update_sprite(delta)
 				move_and_slide()
 				return
 		YetiMode.WINDING_UP:
 			velocity = Vector2.ZERO
-			yeti_timer -= delta
+			yeti_timer -= action_delta
 			if yeti_timer <= 0.0:
 				yeti_mode = YetiMode.CHARGING
 				yeti_timer = CHARGE_DURATION
 				sprite.modulate = Color("#bcecff")
 		YetiMode.CHARGING:
-			velocity = charge_direction * CHARGE_SPEED
-			yeti_timer -= delta
+			velocity = charge_direction * CHARGE_SPEED * get_speed_multiplier()
+			yeti_timer -= action_delta
 		YetiMode.RECOVERING:
 			velocity = Vector2.ZERO
-			yeti_timer -= delta
+			yeti_timer -= action_delta
 			if yeti_timer <= 0.0:
 				yeti_mode = YetiMode.HUNTING
 				sprite.modulate = Color("#d7f1f5")
@@ -68,7 +69,7 @@ func _physics_process(delta: float) -> void:
 	if yeti_mode == YetiMode.CHARGING:
 		var hit_player := target.global_position.distance_to(global_position) <= 42.0
 		if hit_player:
-			target.take_damage(CHARGE_DAMAGE)
+			deal_damage(CHARGE_DAMAGE)
 			target.apply_knockback(charge_direction, KNOCKBACK_STRENGTH)
 		if hit_player or get_slide_collision_count() > 0 or yeti_timer <= 0.0:
 			_roar_shard_burst()
@@ -83,7 +84,8 @@ func _roar_shard_burst() -> void:
 		if shard == null:
 			push_error("The FrostShard scene root must use the FrostShard script.")
 			return
-		shard.damage = 7
+		shard.damage = get_outgoing_damage(7)
+		shard.source_monster = self
 		shard.chill_duration = 1.0
 		shard.direction = direction
 		get_tree().current_scene.add_child(shard)

@@ -14,6 +14,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var action_delta := get_action_delta(delta)
 	if target == null or not is_instance_valid(target):
 		velocity = Vector2.ZERO
 		move_and_slide()
@@ -28,11 +29,11 @@ func _physics_process(delta: float) -> void:
 				velocity = Vector2.ZERO
 			else:
 				facing = _cardinal_direction(to_target)
-				velocity = to_target.normalized() * CHASE_SPEED
+				velocity = to_target.normalized() * CHASE_SPEED * get_speed_multiplier()
 		State.WINDING_UP:
 			velocity = Vector2.ZERO
 			facing = _cardinal_direction(to_target)
-			state_timer -= delta
+			state_timer -= action_delta
 			if state_timer <= 0.0:
 				if to_target.length() <= SPIT_RANGE:
 					_spit_venom(to_target.normalized())
@@ -40,7 +41,7 @@ func _physics_process(delta: float) -> void:
 				state_timer = SPIT_COOLDOWN
 		State.COOLDOWN:
 			velocity = Vector2.ZERO
-			state_timer -= delta
+			state_timer -= action_delta
 			if state_timer <= 0.0:
 				state = State.CHASING
 
@@ -58,6 +59,7 @@ func _spit_venom(direction: Vector2) -> void:
 		return
 
 	venom.direction = direction
-	venom.damage = spit_damage
+	venom.damage = get_outgoing_damage(spit_damage)
+	venom.source_monster = self
 	get_tree().current_scene.add_child(venom)
 	venom.global_position = global_position + direction * 26.0

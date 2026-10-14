@@ -18,14 +18,14 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	laser_angle = wrapf(laser_angle + delta * 1.7, 0.0, TAU)
-	burst_cooldown_remaining = maxf(burst_cooldown_remaining - delta, 0.0)
+	burst_cooldown_remaining = maxf(burst_cooldown_remaining - get_action_delta(delta), 0.0)
 	if target == null or not is_instance_valid(target):
 		velocity = Vector2.ZERO
 		return
 
 	var to_target := target.global_position - global_position
 	if to_target.length() > SCAN_RANGE:
-		velocity = to_target.normalized() * 72.0
+		velocity = to_target.normalized() * 72.0 * get_speed_multiplier()
 		facing = _cardinal_direction(to_target)
 	else:
 		velocity = Vector2.ZERO
@@ -33,7 +33,7 @@ func _physics_process(delta: float) -> void:
 		if to_target.length() <= BURST_RANGE \
 				and target.velocity.length_squared() > 900.0 \
 				and burst_cooldown_remaining <= 0.0:
-			target.take_damage(BURST_DAMAGE)
+			deal_damage(BURST_DAMAGE)
 			burst_cooldown_remaining = BURST_COOLDOWN
 			swipe.rotation = to_target.angle()
 			swipe.show()

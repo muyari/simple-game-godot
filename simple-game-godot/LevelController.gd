@@ -91,6 +91,8 @@ const MAX_AI_ENEMIES = 15
 const SPAWN_EDGE_MARGIN = 128.0
 const SCENERY_PRELOAD_RADIUS = 1
 const ITEM_DROP_CHANCE = 0.1
+## Extra drops (e.g. from Hoarder monsters) scatter up to this far so they don't stack.
+const EXTRA_DROP_SCATTER = 28.0
 const SCENERY_CLEARANCE = 24.0
 const FOREST_BOSS_PACK_SIZE = 3
 const BOSS_PACK_SPREAD = 90.0
@@ -258,6 +260,7 @@ func save_current_level_state() -> bool:
 			"scene_path": enemy.scene_file_path,
 			"position": [enemy.global_position.x, enemy.global_position.y],
 			"health": enemy.health,
+			"modifiers": enemy.modifier_ids,
 			"boss_role": str(enemy.get_meta(BOSS_ROLE_META, ""))
 		})
 
@@ -354,6 +357,7 @@ func _restore_active_enemies(raw_enemies: Variant) -> void:
 			continue
 
 		enemy.target_path = NodePath("../Player")
+		enemy.modifier_ids = MonsterModifiers.sanitize(enemy_record.get("modifiers", []))
 		if str(scene_path) == "res://desert_boss.tscn":
 			enemy.died.connect(_on_desert_boss_died.bind(enemy))
 		else:
@@ -949,6 +953,7 @@ func _spawn_enemy(direction: Vector2) -> bool:
 		return false
 
 	enemy.target_path = NodePath("../Player")
+	enemy.modifier_ids = MonsterModifiers.roll(loot_random, area_level)
 	enemy.died.connect(_on_enemy_died.bind(enemy))
 	get_parent().add_child(enemy)
 	enemy.global_position = player.global_position + direction * _get_spawn_distance(direction)
@@ -1110,15 +1115,25 @@ func _get_scaled_experience_reward(enemy: Wolf) -> int:
 
 
 func _drop_enemy_loot(enemy: Wolf, is_desert_boss := false) -> void:
-	_spawn_gold_pickup(enemy.global_position)
+	var gold_amount := roundi(loot_random.randi_range(1, 3) * enemy.get_gold_multiplier())
+	_spawn_gold_pickup(enemy.global_position, gold_amount)
 	if is_desert_boss:
 		_spawn_item_pickup(_create_desert_gear(true), enemy.global_position)
-	elif biome == 1 or biome == 3:
-		if loot_random.randf() < ITEM_DROP_CHANCE:
-			_spawn_item_pickup(_create_desert_gear(false), enemy.global_position)
 	elif loot_random.randf() < ITEM_DROP_CHANCE:
-		var dropped_item := item_pool[loot_random.randi_range(0, item_pool.size() - 1)]
-		_spawn_item_pickup(dropped_item, enemy.global_position)
+		_drop_random_enemy_item(enemy.global_position)
+	for _extra_drop in enemy.get_extra_item_drops():
+		var scatter := Vector2(
+			loot_random.randf_range(-EXTRA_DROP_SCATTER, EXTRA_DROP_SCATTER),
+			loot_random.randf_range(-EXTRA_DROP_SCATTER, EXTRA_DROP_SCATTER)
+		)
+		_drop_random_enemy_item(enemy.global_position + scatter)
+
+
+func _drop_random_enemy_item(world_position: Vector2) -> void:
+	if biome == 1 or biome == 3:
+		_spawn_item_pickup(_create_desert_gear(false), world_position)
+	elif not item_pool.is_empty():
+		_spawn_item_pickup(item_pool[loot_random.randi_range(0, item_pool.size() - 1)], world_position)
 
 
 func _create_desert_gear(is_boss_drop: bool) -> ItemData:

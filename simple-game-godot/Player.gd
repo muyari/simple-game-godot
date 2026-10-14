@@ -1721,13 +1721,14 @@ func apply_knockback(direction: Vector2, strength: float) -> void:
 	knockback_velocity += direction.normalized() * strength
 
 
-func take_damage(amount: int) -> void:
+## Returns the damage actually taken after evasion and reductions.
+func take_damage(amount: int) -> int:
 	if health <= 0:
-		return
+		return 0
 
 	var evasion_chance := get_evasion()
 	if evasion_chance > 0.0 and randf() < evasion_chance:
-		return
+		return 0
 
 	var flat_reduced := maxi(amount - get_damage_reduction(), 0)
 	var reduced_damage := flat_reduced
@@ -1741,12 +1742,14 @@ func take_damage(amount: int) -> void:
 		reduced_damage = roundi(float(reduced_damage) * (1.0 - warrior_reduction))
 	if reduced_damage > 0:
 		_cancel_town_portal_cast()
-	health = maxi(health - reduced_damage, 0)
+	var damage_taken := mini(reduced_damage, health)
+	health -= damage_taken
 	health_changed.emit(health, get_max_health())
 	if health == 0:
 		velocity = Vector2.ZERO
 		set_physics_process(false)
 		died.emit()
+	return damage_taken
 
 
 func _get_warrior_damage_reduction() -> float:
