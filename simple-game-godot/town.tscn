@@ -43,6 +43,8 @@
 [ext_resource type="Texture2D" path="res://textures/town_grass_clump.png" id="66_grass_clump"]
 [ext_resource type="Texture2D" path="res://textures/town_rocks_small.png" id="67_rocks_small"]
 [ext_resource type="Texture2D" path="res://textures/town_rock_mossy.png" id="68_rock_mossy"]
+[ext_resource type="PackedScene" path="res://quest_giver.tscn" id="69_quest_giver"]
+[ext_resource type="Texture2D" uid="uid://dv8hsnpvlyeyy" path="res://textures/town_beth.png" id="70_beth"]
 [ext_resource type="Texture2D" path="res://textures/town_chicken_walk_1.png" id="51_cw1"]
 [ext_resource type="Texture2D" path="res://textures/town_chicken_walk_2.png" id="52_cw2"]
 [ext_resource type="Texture2D" path="res://textures/town_chicken_walk_3.png" id="53_cw3"]
@@ -960,6 +962,15 @@ shape = SubResource("CircleShape2D_chicken")
 [node name="Player" parent="." unique_id=532737915 instance=ExtResource("1_player")]
 position = Vector2(576, 300)
 
+[node name="Beth" parent="." instance=ExtResource("69_quest_giver")]
+position = Vector2(735, 252)
+npc_name = "Beth"
+quest_id = "find_rendel"
+
+[node name="Sprite2D" parent="Beth" index="2"]
+scale = Vector2(0.56, 0.56)
+texture = ExtResource("70_beth")
+
 [node name="ReturnPortal" parent="." unique_id=657607658 instance=ExtResource("4_portal")]
 position = Vector2(672, 212)
 destination_scene = "res://main.tscn"
@@ -1094,17 +1105,17 @@ theme_override_colors/font_color = Color(0.97, 0.85, 0.6, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 28
-text = "Hearthvale"
+text = "Oblath"
 
 [node name="TownHint" type="Label" parent="TownUI" unique_id=715427858]
 offset_left = 20.0
 offset_top = 52.0
-offset_right = 500.0
+offset_right = 600.0
 offset_bottom = 78.0
 theme_override_colors/font_color = Color(0.95, 0.92, 0.84, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 3
-text = "C Character  |  I Inventory  |  Waystone: replay any level."
+text = "C Character  |  I Inventory  |  J Quests  |  Waystone: replay any level."
 
 [node name="CharacterButton" type="Button" parent="TownUI" unique_id=1758047099]
 anchors_preset = 1

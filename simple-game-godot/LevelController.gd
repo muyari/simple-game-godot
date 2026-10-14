@@ -2,6 +2,9 @@ extends Node
 
 signal progress_changed(defeated: int, total: int)
 signal level_completed
+signal boss_incoming
+signal boss_progress_changed(defeated: int, total: int)
+signal chest_loot_opened(chest: TreasureChest)
 
 const WOLF_SCENE = preload("res://wolf.tscn")
 const SCORPION_SCENE = preload("res://scorpion.tscn")
@@ -16,6 +19,7 @@ const PHASE_SHIFT_INFILTRATOR_SCENE = preload("res://phase_shift_infiltrator.tsc
 const DESERT_BOSS_SCENE = preload("res://desert_boss.tscn")
 const ITEM_PICKUP_SCENE = preload("res://item_pickup.tscn")
 const GOLD_PICKUP_SCENE = preload("res://gold_pickup.tscn")
+const TREASURE_CHEST_SCENE = preload("res://treasure_chest.tscn")
 const TREE_TEXTURE = preload("res://textures/forest_tree.svg")
 const POND_TEXTURE = preload("res://textures/forest_pond.svg")
 const BOULDERS_TEXTURE = preload("res://textures/forest_boulders.svg")
@@ -38,6 +42,15 @@ const SPAWN_EDGE_MARGIN = 128.0
 const SCENERY_PRELOAD_RADIUS = 1
 const ITEM_DROP_CHANCE = 0.1
 const SCENERY_CLEARANCE = 24.0
+const FOREST_BOSS_PACK_SIZE = 3
+const BOSS_PACK_SPREAD = 90.0
+const ALPHA_WOLF_SCALE = 1.25
+const ALPHA_WOLF_HEALTH_MULTIPLIER = 3.0
+const ALPHA_WOLF_DAMAGE_MULTIPLIER = 1.25
+const ALPHA_WOLF_EXPERIENCE = 60
+const BOSS_ROLE_META = "boss_role"
+const CHEST_MIN_ITEMS = 1
+const CHEST_MAX_ITEMS = 2
 
 @export var player_path: NodePath = NodePath("../Player")
 @export_enum("Forest", "Desert", "Ice Caves", "Futuristic AI Zone") var biome := 0
@@ -53,6 +66,7 @@ var last_player_position := Vector2.ZERO
 var enemies_spawned := 0
 var enemies_defeated := 0
 var boss_spawned := false
+var boss_wolves_defeated := 0
 var level_is_complete := false
 var spawned_enemy_regions: Dictionary = {}
 var generated_scenery_regions: Dictionary = {}
@@ -98,6 +112,7 @@ func _ready() -> void:
 		enemies_spawned = 0
 		enemies_defeated = 0
 		boss_spawned = false
+		boss_wolves_defeated = 0
 		spawned_enemy_regions.clear()
 	last_player_position = player.global_position
 	_create_item_pool()
@@ -112,6 +127,8 @@ func _ready() -> void:
 
 func _emit_initial_progress() -> void:
 	progress_changed.emit(enemies_defeated, _get_max_enemies())
+	if biome == 0 and boss_spawned:
+		boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
 
 
 func _notification(what: int) -> void:
@@ -133,6 +150,9 @@ func _restore_level_state(level_state: Dictionary) -> bool:
 	enemies_spawned = clampi(int(saved_spawned), 0, _get_max_enemies())
 	enemies_defeated = clampi(int(saved_defeated), 0, enemies_spawned)
 	boss_spawned = bool(level_state.get("boss_spawned", false))
+	var saved_boss_defeated: Variant = level_state.get("boss_wolves_defeated", 0)
+	if typeof(saved_boss_defeated) in [TYPE_INT, TYPE_FLOAT]:
+		boss_wolves_defeated = clampi(int(saved_boss_defeated), 0, FOREST_BOSS_PACK_SIZE)
 	var saved_origin: Variant = _vector_from_record(
 		level_state.get("region_origin", []),
 		"region origin"
@@ -180,7 +200,8 @@ func save_current_level_state() -> bool:
 		enemy_records.append({
 			"scene_path": enemy.scene_file_path,
 			"position": [enemy.global_position.x, enemy.global_position.y],
-			"health": enemy.health
+			"health": enemy.health,
+			"boss_role": str(enemy.get_meta(BOSS_ROLE_META, ""))
 		})
 
 	var drop_records: Array[Dictionary] = []
@@ -215,6 +236,7 @@ func save_current_level_state() -> bool:
 		"enemies_spawned": enemies_spawned,
 		"enemies_defeated": enemies_defeated,
 		"boss_spawned": boss_spawned,
+		"boss_wolves_defeated": boss_wolves_defeated,
 		"player_position": [player.global_position.x, player.global_position.y],
 		"region_origin": [region_origin.x, region_origin.y],
 		"current_region": [current_region.x, current_region.y],
@@ -248,6 +270,15 @@ func _restore_active_enemies(raw_enemies: Variant) -> void:
 		if typeof(scene_path) != TYPE_STRING \
 				or typeof(saved_health) not in [TYPE_INT, TYPE_FLOAT]:
 			push_error("Ignoring saved enemy with invalid fields.")
+			continue
+		var boss_role := str(enemy_record.get("boss_role", ""))
+		if boss_role in ["alpha", "pack"]:
+			var boss_position: Variant = _vector_from_record(
+				enemy_record.get("position", []),
+				"boss wolf position"
+			)
+			if boss_position != null:
+				_spawn_boss_wolf(boss_position, boss_role == "alpha", float(saved_health))
 			continue
 		var enemy_scene := _get_enemy_scene(str(scene_path))
 		if enemy_scene == null:
@@ -818,10 +849,13 @@ func _on_enemy_died(enemy: Wolf) -> void:
 	_drop_enemy_loot(enemy)
 
 	var max_enemies := _get_max_enemies()
-	if biome == 1 and enemies_defeated == max_enemies and not boss_spawned:
+	if biome == 0 and enemies_defeated == max_enemies and not boss_spawned:
+		_spawn_wolf_boss_pack()
+		_save_level_state()
+	elif biome == 1 and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_desert_boss()
 		_save_level_state()
-	elif biome != 1 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
+	elif biome > 1 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
 		_complete_current_level()
 	else:
 		_save_level_state()
@@ -833,6 +867,89 @@ func _on_desert_boss_died(boss: Wolf) -> void:
 		push_error("Could not award %d XP for defeating the desert boss." % experience_reward)
 	_drop_enemy_loot(boss, true)
 	_complete_current_level()
+
+
+func _spawn_wolf_boss_pack() -> void:
+	boss_spawned = true
+	boss_wolves_defeated = 0
+	boss_incoming.emit()
+	var spawn_direction := player.facing
+	if spawn_direction.is_zero_approx():
+		spawn_direction = Vector2.RIGHT
+	var pack_center := player.global_position \
+			+ spawn_direction * _get_spawn_distance(spawn_direction)
+	var flank := Vector2(-spawn_direction.y, spawn_direction.x) * BOSS_PACK_SPREAD
+	_spawn_boss_wolf(pack_center, true)
+	_spawn_boss_wolf(pack_center + flank, false)
+	_spawn_boss_wolf(pack_center - flank, false)
+	boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
+
+
+## Spawns one wolf of the forest boss pack. Pass saved_health >= 0 when restoring a save.
+func _spawn_boss_wolf(world_position: Vector2, is_alpha: bool, saved_health := -1.0) -> void:
+	var wolf := WOLF_SCENE.instantiate() as Wolf
+	if wolf == null:
+		push_error("The wolf scene root must use the Wolf script.")
+		return
+
+	wolf.target_path = NodePath("../Player")
+	wolf.set_meta(BOSS_ROLE_META, "alpha" if is_alpha else "pack")
+	if is_alpha:
+		wolf.name = "AlphaWolf"
+		wolf.scale = Vector2.ONE * ALPHA_WOLF_SCALE
+		wolf.max_health = Wolf.MAX_HEALTH * ALPHA_WOLF_HEALTH_MULTIPLIER
+		wolf.attack_damage = roundi(Wolf.ATTACK_DAMAGE * ALPHA_WOLF_DAMAGE_MULTIPLIER)
+		wolf.experience_reward = ALPHA_WOLF_EXPERIENCE
+	wolf.died.connect(_on_boss_wolf_died.bind(wolf))
+	get_parent().add_child(wolf)
+	wolf.global_position = world_position
+	if saved_health >= 0.0:
+		wolf.health = clampf(saved_health, 0.0, wolf.max_health)
+		wolf.health_bar.value = wolf.health
+
+
+func _on_boss_wolf_died(wolf: Wolf) -> void:
+	var experience_reward := _get_scaled_experience_reward(wolf)
+	if not player.gain_experience(experience_reward):
+		push_error("Could not award %d XP for defeating %s." % [experience_reward, wolf.name])
+	_drop_enemy_loot(wolf)
+	boss_wolves_defeated = mini(boss_wolves_defeated + 1, FOREST_BOSS_PACK_SIZE)
+	boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
+	if boss_wolves_defeated < FOREST_BOSS_PACK_SIZE:
+		_save_level_state()
+		return
+
+	_spawn_treasure_chest(wolf.global_position)
+	_complete_current_level()
+
+
+func _spawn_treasure_chest(world_position: Vector2) -> void:
+	var chest := TREASURE_CHEST_SCENE.instantiate() as TreasureChest
+	if chest == null:
+		push_error("The treasure chest scene root must use the TreasureChest script.")
+		return
+
+	chest.opened.connect(_on_treasure_chest_opened.bind(chest))
+	get_parent().call_deferred("add_child", chest)
+	chest.position = world_position
+
+
+func _on_treasure_chest_opened(chest: TreasureChest) -> void:
+	if not chest.loot_rolled:
+		chest.loot_rolled = true
+		# Quest items (like Rendel's coat) come first, and only while their quest is at the right stage.
+		chest.loot.append_array(Quests.create_chest_quest_items())
+		if item_pool.is_empty():
+			push_error("The treasure chest has no loot table to draw from.")
+		else:
+			var item_count := mini(
+				loot_random.randi_range(CHEST_MIN_ITEMS, CHEST_MAX_ITEMS),
+				item_pool.size()
+			)
+			var candidates := item_pool.duplicate()
+			for _index in item_count:
+				chest.loot.append(candidates.pop_at(loot_random.randi_range(0, candidates.size() - 1)))
+	chest_loot_opened.emit(chest)
 
 
 func _complete_current_level() -> void:

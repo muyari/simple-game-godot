@@ -1,6 +1,9 @@
 extends CanvasLayer
 
 const EXPERIENCE_BAR_WIDTH = 440.0
+const BOSS_BANNER_DURATION = 3.0
+const BOSS_BANNER_COLOR := Color("#ff6a4d")
+const QUEST_BANNER_COLOR := Color("#ffd34d")
 
 
 @onready var health_orb: ResourceGlobe = $HealthOrb
@@ -20,6 +23,11 @@ var experience_tooltip: PanelContainer
 var experience_tooltip_label: Label
 var experience_feedback_label: Label
 var experience_feedback_time := 0.0
+var boss_banner: Label
+var boss_banner_time := 0.0
+var chest_loot_window: ChestLootWindow
+var active_chest: TreasureChest
+var quest_menu: QuestMenu
 var witch_skill_tree: WitchSkillTree
 var warrior_skill_tree: WarriorSkillTree
 var warrior_passive_tree: WarriorPassiveTree
@@ -55,6 +63,11 @@ var equip_best_button: Button
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_progression_hud()
+	_build_boss_banner()
+	_build_chest_loot_window()
+	quest_menu = QuestMenu.new()
+	quest_menu.closed.connect(_set_player_menu_paused.bind(false))
+	add_child(quest_menu)
 	_build_inventory_slots()
 	_build_pause_menu()
 	equip_item_button.pressed.connect(_on_equip_item_pressed)
@@ -99,6 +112,9 @@ func _ready() -> void:
 	var level_controller: Node = get_node("../LevelController")
 	level_controller.progress_changed.connect(_on_enemy_progress_changed)
 	level_controller.level_completed.connect(_on_level_completed)
+	level_controller.boss_incoming.connect(_on_boss_incoming)
+	level_controller.boss_progress_changed.connect(_on_boss_progress_changed)
+	level_controller.chest_loot_opened.connect(_on_chest_loot_opened)
 
 
 func _connect_skill_slot_clicks(player: Player) -> void:
@@ -110,6 +126,7 @@ func _connect_skill_slot_clicks(player: Player) -> void:
 
 func _process(delta: float) -> void:
 	_update_witch_skill_cooldowns()
+	_update_boss_banner(delta)
 	if experience_feedback_time <= 0.0:
 		return
 	experience_feedback_time = maxf(experience_feedback_time - delta, 0.0)
@@ -156,6 +173,11 @@ func _update_witch_skill_cooldowns() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if chest_loot_window.visible:
+		if event.keycode in [KEY_ESCAPE, KEY_E]:
+			_close_chest_loot_window()
+		get_viewport().set_input_as_handled()
 		return
 	if witch_skill_tree != null and witch_skill_tree.visible:
 		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
@@ -222,6 +244,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			inventory_panel.show()
 			character_menu.show()
 			_set_player_menu_paused(true)
+		get_viewport().set_input_as_handled()
+	elif event.keycode == KEY_J:
+		character_menu.hide()
+		_set_player_menu_paused(true)
+		quest_menu.open_menu()
 		get_viewport().set_input_as_handled()
 
 
@@ -725,6 +752,118 @@ func _on_player_died() -> void:
 
 func _on_enemy_progress_changed(defeated: int, total: int) -> void:
 	enemy_progress_label.text = "Enemies defeated: %d/%d" % [defeated, total]
+
+
+func _on_boss_incoming() -> void:
+	_show_banner("Incoming Boss", BOSS_BANNER_COLOR)
+
+
+## Big centred announcement that punches in and fades out (boss warnings, quest updates).
+func _show_banner(text: String, color: Color) -> void:
+	boss_banner.text = text
+	boss_banner.add_theme_color_override("font_color", color)
+	boss_banner_time = BOSS_BANNER_DURATION
+	boss_banner.show()
+
+
+func _on_boss_progress_changed(defeated: int, total: int) -> void:
+	enemy_progress_label.text = "Boss pack: %d/%d" % [defeated, total]
+
+
+func _update_boss_banner(delta: float) -> void:
+	if boss_banner_time <= 0.0:
+		return
+	boss_banner_time = maxf(boss_banner_time - delta, 0.0)
+	var elapsed := BOSS_BANNER_DURATION - boss_banner_time
+	# Punch in, hold, then fade out over the last second.
+	boss_banner.scale = Vector2.ONE * lerpf(1.4, 1.0, clampf(elapsed / 0.25, 0.0, 1.0))
+	boss_banner.modulate.a = clampf(boss_banner_time, 0.0, 1.0)
+	if boss_banner_time == 0.0:
+		boss_banner.hide()
+
+
+func _build_chest_loot_window() -> void:
+	chest_loot_window = ChestLootWindow.new()
+	chest_loot_window.take_requested.connect(_on_chest_take_requested)
+	chest_loot_window.take_all_requested.connect(_on_chest_take_all_requested)
+	chest_loot_window.close_requested.connect(_close_chest_loot_window)
+	add_child(chest_loot_window)
+
+
+func _on_chest_loot_opened(chest: TreasureChest) -> void:
+	active_chest = chest
+	chest_loot_window.open(chest.loot)
+	_set_player_menu_paused(true)
+
+
+func _on_chest_take_requested(index: int) -> void:
+	if not _take_chest_item(index):
+		return
+	_after_chest_take()
+
+
+func _on_chest_take_all_requested() -> void:
+	while not active_chest.loot.is_empty():
+		if not _take_chest_item(0):
+			return
+	_after_chest_take()
+
+
+## Moves one item from the open chest into the player's inventory.
+func _take_chest_item(index: int) -> bool:
+	if active_chest == null or index < 0 or index >= active_chest.loot.size():
+		return false
+	var item := active_chest.loot[index]
+	if not item.quest_id.is_empty():
+		# Quest items advance their quest instead of taking an inventory slot.
+		var status := Quests.loot_quest_item(item.quest_id)
+		if not status.is_empty():
+			_show_banner("Quest Updated", QUEST_BANNER_COLOR)
+		active_chest.loot.remove_at(index)
+		return true
+	var player: Player = get_node("../Player")
+	if not player.try_add_item(item):
+		chest_loot_window.refresh(active_chest.loot)
+		chest_loot_window.show_status("Inventory full.")
+		return false
+	active_chest.loot.remove_at(index)
+	return true
+
+
+func _after_chest_take() -> void:
+	active_chest.update_prompt()
+	if active_chest.loot.is_empty():
+		_close_chest_loot_window()
+	else:
+		chest_loot_window.refresh(active_chest.loot)
+
+
+func _close_chest_loot_window() -> void:
+	chest_loot_window.hide()
+	_set_player_menu_paused(false)
+	if active_chest != null and is_instance_valid(active_chest):
+		active_chest.update_prompt()
+	active_chest = null
+
+
+func _build_boss_banner() -> void:
+	boss_banner = Label.new()
+	boss_banner.text = "Incoming Boss"
+	boss_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	boss_banner.offset_left = -260.0
+	boss_banner.offset_right = 260.0
+	boss_banner.offset_top = 120.0
+	boss_banner.offset_bottom = 176.0
+	boss_banner.pivot_offset = Vector2(260.0, 28.0)
+	boss_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	boss_banner.add_theme_font_size_override("font_size", 40)
+	boss_banner.add_theme_color_override("font_color", Color("#ff6a4d"))
+	boss_banner.add_theme_color_override("font_outline_color", Color("#1a0805"))
+	boss_banner.add_theme_constant_override("outline_size", 8)
+	boss_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	boss_banner.hide()
+	add_child(boss_banner)
 
 
 func _on_progression_changed(

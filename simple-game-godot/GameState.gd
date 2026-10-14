@@ -1520,6 +1520,40 @@ func clear_level_state(level_id: int) -> bool:
 	return true
 
 
+## Returns the active character's state for a quest ("" if never accepted).
+func get_quest_state(quest_id: String) -> String:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0:
+		return ""
+	var quest_states: Variant = _characters[character_index].get("quest_states", {})
+	if typeof(quest_states) != TYPE_DICTIONARY:
+		push_error("Saved quest states must be a Dictionary.")
+		return ""
+	return str(quest_states.get(quest_id, ""))
+
+
+func set_quest_state(quest_id: String, quest_state: String) -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0 or quest_id.is_empty():
+		push_error("Cannot save quest state for an invalid quest or inactive character.")
+		return false
+
+	var previous_character: Dictionary = _characters[character_index]
+	var updated_character := previous_character.duplicate(true)
+	var quest_states: Variant = updated_character.get("quest_states", {})
+	if typeof(quest_states) != TYPE_DICTIONARY:
+		push_error("Saved quest states must be a Dictionary.")
+		return false
+	var updated_quest_states: Dictionary = quest_states
+	updated_quest_states[quest_id] = quest_state
+	updated_character["quest_states"] = updated_quest_states
+	_characters[character_index] = updated_character
+	if not _save_roster():
+		_characters[character_index] = previous_character
+		return false
+	return true
+
+
 func complete_level(level_id: int) -> bool:
 	var character_index := _find_character_index(_active_character_id)
 	if character_index < 0 or level_id < 1 or level_id > LEVEL_SCENES.size():
@@ -2046,8 +2080,21 @@ func _load_roster() -> void:
 			"class": character_class,
 			"save_path": save_path,
 			"completed_levels": _validated_completed_levels(character.get("completed_levels", [])),
-			"level_states": _validated_level_states(character.get("level_states", {}))
+			"level_states": _validated_level_states(character.get("level_states", {})),
+			"quest_states": _validated_quest_states(character.get("quest_states", {}))
 		})
+
+
+func _validated_quest_states(raw_states: Variant) -> Dictionary:
+	var quest_states := {}
+	if typeof(raw_states) != TYPE_DICTIONARY:
+		push_error("Ignoring saved quest states that are not a Dictionary.")
+		return quest_states
+	for quest_id in raw_states:
+		var quest_state: Variant = raw_states[quest_id]
+		if typeof(quest_id) == TYPE_STRING and typeof(quest_state) == TYPE_STRING:
+			quest_states[quest_id] = quest_state
+	return quest_states
 
 
 func _save_roster() -> bool:

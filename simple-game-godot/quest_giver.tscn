@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://QuestGiver.gd" id="1_giver"]
+[ext_resource type="Script" path="res://QuestMarker.gd" id="2_marker"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_talk"]
+radius = 40.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(26, 12)
+
+[node name="QuestGiver" type="Area2D"]
+collision_layer = 0
+script = ExtResource("1_giver")
+
+[node name="TalkArea" type="CollisionShape2D" parent="."]
+position = Vector2(0, -12)
+shape = SubResource("CircleShape2D_talk")
+
+[node name="Body" type="StaticBody2D" parent="."]
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Body"]
+position = Vector2(0, -6)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(0.64, 0.64)
+
+[node name="QuestMarker" type="Node2D" parent="."]
+position = Vector2(0, -60)
+script = ExtResource("2_marker")
+
+[node name="Prompt" type="Label" parent="."]
+offset_left = -44.0
+offset_top = -104.0
+offset_right = 44.0
+offset_bottom = -81.0
+theme_override_colors/font_color = Color(1, 0.91, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+text = "E  Talk"
+horizontal_alignment = 1

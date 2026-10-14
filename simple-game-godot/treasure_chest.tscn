@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://TreasureChest.gd" id="1_chest"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_chest"]
+radius = 46.0
+
+[node name="TreasureChest" type="Area2D"]
+collision_layer = 0
+script = ExtResource("1_chest")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -12)
+shape = SubResource("CircleShape2D_chest")
+
+[node name="Prompt" type="Label" parent="."]
+offset_left = -44.0
+offset_top = -68.0
+offset_right = 44.0
+offset_bottom = -45.0
+theme_override_colors/font_color = Color(1, 0.91, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+text = "E  Open"
+horizontal_alignment = 1
