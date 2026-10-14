@@ -3,7 +3,10 @@
 [ext_resource type="PackedScene" uid="uid://dp3jfuvuykpb7" path="res://player.tscn" id="1_ig7tw"]
 [ext_resource type="Texture2D" uid="uid://bj6r67hp3hn5c" path="res://textures/forest_ground.svg" id="3_forest"]
 [ext_resource type="Script" uid="uid://vgw2fyi27qcg" path="res://GameUI.gd" id="9_ui"]
-[ext_resource type="Script" uid="uid://cjhoc32h6ws4d" path="res://ResourceGlobe.gd" id="10_globe"]
+[ext_resource type="PackedScene" path="res://health_globe.tscn" id="10_globe_health"]
+[ext_resource type="PackedScene" path="res://mana_globe.tscn" id="10_globe_mana"]
+[ext_resource type="PackedScene" path="res://health_potion.tscn" id="10_health_potion"]
+[ext_resource type="PackedScene" path="res://mana_potion.tscn" id="10_mana_potion"]
 [ext_resource type="Script" uid="uid://dr0xwo3tteeun" path="res://SkillSlot.gd" id="11_skill"]
 [ext_resource type="Script" uid="uid://bxfs1iny0xnx2" path="res://LevelController.gd" id="12_level"]
 
@@ -61,7 +64,7 @@ script = ExtResource("12_level")
 [node name="UI" type="CanvasLayer" parent="." unique_id=1643507356]
 script = ExtResource("9_ui")
 
-[node name="HealthOrb" type="Control" parent="UI" unique_id=2067677508]
+[node name="HealthOrb" parent="UI" unique_id=2067677508 instance=ExtResource("10_globe_health")]
 layout_mode = 3
 anchors_preset = 2
 anchor_top = 1.0
@@ -71,48 +74,45 @@ offset_top = -166.0
 offset_right = 166.0
 offset_bottom = -22.0
 grow_vertical = 0
-script = ExtResource("10_globe")
 
-[node name="HealthPotionLabel" type="Label" parent="UI" unique_id=246364791]
+[node name="HealthPotion" parent="UI" unique_id=246364791 instance=ExtResource("10_health_potion")]
+layout_mode = 3
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 30.0
-offset_top = -22.0
-offset_right = 158.0
-offset_bottom = -2.0
-text = "1  x3"
-horizontal_alignment = 1
+offset_left = 250.0
+offset_top = -126.0
+offset_right = 310.0
+offset_bottom = -22.0
+grow_vertical = 0
 
-[node name="ManaOrb" type="Control" parent="UI" unique_id=5414627]
+[node name="ManaOrb" parent="UI" unique_id=5414627 instance=ExtResource("10_globe_mana")]
 layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -132.0
+offset_left = -166.0
 offset_top = -166.0
 offset_right = -22.0
 offset_bottom = -22.0
 grow_horizontal = 0
 grow_vertical = 0
-script = ExtResource("10_globe")
-fill_color = Color(0.12, 0.36, 0.9, 1)
-highlight_color = Color(0.48, 0.7, 1, 0.55)
 
-[node name="ManaPotionLabel" type="Label" parent="UI" unique_id=747844999]
+[node name="ManaPotion" parent="UI" unique_id=747844999 instance=ExtResource("10_mana_potion")]
+layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -158.0
-offset_top = -22.0
-offset_right = -30.0
-offset_bottom = -2.0
-text = "2  x3"
-horizontal_alignment = 1
+offset_left = -310.0
+offset_top = -126.0
+offset_right = -250.0
+offset_bottom = -22.0
+grow_horizontal = 0
+grow_vertical = 0
 
 [node name="SkillSlotQ" type="Control" parent="UI" unique_id=1731028023]
 layout_mode = 3

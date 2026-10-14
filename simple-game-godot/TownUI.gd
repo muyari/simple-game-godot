@@ -2,6 +2,12 @@ extends CanvasLayer
 
 const MINIMUM_ITEM_PRICE = 25
 const EXPERIENCE_BAR_WIDTH = 440.0
+# World-space camera bounds for the town. Top and bottom leave room for the HUD so the
+# fence is never hidden behind it; the sides stay wide so the outside scenery is visible.
+const CAMERA_LIMIT_LEFT = -600
+const CAMERA_LIMIT_RIGHT = 1752
+const CAMERA_LIMIT_TOP = -100
+const CAMERA_LIMIT_BOTTOM = 900
 
 @onready var gold_label: Label = $GoldLabel
 @onready var player: Player = get_node("../Player")
@@ -10,8 +16,8 @@ const EXPERIENCE_BAR_WIDTH = 440.0
 @onready var return_portal: Portal = get_node("../ReturnPortal")
 @onready var health_orb: ResourceGlobe = $HealthOrb
 @onready var mana_orb: ResourceGlobe = $ManaOrb
-@onready var health_potion_label: Label = $HealthPotionLabel
-@onready var mana_potion_label: Label = $ManaPotionLabel
+@onready var health_potion: PotionFlask = $HealthPotion
+@onready var mana_potion: PotionFlask = $ManaPotion
 @onready var passive_tree_button: Button = $PassiveTreeButton
 
 var experience_bar: ProgressBar
@@ -57,6 +63,7 @@ func _ready() -> void:
 	_update_gold(GameState.gold)
 	GameState.gold_changed.connect(_update_gold)
 	_restore_town_return_destination()
+	_apply_camera_limits()
 	health_orb.maximum = player.MAX_HEALTH
 	health_orb.value = player.health
 	mana_orb.maximum = player.MAX_MANA
@@ -862,12 +869,8 @@ func _update_potion_counts(
 	health_refill: float,
 	mana_refill: float
 ) -> void:
-	health_potion_label.text = "1  x%d" % health_count
-	mana_potion_label.text = "2  x%d" % mana_count
-	if health_count < player.MAX_POTIONS and health_refill > 0.0:
-		health_potion_label.text += "  +1 in %.1fs" % health_refill
-	if mana_count < player.MAX_POTIONS and mana_refill > 0.0:
-		mana_potion_label.text += "  +1 in %.1fs" % mana_refill
+	health_potion.set_charges(health_count, health_refill, Player.POTION_REFILL_TIME)
+	mana_potion.set_charges(mana_count, mana_refill, Player.POTION_REFILL_TIME)
 
 
 func _show_character_panel() -> void:
@@ -1083,30 +1086,22 @@ func _build_experience_bar() -> void:
 	experience_level_label.offset_bottom = -6.0
 	experience_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	experience_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	experience_level_label.add_theme_color_override("font_color", ExperienceBar.LIQUID_HIGHLIGHT)
+	experience_level_label.add_theme_color_override("font_outline_color", ExperienceBar.OUTLINE_COLOR)
+	experience_level_label.add_theme_constant_override("outline_size", 4)
 	add_child(experience_level_label)
 
-	experience_bar = ProgressBar.new()
+	experience_bar = ExperienceBar.new()
 	experience_bar.anchor_left = 0.5
 	experience_bar.anchor_right = 0.5
 	experience_bar.anchor_top = 1.0
 	experience_bar.anchor_bottom = 1.0
 	experience_bar.offset_left = -EXPERIENCE_BAR_WIDTH * 0.5
-	experience_bar.offset_top = -22.0
+	experience_bar.offset_top = -25.0
 	experience_bar.offset_right = EXPERIENCE_BAR_WIDTH * 0.5
 	experience_bar.offset_bottom = -10.0
 	experience_bar.min_value = 0.0
-	experience_bar.show_percentage = false
 	experience_bar.mouse_filter = Control.MOUSE_FILTER_STOP
-	var experience_background := StyleBoxFlat.new()
-	experience_background.bg_color = Color("#10233b")
-	experience_background.set_border_width_all(1)
-	experience_background.border_color = Color("#4875a5")
-	experience_background.set_corner_radius_all(4)
-	experience_bar.add_theme_stylebox_override("background", experience_background)
-	var experience_fill := StyleBoxFlat.new()
-	experience_fill.bg_color = Color("#2389e8")
-	experience_fill.set_corner_radius_all(4)
-	experience_bar.add_theme_stylebox_override("fill", experience_fill)
 	add_child(experience_bar)
 
 	experience_tooltip = PanelContainer.new()
@@ -1120,10 +1115,9 @@ func _build_experience_bar() -> void:
 	experience_tooltip.offset_bottom = -28.0
 	experience_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tooltip_style := StyleBoxFlat.new()
-	tooltip_style.bg_color = Color("#10233b")
+	tooltip_style.bg_color = Color(ExperienceBar.GLASS_COLOR, 0.95)
 	tooltip_style.set_border_width_all(1)
-	tooltip_style.border_color = Color("#4875a5")
-	tooltip_style.set_corner_radius_all(4)
+	tooltip_style.border_color = ExperienceBar.RIM_COLOR
 	tooltip_style.content_margin_left = 6.0
 	tooltip_style.content_margin_right = 6.0
 	tooltip_style.content_margin_top = 2.0
@@ -1268,6 +1262,17 @@ func _update_gold(total_gold: int) -> void:
 		shop_gold_label.text = "Gold: %d" % total_gold
 	if is_instance_valid(inventory_gold_label):
 		inventory_gold_label.text = "Gold: %d" % total_gold
+
+
+func _apply_camera_limits() -> void:
+	var camera: Camera2D = player.get_node("Camera2D")
+	# Limits clamp the camera before its offset is applied, so compensate to keep the
+	# visible edges at the limits above.
+	camera.limit_left = CAMERA_LIMIT_LEFT - int(camera.offset.x)
+	camera.limit_right = CAMERA_LIMIT_RIGHT - int(camera.offset.x)
+	camera.limit_top = CAMERA_LIMIT_TOP - int(camera.offset.y)
+	camera.limit_bottom = CAMERA_LIMIT_BOTTOM - int(camera.offset.y)
+	camera.reset_smoothing()
 
 
 func _restore_town_return_destination() -> void:

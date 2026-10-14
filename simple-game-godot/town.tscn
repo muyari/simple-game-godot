@@ -5,8 +5,11 @@
 [ext_resource type="PackedScene" path="res://portal.tscn" id="4_portal"]
 [ext_resource type="Script" uid="uid://8bwyjet1d7oj" path="res://TownUI.gd" id="5_town_ui"]
 [ext_resource type="Script" uid="uid://cjjc5mad4rxxi" path="res://Vendor.gd" id="6_vendor"]
-[ext_resource type="Texture2D" uid="uid://coiesfcnqwaiq" path="res://textures/vendor_sheet.svg" id="7_vendor_sprite"]
-[ext_resource type="Script" uid="uid://cjhoc32h6ws4d" path="res://ResourceGlobe.gd" id="8_globe"]
+[ext_resource type="Texture2D" uid="uid://cjhg5xwaekavq" path="res://textures/town_shopkeeper.png" id="7_vendor_sprite"]
+[ext_resource type="PackedScene" path="res://health_globe.tscn" id="8_globe_health"]
+[ext_resource type="PackedScene" path="res://mana_globe.tscn" id="8_globe_mana"]
+[ext_resource type="PackedScene" path="res://health_potion.tscn" id="8_health_potion"]
+[ext_resource type="PackedScene" path="res://mana_potion.tscn" id="8_mana_potion"]
 [ext_resource type="Script" uid="uid://dr0xwo3tteeun" path="res://SkillSlot.gd" id="9_skill"]
 [ext_resource type="Script" uid="uid://ewngat6gtsej" path="res://TownFence.gd" id="10_fence"]
 [ext_resource type="Script" uid="uid://dy3jjhohl50ah" path="res://Waystone.gd" id="11_waystone"]
@@ -32,6 +35,14 @@
 [ext_resource type="Texture2D" uid="uid://d4jssosqd233p" path="res://textures/town_waystone.png" id="41_waystone"]
 [ext_resource type="Texture2D" uid="uid://dkcbl3206gn6u" path="res://textures/town_shop.png" id="42_shop"]
 [ext_resource type="Script" path="res://AnimalWander.gd" id="50_script"]
+[ext_resource type="Script" path="res://TownRoad.gd" id="61_town_road"]
+[ext_resource type="Script" path="res://GroundShadows.gd" id="62_shadows"]
+[ext_resource type="Texture2D" path="res://textures/town_path_dirt.png" id="63_path"]
+[ext_resource type="Texture2D" path="res://textures/town_flowers.png" id="64_flowers"]
+[ext_resource type="Texture2D" path="res://textures/town_fern.png" id="65_fern"]
+[ext_resource type="Texture2D" path="res://textures/town_grass_clump.png" id="66_grass_clump"]
+[ext_resource type="Texture2D" path="res://textures/town_rocks_small.png" id="67_rocks_small"]
+[ext_resource type="Texture2D" path="res://textures/town_rock_mossy.png" id="68_rock_mossy"]
 [ext_resource type="Texture2D" path="res://textures/town_chicken_walk_1.png" id="51_cw1"]
 [ext_resource type="Texture2D" path="res://textures/town_chicken_walk_2.png" id="52_cw2"]
 [ext_resource type="Texture2D" path="res://textures/town_chicken_walk_3.png" id="53_cw3"]
@@ -57,6 +68,9 @@ size = Vector2(130, 80)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_vendor"]
 radius = 21.095022
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vendor_body"]
+size = Vector2(28, 14)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_town_trunk"]
 radius = 12.0
@@ -109,39 +123,196 @@ texture_repeat = 2
 texture = ExtResource("2_ground")
 polygon = PackedVector2Array(-900, -600, 2050, -600, 2050, 1370, -900, 1370)
 
-[node name="MainRoad" type="Polygon2D" parent="." unique_id=1845383368]
+[node name="TownRoad" type="Node2D" parent="." unique_id=1845383368]
 z_index = -5
 texture_filter = 1
 texture_repeat = 2
-texture = ExtResource("13_brick")
-polygon = PackedVector2Array(0, 270, 1152, 270, 1152, 530, 0, 530)
+script = ExtResource("61_town_road")
+road_texture = ExtResource("13_brick")
+plaza_texture = ExtResource("14_cobble")
 
-[node name="RoadHighlight" type="Polygon2D" parent="." unique_id=150731986]
-z_index = -4
-color = Color(0.34, 0.32, 0.3, 1)
-polygon = PackedVector2Array(0, 270, 1152, 270, 1152, 282, 0, 282, 0, 518, 1152, 518, 1152, 530, 0, 530)
+[node name="DirtPaths" type="Node2D" parent="."]
+z_index = -6
 
-[node name="SaplingSeedling" type="Sprite2D" parent="RoadHighlight" unique_id=282961727]
+[node name="NorthwestHousePath" type="Sprite2D" parent="DirtPaths"]
+texture_filter = 1
+texture_repeat = 2
+position = Vector2(345.5, 190)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("63_path")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 50, 146)
+
+[node name="NortheastHousePath" type="Sprite2D" parent="DirtPaths"]
+texture_filter = 1
+texture_repeat = 2
+position = Vector2(882.5, 236)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("63_path")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 50, 80)
+
+[node name="ShopPath" type="Sprite2D" parent="DirtPaths"]
+texture_filter = 1
+texture_repeat = 2
+position = Vector2(178.5, 250)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("63_path")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 50, 60)
+
+[node name="PortalPath" type="Sprite2D" parent="DirtPaths"]
+texture_filter = 1
+texture_repeat = 2
+position = Vector2(654.5, 238)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("63_path")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 50, 77)
+
+[node name="GroundShadows" type="Node2D" parent="."]
+z_index = -1
+script = ExtResource("62_shadows")
+shadows = Array[Rect2]([Rect2(112, 259, 112, 16), Rect2(204, 252, 30, 8), Rect2(897, 487, 54, 12), Rect2(916, 713, 56, 12), Rect2(815, 130, 46, 10), Rect2(468, 704, 38, 9), Rect2(1060, 608, 60, 10), Rect2(480, 98, 56, 12), Rect2(640, 723, 60, 10)])
+
+[node name="SaplingSeedling" type="Sprite2D" parent="." unique_id=282961727]
 texture_filter = 1
 position = Vector2(522, 179)
 scale = Vector2(0.6, 0.6)
 texture = ExtResource("34_seedling")
 offset = Vector2(0, -44)
 
-[node name="SaplingSeedling" type="Sprite2D" parent="RoadHighlight/SaplingSeedling" unique_id=1133864843]
+[node name="SaplingSeedling2" type="Sprite2D" parent="." unique_id=1133864843]
 texture_filter = 1
-position = Vector2(101.06665, 793.3333)
-scale = Vector2(1.0098783, 0.80833244)
+position = Vector2(583, 655)
+scale = Vector2(0.6, 0.6)
 texture = ExtResource("34_seedling")
 offset = Vector2(0, -44)
 
-[node name="Plaza" type="Polygon2D" parent="." unique_id=1387459165]
-z_index = -3
+[node name="TownProps" type="Node2D" parent="."]
+
+[node name="Flowers1" type="Sprite2D" parent="TownProps"]
 texture_filter = 1
-texture_repeat = 2
-position = Vector2(576, 397)
-texture = ExtResource("14_cobble")
-polygon = PackedVector2Array(-95, 0, -67, -67, 0, -95, 67, -67, 95, 0, 67, 67, 0, 95, -67, 67)
+position = Vector2(440, 281)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("64_flowers")
+offset = Vector2(0, -40)
+
+[node name="Flowers2" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(610, 281)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("64_flowers")
+offset = Vector2(0, -40)
+
+[node name="Flowers3" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(1000, 281)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("64_flowers")
+offset = Vector2(0, -40)
+
+[node name="Flowers4" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(330, 538)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("64_flowers")
+offset = Vector2(0, -40)
+
+[node name="Flowers5" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(520, 540)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("64_flowers")
+offset = Vector2(0, -40)
+
+[node name="Flowers6" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(1050, 540)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("64_flowers")
+offset = Vector2(0, -40)
+
+[node name="GrassClump1" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(740, 282)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("66_grass_clump")
+offset = Vector2(0, -35)
+
+[node name="GrassClump2" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(130, 556)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("66_grass_clump")
+offset = Vector2(0, -35)
+
+[node name="GrassClump3" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(640, 540)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("66_grass_clump")
+offset = Vector2(0, -35)
+
+[node name="GrassClump4" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(840, 542)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("66_grass_clump")
+offset = Vector2(0, -35)
+
+[node name="GrassClump5" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(455, 250)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("66_grass_clump")
+offset = Vector2(0, -35)
+
+[node name="Fern1" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(72, 578)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("65_fern")
+offset = Vector2(0, -44.5)
+
+[node name="Fern2" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(300, 604)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("65_fern")
+offset = Vector2(0, -44.5)
+
+[node name="Fern3" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(1098, 702)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("65_fern")
+offset = Vector2(0, -44.5)
+
+[node name="RocksSmall1" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(1060, 610)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("67_rocks_small")
+offset = Vector2(0, -44)
+
+[node name="RocksSmall2" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(640, 725)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("67_rocks_small")
+offset = Vector2(0, -44)
+
+[node name="RockMossy1" type="Sprite2D" parent="TownProps"]
+texture_filter = 1
+position = Vector2(480, 100)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("68_rock_mossy")
+offset = Vector2(0, -48.5)
 
 [node name="Waystone" type="Area2D" parent="." unique_id=204624905]
 position = Vector2(379, 396)
@@ -244,12 +415,19 @@ script = ExtResource("6_vendor")
 position = Vector2(-593, -158)
 shape = SubResource("CircleShape2D_vendor")
 
+[node name="Body" type="StaticBody2D" parent="Vendor"]
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Vendor/Body"]
+position = Vector2(-593, -144)
+shape = SubResource("RectangleShape2D_vendor_body")
+
 [node name="VendorSprite" type="Sprite2D" parent="Vendor" unique_id=135512393]
-position = Vector2(-593, -165)
-scale = Vector2(0.921875, 0.875)
+texture_filter = 1
+position = Vector2(-593, -137)
+scale = Vector2(0.64, 0.64)
 texture = ExtResource("7_vendor_sprite")
-region_enabled = true
-region_rect = Rect2(0, 0, 64, 64)
+offset = Vector2(0, -41)
 
 [node name="Shop" type="Sprite2D" parent="Vendor" unique_id=221550320]
 texture_filter = 1
@@ -260,9 +438,9 @@ offset = Vector2(0, -60.5)
 
 [node name="Prompt" type="Label" parent="Vendor" unique_id=1822896393]
 offset_left = -636.0
-offset_top = -212.0
+offset_top = -220.0
 offset_right = -547.0
-offset_bottom = -189.0
+offset_bottom = -197.0
 theme_override_colors/font_color = Color(1, 0.91, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 4
@@ -713,7 +891,7 @@ offset = Vector2(0, -44.5)
 
 [node name="SeedlingOut151" type="Sprite2D" parent="OutsideScenery" unique_id=1354632279]
 texture_filter = 1
-position = Vector2(873, 773)
+position = Vector2(873, 800)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("34_seedling")
 offset = Vector2(0, -44)
@@ -787,10 +965,13 @@ position = Vector2(672, 212)
 destination_scene = "res://main.tscn"
 destination_position = Vector2(84, 574)
 
+[node name="DestinationLabel" parent="ReturnPortal" index="2"]
+text = "RETURN"
+
 [node name="TownUI" type="CanvasLayer" parent="." unique_id=7369185]
 script = ExtResource("5_town_ui")
 
-[node name="HealthOrb" type="Control" parent="TownUI" unique_id=2145565031]
+[node name="HealthOrb" parent="TownUI" unique_id=2145565031 instance=ExtResource("8_globe_health")]
 layout_mode = 3
 anchors_preset = 2
 anchor_top = 1.0
@@ -800,20 +981,19 @@ offset_top = -166.0
 offset_right = 166.0
 offset_bottom = -22.0
 grow_vertical = 0
-script = ExtResource("8_globe")
 
-[node name="HealthPotionLabel" type="Label" parent="TownUI" unique_id=165852680]
+[node name="HealthPotion" parent="TownUI" unique_id=165852680 instance=ExtResource("8_health_potion")]
+layout_mode = 3
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 30.0
-offset_top = -22.0
-offset_right = 158.0
-offset_bottom = -2.0
-text = "1  x3"
-horizontal_alignment = 1
+offset_left = 250.0
+offset_top = -126.0
+offset_right = 310.0
+offset_bottom = -22.0
+grow_vertical = 0
 
-[node name="ManaOrb" type="Control" parent="TownUI" unique_id=1316408284]
+[node name="ManaOrb" parent="TownUI" unique_id=1316408284 instance=ExtResource("8_globe_mana")]
 layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
@@ -826,22 +1006,20 @@ offset_right = -22.0
 offset_bottom = -22.0
 grow_horizontal = 0
 grow_vertical = 0
-script = ExtResource("8_globe")
-fill_color = Color(0.12, 0.36, 0.9, 1)
-highlight_color = Color(0.48, 0.7, 1, 0.55)
 
-[node name="ManaPotionLabel" type="Label" parent="TownUI" unique_id=8838019]
+[node name="ManaPotion" parent="TownUI" unique_id=8838019 instance=ExtResource("8_mana_potion")]
+layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -158.0
-offset_top = -22.0
-offset_right = -30.0
-offset_bottom = -2.0
-text = "2  x3"
-horizontal_alignment = 1
+offset_left = -310.0
+offset_top = -126.0
+offset_right = -250.0
+offset_bottom = -22.0
+grow_horizontal = 0
+grow_vertical = 0
 
 [node name="SkillSlotQ" type="Control" parent="TownUI" unique_id=1668134948]
 layout_mode = 3

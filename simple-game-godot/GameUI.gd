@@ -5,8 +5,8 @@ const EXPERIENCE_BAR_WIDTH = 440.0
 
 @onready var health_orb: ResourceGlobe = $HealthOrb
 @onready var mana_orb: ResourceGlobe = $ManaOrb
-@onready var health_potion_label: Label = $HealthPotionLabel
-@onready var mana_potion_label: Label = $ManaPotionLabel
+@onready var health_potion: PotionFlask = $HealthPotion
+@onready var mana_potion: PotionFlask = $ManaPotion
 @onready var defeated_label: Label = $DefeatedLabel
 @onready var return_to_town_button: Button = $ReturnToTownButton
 @onready var enemy_progress_label: Label = $EnemyProgressLabel
@@ -14,9 +14,6 @@ const EXPERIENCE_BAR_WIDTH = 440.0
 @onready var portal_hint_label: Label = $PortalHintLabel
 @onready var level_complete_label: Label = $LevelCompleteLabel
 @onready var return_to_levels_button: Button = $ReturnToLevelsButton
-var portal_cast_panel: PanelContainer
-var portal_cast_progress_bar: ProgressBar
-var portal_cast_countdown: Label
 var experience_bar: ProgressBar
 var experience_level_label: Label
 var experience_tooltip: PanelContainer
@@ -57,7 +54,6 @@ var equip_best_button: Button
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_build_portal_cast_bar()
 	_build_progression_hud()
 	_build_inventory_slots()
 	_build_pause_menu()
@@ -82,7 +78,6 @@ func _ready() -> void:
 	player.inventory_changed.connect(_on_inventory_changed)
 	player.equipment_changed.connect(_on_equipment_changed)
 	player.town_portal_cast_started.connect(_on_town_portal_cast_started)
-	player.town_portal_cast_progress.connect(_on_town_portal_cast_progress)
 	player.town_portal_cast_cancelled.connect(_on_town_portal_cast_cancelled)
 	player.town_portal_opened.connect(_on_town_portal_opened)
 	player.died.connect(_on_player_died)
@@ -719,12 +714,8 @@ func _update_potion_counts(
 	health_refill: float,
 	mana_refill: float
 ) -> void:
-	health_potion_label.text = "1  x%d" % health_count
-	mana_potion_label.text = "2  x%d" % mana_count
-	if health_count < 3 and health_refill > 0.0:
-		health_potion_label.text += "  +1 in %.1fs" % health_refill
-	if mana_count < 3 and mana_refill > 0.0:
-		mana_potion_label.text += "  +1 in %.1fs" % mana_refill
+	health_potion.set_charges(health_count, health_refill, Player.POTION_REFILL_TIME)
+	mana_potion.set_charges(mana_count, mana_refill, Player.POTION_REFILL_TIME)
 
 
 func _on_player_died() -> void:
@@ -782,81 +773,15 @@ func _on_gold_changed(total_gold: int) -> void:
 
 
 func _on_town_portal_opened() -> void:
-	portal_cast_panel.hide()
-	portal_cast_progress_bar.value = Player.TOWN_PORTAL_CAST_DURATION
-	portal_cast_countdown.text = "%.1f s" % Player.TOWN_PORTAL_CAST_DURATION
 	portal_hint_label.text = "Town portal open - walk into it to travel"
 
 
 func _on_town_portal_cast_started() -> void:
-	portal_cast_progress_bar.max_value = Player.TOWN_PORTAL_CAST_DURATION
-	portal_cast_progress_bar.value = Player.TOWN_PORTAL_CAST_DURATION
-	portal_cast_countdown.text = "%.1f s" % Player.TOWN_PORTAL_CAST_DURATION
-	portal_cast_panel.show()
 	portal_hint_label.text = "Channeling Town Portal (3 seconds)..."
 
 
-func _on_town_portal_cast_progress(remaining: float, duration: float) -> void:
-	portal_cast_progress_bar.max_value = duration
-	portal_cast_progress_bar.value = remaining
-	portal_cast_countdown.text = "%.1f s" % remaining
-
-
 func _on_town_portal_cast_cancelled() -> void:
-	portal_cast_panel.hide()
-	portal_cast_progress_bar.value = Player.TOWN_PORTAL_CAST_DURATION
-	portal_cast_countdown.text = "%.1f s" % Player.TOWN_PORTAL_CAST_DURATION
 	portal_hint_label.text = "Town Portal interrupted"
-
-
-func _build_portal_cast_bar() -> void:
-	portal_cast_panel = PanelContainer.new()
-	portal_cast_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	portal_cast_panel.offset_left = -190.0
-	portal_cast_panel.offset_top = 94.0
-	portal_cast_panel.offset_right = 190.0
-	portal_cast_panel.offset_bottom = 166.0
-	portal_cast_panel.visible = false
-
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.045, 0.075, 0.11, 0.94)
-	panel_style.set_border_width_all(2)
-	panel_style.border_color = Color(0.28, 0.72, 0.94, 1.0)
-	panel_style.set_corner_radius_all(6)
-	panel_style.content_margin_left = 12.0
-	panel_style.content_margin_right = 12.0
-	panel_style.content_margin_top = 8.0
-	panel_style.content_margin_bottom = 8.0
-	portal_cast_panel.add_theme_stylebox_override("panel", panel_style)
-	add_child(portal_cast_panel)
-
-	var contents := VBoxContainer.new()
-	contents.add_theme_constant_override("separation", 4)
-	portal_cast_panel.add_child(contents)
-
-	var title := Label.new()
-	title.text = "Channeling Town Portal"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_color_override("font_color", Color("#b9eaff"))
-	contents.add_child(title)
-
-	var progress_row := HBoxContainer.new()
-	progress_row.add_theme_constant_override("separation", 10)
-	contents.add_child(progress_row)
-
-	portal_cast_progress_bar = ProgressBar.new()
-	portal_cast_progress_bar.custom_minimum_size = Vector2(300.0, 18.0)
-	portal_cast_progress_bar.min_value = 0.0
-	portal_cast_progress_bar.max_value = Player.TOWN_PORTAL_CAST_DURATION
-	portal_cast_progress_bar.value = Player.TOWN_PORTAL_CAST_DURATION
-	portal_cast_progress_bar.show_percentage = false
-	progress_row.add_child(portal_cast_progress_bar)
-
-	portal_cast_countdown = Label.new()
-	portal_cast_countdown.custom_minimum_size.x = 42.0
-	portal_cast_countdown.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	portal_cast_countdown.text = "%.1f s" % Player.TOWN_PORTAL_CAST_DURATION
-	progress_row.add_child(portal_cast_countdown)
 
 
 func _build_progression_hud() -> void:
@@ -871,30 +796,22 @@ func _build_progression_hud() -> void:
 	experience_level_label.offset_bottom = -6.0
 	experience_level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	experience_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	experience_level_label.add_theme_color_override("font_color", ExperienceBar.LIQUID_HIGHLIGHT)
+	experience_level_label.add_theme_color_override("font_outline_color", ExperienceBar.OUTLINE_COLOR)
+	experience_level_label.add_theme_constant_override("outline_size", 4)
 	add_child(experience_level_label)
 
-	experience_bar = ProgressBar.new()
+	experience_bar = ExperienceBar.new()
 	experience_bar.anchor_left = 0.5
 	experience_bar.anchor_right = 0.5
 	experience_bar.anchor_top = 1.0
 	experience_bar.anchor_bottom = 1.0
 	experience_bar.offset_left = -EXPERIENCE_BAR_WIDTH * 0.5
-	experience_bar.offset_top = -22.0
+	experience_bar.offset_top = -25.0
 	experience_bar.offset_right = EXPERIENCE_BAR_WIDTH * 0.5
 	experience_bar.offset_bottom = -10.0
 	experience_bar.min_value = 0.0
-	experience_bar.show_percentage = false
 	experience_bar.mouse_filter = Control.MOUSE_FILTER_STOP
-	var experience_background := StyleBoxFlat.new()
-	experience_background.bg_color = Color("#10233b")
-	experience_background.set_border_width_all(1)
-	experience_background.border_color = Color("#4875a5")
-	experience_background.set_corner_radius_all(4)
-	experience_bar.add_theme_stylebox_override("background", experience_background)
-	var experience_fill := StyleBoxFlat.new()
-	experience_fill.bg_color = Color("#2389e8")
-	experience_fill.set_corner_radius_all(4)
-	experience_bar.add_theme_stylebox_override("fill", experience_fill)
 	add_child(experience_bar)
 
 	experience_tooltip = PanelContainer.new()
@@ -908,10 +825,9 @@ func _build_progression_hud() -> void:
 	experience_tooltip.offset_bottom = -28.0
 	experience_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tooltip_style := StyleBoxFlat.new()
-	tooltip_style.bg_color = Color("#10233b")
+	tooltip_style.bg_color = Color(ExperienceBar.GLASS_COLOR, 0.95)
 	tooltip_style.set_border_width_all(1)
-	tooltip_style.border_color = Color("#4875a5")
-	tooltip_style.set_corner_radius_all(4)
+	tooltip_style.border_color = ExperienceBar.RIM_COLOR
 	tooltip_style.content_margin_left = 6.0
 	tooltip_style.content_margin_right = 6.0
 	tooltip_style.content_margin_top = 2.0

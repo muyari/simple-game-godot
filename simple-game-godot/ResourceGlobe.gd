@@ -1,45 +1,44 @@
 extends Control
 class_name ResourceGlobe
 
-@export var fill_color := Color(0.82, 0.12, 0.13)
-@export var highlight_color := Color(1.0, 0.55, 0.48, 0.55)
-
 var value := 100.0:
 	set(new_value):
 		value = new_value
-		queue_redraw()
+		_update_fill()
 
 var maximum := 100.0:
 	set(new_maximum):
 		maximum = new_maximum
-		queue_redraw()
+		_update_fill()
+
+@onready var glass: Sprite2D = $Glass
+@onready var fill: Sprite2D = $Fill
+@onready var value_label: Label = $ValueLabel
 
 
-func _draw() -> void:
-	var center := size / 2.0
-	var radius := minf(size.x, size.y) * 0.43
+func _ready() -> void:
+	resized.connect(_layout_sprites)
+	_layout_sprites()
+
+
+func _layout_sprites() -> void:
+	var texture_size := glass.texture.get_size()
+	var sprite_scale := minf(size.x, size.y) / texture_size.x
+	var origin := (size - texture_size * sprite_scale) / 2.0
+	for sprite: Sprite2D in [glass, fill]:
+		sprite.scale = Vector2.ONE * sprite_scale
+		sprite.position = origin
+	_update_fill()
+
+
+func _update_fill() -> void:
+	if not is_node_ready():
+		return
 	var fraction := clampf(value / maximum, 0.0, 1.0) if maximum > 0.0 else 0.0
-
-	draw_circle(center, radius + 7.0, Color("#171b20"))
-	draw_arc(center, radius + 6.0, 0.0, TAU, 96, Color("#b99b68"), 3.0, true)
-	draw_circle(center, radius, Color("#292d32"))
-
-	if fraction > 0.0:
-		if fraction >= 1.0:
-			draw_circle(center, radius - 2.0, fill_color)
-		else:
-			var level := radius - 2.0 * radius * fraction
-			var start_angle := asin(clampf(level / radius, -1.0, 1.0))
-			var end_angle := PI - start_angle
-			var points := PackedVector2Array()
-			for step in range(33):
-				var angle := lerpf(start_angle, end_angle, float(step) / 32.0)
-				points.append(center + Vector2(cos(angle), sin(angle)) * radius)
-			draw_colored_polygon(points, fill_color)
-
-	draw_circle(center, radius - 3.0, Color(0, 0, 0, 0), false, 2.0, true)
-	draw_arc(center + Vector2(-radius * 0.12, -radius * 0.12), radius * 0.66, PI * 1.08, PI * 1.78, 24, highlight_color, 4.0, true)
-	draw_arc(center, radius + 3.0, 0.0, TAU, 96, Color("#e1c68d"), 2.0, true)
-	var font := ThemeDB.fallback_font
-	var amount := str(roundi(value))
-	draw_string(font, center + Vector2(-size.x / 2.0, 6.0), amount, HORIZONTAL_ALIGNMENT_CENTER, size.x, 16, Color.WHITE)
+	var texture_size := fill.texture.get_size()
+	# Show only the bottom part of the full globe so the liquid drains from the top.
+	var empty_height := texture_size.y * (1.0 - fraction)
+	fill.visible = fraction > 0.0
+	fill.region_rect = Rect2(0.0, empty_height, texture_size.x, texture_size.y - empty_height)
+	fill.offset = Vector2(0.0, empty_height)
+	value_label.text = str(roundi(value))

@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://resource_globe.tscn" id="1_globe"]
+[ext_resource type="Texture2D" uid="uid://mniy606kmejn" path="res://textures/health_globe_fill.png" id="2_fill"]
+
+[node name="HealthGlobe" instance=ExtResource("1_globe")]
+
+[node name="Fill" parent="." index="1"]
+texture = ExtResource("2_fill")

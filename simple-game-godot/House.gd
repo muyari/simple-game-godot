@@ -23,3 +23,9 @@ func _ready() -> void:
 		_sprite.texture = textures[randi() % textures.size()]
 	# Node origin is the house's bottom-center.
 	_sprite.offset = Vector2(0, -_sprite.texture.get_height() / 2.0)
+	queue_redraw()
+
+
+func _draw() -> void:
+	var footprint := _sprite.texture.get_width() * absf(_sprite.scale.x)
+	GroundShadows.draw_soft_ellipse(self, _sprite.position + Vector2(0, -3), Vector2(footprint * 0.95, 22))
