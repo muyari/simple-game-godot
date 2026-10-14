@@ -234,6 +234,7 @@ func _physics_process(delta: float) -> void:
 			town_portal_cast_time_remaining - delta,
 			0.0
 		)
+		portal_cast_effect.progress = 1.0 - town_portal_cast_time_remaining / TOWN_PORTAL_CAST_DURATION
 		town_portal_cast_progress.emit(
 			town_portal_cast_time_remaining,
 			TOWN_PORTAL_CAST_DURATION

@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://potion_flask.tscn" id="1_flask"]
+[ext_resource type="Texture2D" uid="uid://c7wkmf5cmkbk" path="res://textures/mana_potion_empty.png" id="2_empty"]
+[ext_resource type="Texture2D" uid="uid://dfx20u3vnv6om" path="res://textures/mana_potion_full.png" id="3_full"]
+
+[node name="ManaPotion" instance=ExtResource("1_flask")]
+liquid_top = 51.0
+liquid_bottom = 90.0
+pip_color = Color(0.2, 0.55, 1, 1)
+
+[node name="EmptyBottle" parent="." index="0"]
+texture = ExtResource("2_empty")
+
+[node name="Fill" parent="." index="1"]
+texture = ExtResource("3_full")
