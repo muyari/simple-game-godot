@@ -216,6 +216,19 @@ func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 
+func go_back() -> void:
+	if delete_confirmation.visible:
+		delete_confirmation.hide()
+	elif character_screen.visible:
+		_on_creation_cancel_pressed()
+	elif level_screen.visible:
+		_on_back_to_characters()
+	elif roster_screen.visible:
+		_on_roster_back_pressed()
+	else:
+		_on_quit_pressed()
+
+
 func _on_warrior_selected() -> void:
 	new_character_class = "Warrior"
 	character_status.text = "Warrior selected"

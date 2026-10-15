@@ -1,0 +1,176 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bdsxulyh86qde" path="res://TouchControls.gd" id="1_controls"]
+[ext_resource type="Script" uid="uid://bxaq37rymxo4a" path="res://TouchStick.gd" id="2_stick"]
+[ext_resource type="Script" uid="uid://bie5vhmol6xso" path="res://TouchButton.gd" id="3_button"]
+[ext_resource type="Script" path="res://TouchLayoutMarker.gd" id="4_marker"]
+
+[node name="TouchControls" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_controls")
+
+[node name="MoveStick" type="Control" parent="."]
+layout_mode = 1
+anchor_right = 0.5
+anchor_bottom = 1.0
+script = ExtResource("2_stick")
+
+[node name="AimStick" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("2_stick")
+
+[node name="HudLayout" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HealthOrb" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = -166.0
+offset_right = 166.0
+offset_bottom = -22.0
+grow_vertical = 0
+script = ExtResource("4_marker")
+round = true
+
+[node name="HealthPotion" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 250.0
+offset_top = -126.0
+offset_right = 310.0
+offset_bottom = -22.0
+grow_vertical = 0
+script = ExtResource("4_marker")
+
+[node name="ManaOrb" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -166.0
+offset_top = -166.0
+offset_right = -22.0
+offset_bottom = -22.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("4_marker")
+round = true
+
+[node name="ManaPotion" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -380.0
+offset_top = -126.0
+offset_right = -320.0
+offset_bottom = -22.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("4_marker")
+
+[node name="SkillSlotQ" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -299.0
+offset_top = -175.0
+offset_right = -227.0
+offset_bottom = -103.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("4_marker")
+round = true
+
+[node name="SkillSlotW" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -254.0
+offset_top = -254.0
+offset_right = -182.0
+offset_bottom = -182.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("4_marker")
+round = true
+
+[node name="SkillSlotE" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -175.0
+offset_top = -299.0
+offset_right = -103.0
+offset_bottom = -227.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("4_marker")
+round = true
+
+[node name="SkillSlotR" type="Control" parent="HudLayout"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -85.0
+offset_top = -299.0
+offset_right = -13.0
+offset_bottom = -227.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("4_marker")
+round = true
+
+[node name="InteractButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -350.0
+offset_top = -470.0
+offset_right = -110.0
+offset_bottom = -400.0
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "Talk"
+script = ExtResource("3_button")

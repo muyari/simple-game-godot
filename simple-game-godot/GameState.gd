@@ -923,6 +923,23 @@ func _ready() -> void:
 	_load_character()
 
 
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST:
+		return
+	# Android back: scenes with their own back navigation handle it, otherwise
+	# it behaves like Esc (close the top menu, or open the pause menu).
+	var scene := get_tree().current_scene
+	if scene != null and scene.has_method("go_back"):
+		scene.call("go_back")
+		return
+	for pressed in [true, false]:
+		var escape := InputEventKey.new()
+		escape.keycode = KEY_ESCAPE
+		escape.physical_keycode = KEY_ESCAPE
+		escape.pressed = pressed
+		Input.parse_input_event(escape)
+
+
 func get_characters() -> Array[Dictionary]:
 	_load_roster()
 	if _characters.is_empty() and FileAccess.file_exists(SAVE_PATH):

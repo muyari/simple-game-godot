@@ -73,6 +73,7 @@ func _ready() -> void:
 	equip_item_button.pressed.connect(_on_equip_item_pressed)
 	_build_equip_best_button()
 	var player: Player = get_node("../Player")
+	_build_touch_controls(player)
 	_connect_skill_slot_clicks(player)
 	if player.selected_character == "Witch":
 		_build_witch_skill_tree()
@@ -250,6 +251,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_player_menu_paused(true)
 		quest_menu.open_menu()
 		get_viewport().set_input_as_handled()
+
+
+func _build_touch_controls(player: Player) -> void:
+	if not TouchControls.is_supported():
+		return
+	var touch_controls := TouchControls.create(player)
+	add_child(touch_controls)
+	# First child, so every other HUD control sits above it and takes touches first.
+	move_child(touch_controls, 0)
 
 
 func _build_pause_menu() -> void:
