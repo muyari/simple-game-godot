@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="PackedScene" uid="uid://dp3jfuvuykpb7" path="res://player.tscn" id="1_ig7tw"]
-[ext_resource type="Texture2D" path="res://textures/desert_ground.svg" id="3_desert"]
+[ext_resource type="Texture2D" path="res://textures/desert_sand_ground.png" id="3_desert"]
 [ext_resource type="Script" uid="uid://vgw2fyi27qcg" path="res://GameUI.gd" id="9_ui"]
 [ext_resource type="PackedScene" path="res://health_globe.tscn" id="10_globe_health"]
 [ext_resource type="PackedScene" path="res://mana_globe.tscn" id="10_globe_mana"]

@@ -777,7 +777,10 @@ func _show_banner(text: String, color: Color) -> void:
 
 
 func _on_boss_progress_changed(defeated: int, total: int) -> void:
-	enemy_progress_label.text = "Boss pack: %d/%d" % [defeated, total]
+	if total > 1:
+		enemy_progress_label.text = "Boss pack: %d/%d" % [defeated, total]
+	else:
+		enemy_progress_label.text = "Boss: %d/%d" % [defeated, total]
 
 
 func _update_boss_banner(delta: float) -> void:

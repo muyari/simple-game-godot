@@ -1,4 +1,4 @@
-extends Wolf
+extends DesertCreature
 
 const VENOM_SCENE = preload("res://venom_ball.tscn")
 const VENOM_RANGE = 460.0

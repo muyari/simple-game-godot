@@ -119,6 +119,8 @@ var is_casting_town_portal := false
 
 
 func _ready() -> void:
+	# Top-down movement; the default (grounded) mode treats bodies below as floors to ride on.
+	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	selected_character = str(get_tree().get_meta("selected_character", "Warrior"))
 	match selected_character:
 		"Witch":
