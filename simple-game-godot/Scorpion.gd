@@ -1,4 +1,4 @@
-extends Wolf
+extends DesertCreature
 
 
 func _ready() -> void:

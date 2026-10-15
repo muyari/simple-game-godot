@@ -18,6 +18,10 @@ const IDLE_FRAME_DURATION = 0.42
 const MOVEMENT_FRAME_START = 2
 const ATTACK_FRAME_START = 8
 const MAX_HEALTH = 3.0
+## Monsters wait where they are until the player comes this close (or hits them)...
+const AGGRO_RANGE := 520.0
+## ...and give up the hunt once the player gets this far away.
+const LEASH_RANGE := 1100.0
 const AURA_GROUP := "monster_auras"
 const AURA_REFRESH_INTERVAL := 0.25
 const MODIFIER_LABEL_COLOR := Color("#8fb8ff")
@@ -52,6 +56,10 @@ var modifier_ids: Array[String] = []
 var modifier_stats := {}
 var aura_bonuses := {}
 var aura_refresh_remaining := 0.0
+## Bosses hunt the player from anywhere. Set before the monster enters the tree.
+var always_alert := false
+## While not alert the monster stands idle and its physics (chasing, attacking) is off.
+var is_alert := false
 
 
 func _ready() -> void:
@@ -61,16 +69,24 @@ func _ready() -> void:
 	health = max_health
 	health_bar.max_value = max_health
 	health_bar.value = health
+	# Top-down movement; the default (grounded) mode treats bodies below as floors to ride on.
+	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	target = get_node_or_null(target_path) as Player
 	if target == null:
 		push_error("Wolf could not find its player target at %s." % target_path)
+	else:
+		# The player walks through monsters, so a crowd can never pin them in place.
+		add_collision_exception_with(target)
+	is_alert = always_alert
+	set_physics_process(is_alert)
 
 
 func _process(delta: float) -> void:
 	if stun_time_remaining > 0.0:
 		stun_time_remaining = maxf(stun_time_remaining - delta, 0.0)
-		if stun_time_remaining == 0.0 and health > 0.0:
+		if stun_time_remaining == 0.0 and health > 0.0 and is_alert:
 			set_physics_process(true)
+	_update_alertness(delta)
 	if curse_time_remaining > 0.0:
 		curse_time_remaining = maxf(curse_time_remaining - delta, 0.0)
 		if curse_time_remaining == 0.0:
@@ -178,9 +194,34 @@ func _update_sprite(delta: float) -> void:
 	)
 
 
+## Starts the hunt: notices the player approaching, or being hit from range.
+func alert() -> void:
+	if is_alert or health <= 0.0:
+		return
+	is_alert = true
+	if stun_time_remaining == 0.0:
+		set_physics_process(true)
+
+
+func _update_alertness(delta: float) -> void:
+	if always_alert or health <= 0.0 or target == null or not is_instance_valid(target):
+		return
+	var distance := global_position.distance_to(target.global_position)
+	if not is_alert and distance <= AGGRO_RANGE:
+		alert()
+	elif is_alert and distance > LEASH_RANGE:
+		is_alert = false
+		state = State.CHASING
+		velocity = Vector2.ZERO
+		set_physics_process(false)
+	if not is_alert:
+		_update_sprite(delta)
+
+
 func take_damage(amount: float) -> void:
 	if health <= 0:
 		return
+	alert()
 
 	if randf() < minf(get_stat(MonsterModifiers.STAT_DODGE), MonsterModifiers.MAX_DODGE_CHANCE):
 		return

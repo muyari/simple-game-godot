@@ -34,27 +34,26 @@
 [ext_resource type="Texture2D" uid="uid://1gyn1n16q03c" path="res://textures/town_shrub_conifer.png" id="40_shrubc"]
 [ext_resource type="Texture2D" uid="uid://d4jssosqd233p" path="res://textures/town_waystone.png" id="41_waystone"]
 [ext_resource type="Texture2D" uid="uid://dkcbl3206gn6u" path="res://textures/town_shop.png" id="42_shop"]
-[ext_resource type="Script" path="res://AnimalWander.gd" id="50_script"]
-[ext_resource type="Script" path="res://TownRoad.gd" id="61_town_road"]
-[ext_resource type="Script" path="res://GroundShadows.gd" id="62_shadows"]
-[ext_resource type="Texture2D" path="res://textures/town_path_dirt.png" id="63_path"]
-[ext_resource type="Texture2D" path="res://textures/town_flowers.png" id="64_flowers"]
-[ext_resource type="Texture2D" path="res://textures/town_fern.png" id="65_fern"]
-[ext_resource type="Texture2D" path="res://textures/town_grass_clump.png" id="66_grass_clump"]
-[ext_resource type="Texture2D" path="res://textures/town_rocks_small.png" id="67_rocks_small"]
-[ext_resource type="Texture2D" path="res://textures/town_rock_mossy.png" id="68_rock_mossy"]
+[ext_resource type="Script" uid="uid://cetax3te2m6gx" path="res://AnimalWander.gd" id="50_script"]
+[ext_resource type="Texture2D" uid="uid://dkrgc6y371wsy" path="res://textures/town_chicken_walk_1.png" id="51_cw1"]
+[ext_resource type="Texture2D" uid="uid://0l4t2nnc7gc8" path="res://textures/town_chicken_walk_2.png" id="52_cw2"]
+[ext_resource type="Texture2D" uid="uid://cpoyno1b8dgt6" path="res://textures/town_chicken_walk_3.png" id="53_cw3"]
+[ext_resource type="Texture2D" uid="uid://dposs1qmeb4jq" path="res://textures/town_chicken_walk_4.png" id="54_cw4"]
+[ext_resource type="Texture2D" uid="uid://kel7v3p68cfu" path="res://textures/town_chicken_peck_1.png" id="55_cp1"]
+[ext_resource type="Texture2D" uid="uid://crytsuvhxe63q" path="res://textures/town_chicken_peck_2.png" id="56_cp2"]
+[ext_resource type="Texture2D" uid="uid://bs0ktatoc05bi" path="res://textures/town_chicken_peck_3.png" id="57_cp3"]
+[ext_resource type="Texture2D" uid="uid://dk6h1uc3yb2gc" path="res://textures/town_cow_graze.png" id="58_cowg"]
+[ext_resource type="Texture2D" uid="uid://buh6h25hx3ukf" path="res://textures/town_cow_walk_1.png" id="59_cow1"]
+[ext_resource type="Texture2D" uid="uid://dlciwcmq5ecp1" path="res://textures/town_cow_walk_2.png" id="60_cow2"]
+[ext_resource type="Script" uid="uid://ct3h33fmhqm0d" path="res://TownRoad.gd" id="61_town_road"]
+[ext_resource type="Script" uid="uid://u5ackwk0cj1q" path="res://GroundShadows.gd" id="62_shadows"]
+[ext_resource type="Texture2D" uid="uid://664cdu7j6axc" path="res://textures/town_path_dirt.png" id="63_path"]
+[ext_resource type="Texture2D" uid="uid://ckywgynl15ry2" path="res://textures/town_flowers.png" id="64_flowers"]
+[ext_resource type="Texture2D" uid="uid://d4b8cndoo6k5q" path="res://textures/town_fern.png" id="65_fern"]
+[ext_resource type="Texture2D" uid="uid://6y5mpi2ycuvs" path="res://textures/town_grass_clump.png" id="66_grass_clump"]
+[ext_resource type="Texture2D" uid="uid://shhhbgyoguvm" path="res://textures/town_rocks_small.png" id="67_rocks_small"]
+[ext_resource type="Texture2D" uid="uid://daoc7gu3ycwwd" path="res://textures/town_rock_mossy.png" id="68_rock_mossy"]
 [ext_resource type="PackedScene" path="res://quest_giver.tscn" id="69_quest_giver"]
-[ext_resource type="Texture2D" uid="uid://dv8hsnpvlyeyy" path="res://textures/town_beth.png" id="70_beth"]
-[ext_resource type="Texture2D" path="res://textures/town_chicken_walk_1.png" id="51_cw1"]
-[ext_resource type="Texture2D" path="res://textures/town_chicken_walk_2.png" id="52_cw2"]
-[ext_resource type="Texture2D" path="res://textures/town_chicken_walk_3.png" id="53_cw3"]
-[ext_resource type="Texture2D" path="res://textures/town_chicken_walk_4.png" id="54_cw4"]
-[ext_resource type="Texture2D" path="res://textures/town_chicken_peck_1.png" id="55_cp1"]
-[ext_resource type="Texture2D" path="res://textures/town_chicken_peck_2.png" id="56_cp2"]
-[ext_resource type="Texture2D" path="res://textures/town_chicken_peck_3.png" id="57_cp3"]
-[ext_resource type="Texture2D" path="res://textures/town_cow_graze.png" id="58_cowg"]
-[ext_resource type="Texture2D" path="res://textures/town_cow_walk_1.png" id="59_cow1"]
-[ext_resource type="Texture2D" path="res://textures/town_cow_walk_2.png" id="60_cow2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_town_vertical"]
 size = Vector2(20, 728)
@@ -83,11 +82,11 @@ size = Vector2(42, 16)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_town_fountain"]
 size = Vector2(103, 84)
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_chicken"]
-radius = 7.0
-
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cow"]
 size = Vector2(56, 18)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_chicken"]
+radius = 7.0
 
 [node name="Town" type="Node2D" unique_id=831735069]
 y_sort_enabled = true
@@ -122,6 +121,7 @@ collision_mask = 0
 z_index = -10
 texture_filter = 1
 texture_repeat = 2
+position = Vector2(-75, -68)
 texture = ExtResource("2_ground")
 polygon = PackedVector2Array(-900, -600, 2050, -600, 2050, 1370, -900, 1370)
 
@@ -133,10 +133,10 @@ script = ExtResource("61_town_road")
 road_texture = ExtResource("13_brick")
 plaza_texture = ExtResource("14_cobble")
 
-[node name="DirtPaths" type="Node2D" parent="."]
+[node name="DirtPaths" type="Node2D" parent="." unique_id=501380682]
 z_index = -6
 
-[node name="NorthwestHousePath" type="Sprite2D" parent="DirtPaths"]
+[node name="NorthwestHousePath" type="Sprite2D" parent="DirtPaths" unique_id=2010020403]
 texture_filter = 1
 texture_repeat = 2
 position = Vector2(345.5, 190)
@@ -146,7 +146,7 @@ centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 50, 146)
 
-[node name="NortheastHousePath" type="Sprite2D" parent="DirtPaths"]
+[node name="NortheastHousePath" type="Sprite2D" parent="DirtPaths" unique_id=1688592753]
 texture_filter = 1
 texture_repeat = 2
 position = Vector2(882.5, 236)
@@ -156,7 +156,7 @@ centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 50, 80)
 
-[node name="ShopPath" type="Sprite2D" parent="DirtPaths"]
+[node name="ShopPath" type="Sprite2D" parent="DirtPaths" unique_id=2115596249]
 texture_filter = 1
 texture_repeat = 2
 position = Vector2(178.5, 250)
@@ -166,7 +166,7 @@ centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 50, 60)
 
-[node name="PortalPath" type="Sprite2D" parent="DirtPaths"]
+[node name="PortalPath" type="Sprite2D" parent="DirtPaths" unique_id=866221827]
 texture_filter = 1
 texture_repeat = 2
 position = Vector2(654.5, 238)
@@ -176,7 +176,7 @@ centered = false
 region_enabled = true
 region_rect = Rect2(0, 0, 50, 77)
 
-[node name="GroundShadows" type="Node2D" parent="."]
+[node name="GroundShadows" type="Node2D" parent="." unique_id=944966453]
 z_index = -1
 script = ExtResource("62_shadows")
 shadows = Array[Rect2]([Rect2(112, 259, 112, 16), Rect2(204, 252, 30, 8), Rect2(897, 487, 54, 12), Rect2(916, 713, 56, 12), Rect2(815, 130, 46, 10), Rect2(468, 704, 38, 9), Rect2(1060, 608, 60, 10), Rect2(480, 98, 56, 12), Rect2(640, 723, 60, 10)])
@@ -195,121 +195,121 @@ scale = Vector2(0.6, 0.6)
 texture = ExtResource("34_seedling")
 offset = Vector2(0, -44)
 
-[node name="TownProps" type="Node2D" parent="."]
+[node name="TownProps" type="Node2D" parent="." unique_id=35840909]
 
-[node name="Flowers1" type="Sprite2D" parent="TownProps"]
+[node name="Flowers1" type="Sprite2D" parent="TownProps" unique_id=2088557684]
 texture_filter = 1
-position = Vector2(440, 281)
+position = Vector2(400, 309.00003)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("64_flowers")
 offset = Vector2(0, -40)
 
-[node name="Flowers2" type="Sprite2D" parent="TownProps"]
+[node name="Flowers2" type="Sprite2D" parent="TownProps" unique_id=581612136]
 texture_filter = 1
 position = Vector2(610, 281)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("64_flowers")
 offset = Vector2(0, -40)
 
-[node name="Flowers3" type="Sprite2D" parent="TownProps"]
+[node name="Flowers3" type="Sprite2D" parent="TownProps" unique_id=580074962]
 texture_filter = 1
 position = Vector2(1000, 281)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("64_flowers")
 offset = Vector2(0, -40)
 
-[node name="Flowers4" type="Sprite2D" parent="TownProps"]
+[node name="Flowers4" type="Sprite2D" parent="TownProps" unique_id=1947266097]
 texture_filter = 1
 position = Vector2(330, 538)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("64_flowers")
 offset = Vector2(0, -40)
 
-[node name="Flowers5" type="Sprite2D" parent="TownProps"]
+[node name="Flowers5" type="Sprite2D" parent="TownProps" unique_id=1952984428]
 texture_filter = 1
 position = Vector2(520, 540)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("64_flowers")
 offset = Vector2(0, -40)
 
-[node name="Flowers6" type="Sprite2D" parent="TownProps"]
+[node name="Flowers6" type="Sprite2D" parent="TownProps" unique_id=1839566718]
 texture_filter = 1
 position = Vector2(1050, 540)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("64_flowers")
 offset = Vector2(0, -40)
 
-[node name="GrassClump1" type="Sprite2D" parent="TownProps"]
+[node name="GrassClump1" type="Sprite2D" parent="TownProps" unique_id=599740748]
 texture_filter = 1
 position = Vector2(740, 282)
 scale = Vector2(0.4, 0.4)
 texture = ExtResource("66_grass_clump")
 offset = Vector2(0, -35)
 
-[node name="GrassClump2" type="Sprite2D" parent="TownProps"]
+[node name="GrassClump2" type="Sprite2D" parent="TownProps" unique_id=408422467]
 texture_filter = 1
 position = Vector2(130, 556)
 scale = Vector2(0.4, 0.4)
 texture = ExtResource("66_grass_clump")
 offset = Vector2(0, -35)
 
-[node name="GrassClump3" type="Sprite2D" parent="TownProps"]
+[node name="GrassClump3" type="Sprite2D" parent="TownProps" unique_id=1664444010]
 texture_filter = 1
 position = Vector2(640, 540)
 scale = Vector2(0.4, 0.4)
 texture = ExtResource("66_grass_clump")
 offset = Vector2(0, -35)
 
-[node name="GrassClump4" type="Sprite2D" parent="TownProps"]
+[node name="GrassClump4" type="Sprite2D" parent="TownProps" unique_id=1168190809]
 texture_filter = 1
 position = Vector2(840, 542)
 scale = Vector2(0.4, 0.4)
 texture = ExtResource("66_grass_clump")
 offset = Vector2(0, -35)
 
-[node name="GrassClump5" type="Sprite2D" parent="TownProps"]
+[node name="GrassClump5" type="Sprite2D" parent="TownProps" unique_id=110654380]
 texture_filter = 1
-position = Vector2(455, 250)
+position = Vector2(443, 222)
 scale = Vector2(0.4, 0.4)
 texture = ExtResource("66_grass_clump")
 offset = Vector2(0, -35)
 
-[node name="Fern1" type="Sprite2D" parent="TownProps"]
+[node name="Fern1" type="Sprite2D" parent="TownProps" unique_id=1350785864]
 texture_filter = 1
 position = Vector2(72, 578)
 scale = Vector2(0.45, 0.45)
 texture = ExtResource("65_fern")
 offset = Vector2(0, -44.5)
 
-[node name="Fern2" type="Sprite2D" parent="TownProps"]
+[node name="Fern2" type="Sprite2D" parent="TownProps" unique_id=1380466649]
 texture_filter = 1
 position = Vector2(300, 604)
 scale = Vector2(0.45, 0.45)
 texture = ExtResource("65_fern")
 offset = Vector2(0, -44.5)
 
-[node name="Fern3" type="Sprite2D" parent="TownProps"]
+[node name="Fern3" type="Sprite2D" parent="TownProps" unique_id=394818418]
 texture_filter = 1
 position = Vector2(1098, 702)
 scale = Vector2(0.45, 0.45)
 texture = ExtResource("65_fern")
 offset = Vector2(0, -44.5)
 
-[node name="RocksSmall1" type="Sprite2D" parent="TownProps"]
+[node name="RocksSmall1" type="Sprite2D" parent="TownProps" unique_id=57371957]
 texture_filter = 1
 position = Vector2(1060, 610)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("67_rocks_small")
 offset = Vector2(0, -44)
 
-[node name="RocksSmall2" type="Sprite2D" parent="TownProps"]
+[node name="RocksSmall2" type="Sprite2D" parent="TownProps" unique_id=1784039169]
 texture_filter = 1
 position = Vector2(640, 725)
 scale = Vector2(0.42, 0.42)
 texture = ExtResource("67_rocks_small")
 offset = Vector2(0, -44)
 
-[node name="RockMossy1" type="Sprite2D" parent="TownProps"]
+[node name="RockMossy1" type="Sprite2D" parent="TownProps" unique_id=467822636]
 texture_filter = 1
 position = Vector2(480, 100)
 scale = Vector2(0.45, 0.45)
@@ -417,10 +417,10 @@ script = ExtResource("6_vendor")
 position = Vector2(-593, -158)
 shape = SubResource("CircleShape2D_vendor")
 
-[node name="Body" type="StaticBody2D" parent="Vendor"]
+[node name="Body" type="StaticBody2D" parent="Vendor" unique_id=1033181612]
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Vendor/Body"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Vendor/Body" unique_id=41834009]
 position = Vector2(-593, -144)
 shape = SubResource("RectangleShape2D_vendor_body")
 
@@ -621,7 +621,7 @@ shape = SubResource("RectangleShape2D_town_fountain")
 [node name="OutsideScenery" type="Node2D" parent="." unique_id=462171856]
 y_sort_enabled = true
 
-[node name="Cow1" type="CharacterBody2D" parent="OutsideScenery"]
+[node name="Cow1" type="CharacterBody2D" parent="OutsideScenery" unique_id=1216140796]
 position = Vector2(-250, 330)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
@@ -630,17 +630,17 @@ idle_faces_right = false
 speed = 18.0
 wander_radius = 130.0
 
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow1"]
+[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow1" unique_id=102522389]
 texture_filter = 1
 scale = Vector2(0.33, 0.33)
 texture = ExtResource("59_cow1")
 offset = Vector2(0, -79.5)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow1"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow1" unique_id=1341349375]
 position = Vector2(0, -9)
 shape = SubResource("RectangleShape2D_cow")
 
-[node name="Cow2" type="CharacterBody2D" parent="OutsideScenery"]
+[node name="Cow2" type="CharacterBody2D" parent="OutsideScenery" unique_id=1160708004]
 position = Vector2(-380, 640)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
@@ -649,17 +649,17 @@ idle_faces_right = false
 speed = 18.0
 wander_radius = 130.0
 
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow2"]
+[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow2" unique_id=2068961231]
 texture_filter = 1
 scale = Vector2(0.33, 0.33)
 texture = ExtResource("59_cow1")
 offset = Vector2(0, -79.5)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow2"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow2" unique_id=1469492664]
 position = Vector2(0, -9)
 shape = SubResource("RectangleShape2D_cow")
 
-[node name="Cow3" type="CharacterBody2D" parent="OutsideScenery"]
+[node name="Cow3" type="CharacterBody2D" parent="OutsideScenery" unique_id=524282117]
 position = Vector2(1400, 260)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
@@ -668,17 +668,17 @@ idle_faces_right = false
 speed = 18.0
 wander_radius = 130.0
 
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow3"]
+[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow3" unique_id=1892674338]
 texture_filter = 1
 scale = Vector2(0.33, 0.33)
 texture = ExtResource("59_cow1")
 offset = Vector2(0, -79.5)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow3"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow3" unique_id=420697878]
 position = Vector2(0, -9)
 shape = SubResource("RectangleShape2D_cow")
 
-[node name="Cow4" type="CharacterBody2D" parent="OutsideScenery"]
+[node name="Cow4" type="CharacterBody2D" parent="OutsideScenery" unique_id=1646541221]
 position = Vector2(1330, 640)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
@@ -687,17 +687,17 @@ idle_faces_right = false
 speed = 18.0
 wander_radius = 130.0
 
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow4"]
+[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow4" unique_id=1271622326]
 texture_filter = 1
 scale = Vector2(0.33, 0.33)
 texture = ExtResource("59_cow1")
 offset = Vector2(0, -79.5)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow4"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow4" unique_id=1881401759]
 position = Vector2(0, -9)
 shape = SubResource("RectangleShape2D_cow")
 
-[node name="Cow5" type="CharacterBody2D" parent="OutsideScenery"]
+[node name="Cow5" type="CharacterBody2D" parent="OutsideScenery" unique_id=1788196679]
 position = Vector2(560, 960)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
@@ -706,13 +706,13 @@ idle_faces_right = false
 speed = 18.0
 wander_radius = 130.0
 
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow5"]
+[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow5" unique_id=301484837]
 texture_filter = 1
 scale = Vector2(0.33, 0.33)
 texture = ExtResource("59_cow1")
 offset = Vector2(0, -79.5)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow5"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow5" unique_id=2101151169]
 position = Vector2(0, -9)
 shape = SubResource("RectangleShape2D_cow")
 
@@ -905,7 +905,7 @@ scale = Vector2(0.5, 0.5)
 texture = ExtResource("34_seedling")
 offset = Vector2(0, -44)
 
-[node name="Chicken1" type="CharacterBody2D" parent="."]
+[node name="Chicken1" type="CharacterBody2D" parent="." unique_id=76633456]
 position = Vector2(560, 140)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("51_cw1"), ExtResource("52_cw2"), ExtResource("53_cw3"), ExtResource("54_cw4")])
@@ -913,17 +913,17 @@ idle_frames = Array[Texture2D]([ExtResource("55_cp1"), ExtResource("56_cp2"), Ex
 speed = 38.0
 wander_radius = 90.0
 
-[node name="Sprite2D" type="Sprite2D" parent="Chicken1"]
+[node name="Sprite2D" type="Sprite2D" parent="Chicken1" unique_id=1842506792]
 texture_filter = 1
 scale = Vector2(0.28, 0.28)
 texture = ExtResource("51_cw1")
 offset = Vector2(0, -52)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken1"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken1" unique_id=1732410415]
 position = Vector2(0, -7)
 shape = SubResource("CircleShape2D_chicken")
 
-[node name="Chicken2" type="CharacterBody2D" parent="."]
+[node name="Chicken2" type="CharacterBody2D" parent="." unique_id=174933376]
 position = Vector2(560, 650)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("51_cw1"), ExtResource("52_cw2"), ExtResource("53_cw3"), ExtResource("54_cw4")])
@@ -931,17 +931,17 @@ idle_frames = Array[Texture2D]([ExtResource("55_cp1"), ExtResource("56_cp2"), Ex
 speed = 38.0
 wander_radius = 90.0
 
-[node name="Sprite2D" type="Sprite2D" parent="Chicken2"]
+[node name="Sprite2D" type="Sprite2D" parent="Chicken2" unique_id=907285211]
 texture_filter = 1
 scale = Vector2(0.28, 0.28)
 texture = ExtResource("51_cw1")
 offset = Vector2(0, -52)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken2"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken2" unique_id=1448967116]
 position = Vector2(0, -7)
 shape = SubResource("CircleShape2D_chicken")
 
-[node name="Chicken3" type="CharacterBody2D" parent="."]
+[node name="Chicken3" type="CharacterBody2D" parent="." unique_id=78489232]
 position = Vector2(100, 150)
 script = ExtResource("50_script")
 walk_frames = Array[Texture2D]([ExtResource("51_cw1"), ExtResource("52_cw2"), ExtResource("53_cw3"), ExtResource("54_cw4")])
@@ -949,41 +949,33 @@ idle_frames = Array[Texture2D]([ExtResource("55_cp1"), ExtResource("56_cp2"), Ex
 speed = 38.0
 wander_radius = 90.0
 
-[node name="Sprite2D" type="Sprite2D" parent="Chicken3"]
+[node name="Sprite2D" type="Sprite2D" parent="Chicken3" unique_id=1614828136]
 texture_filter = 1
 scale = Vector2(0.28, 0.28)
 texture = ExtResource("51_cw1")
 offset = Vector2(0, -52)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken3"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken3" unique_id=614195077]
 position = Vector2(0, -7)
 shape = SubResource("CircleShape2D_chicken")
 
 [node name="Player" parent="." unique_id=532737915 instance=ExtResource("1_player")]
 position = Vector2(576, 300)
 
-[node name="Beth" parent="." instance=ExtResource("69_quest_giver")]
+[node name="Beth" parent="." unique_id=1121912796 instance=ExtResource("69_quest_giver")]
 position = Vector2(735, 252)
 npc_name = "Beth"
 quest_id = "find_rendel"
-
-[node name="Sprite2D" parent="Beth" index="2"]
-scale = Vector2(0.56, 0.56)
-texture = ExtResource("70_beth")
 
 [node name="ReturnPortal" parent="." unique_id=657607658 instance=ExtResource("4_portal")]
 position = Vector2(672, 212)
 destination_scene = "res://main.tscn"
 destination_position = Vector2(84, 574)
 
-[node name="DestinationLabel" parent="ReturnPortal" index="2"]
-text = "RETURN"
-
 [node name="TownUI" type="CanvasLayer" parent="." unique_id=7369185]
 script = ExtResource("5_town_ui")
 
 [node name="HealthOrb" parent="TownUI" unique_id=2145565031 instance=ExtResource("8_globe_health")]
-layout_mode = 3
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -994,7 +986,6 @@ offset_bottom = -22.0
 grow_vertical = 0
 
 [node name="HealthPotion" parent="TownUI" unique_id=165852680 instance=ExtResource("8_health_potion")]
-layout_mode = 3
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -1005,7 +996,6 @@ offset_bottom = -22.0
 grow_vertical = 0
 
 [node name="ManaOrb" parent="TownUI" unique_id=1316408284 instance=ExtResource("8_globe_mana")]
-layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -1019,7 +1009,6 @@ grow_horizontal = 0
 grow_vertical = 0
 
 [node name="ManaPotion" parent="TownUI" unique_id=8838019 instance=ExtResource("8_mana_potion")]
-layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0

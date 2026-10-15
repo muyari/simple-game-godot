@@ -70,14 +70,144 @@ const FOREST_APPLE_TREE_REGIONS: Array[Vector2i] = [
 	Vector2i(1, 2), Vector2i(-1, -2), Vector2i(3, 1), Vector2i(-3, -1), Vector2i(0, 3),
 ]
 const FOREST_APPLE_TREE_SCALE := 0.68
-## Nothing solid is placed this close to where the player enters the forest.
-const FOREST_SPAWN_CLEARING := 150.0
+## Nothing solid is placed this close to where the player enters a level.
+const PROP_SPAWN_CLEARING := 150.0
 const BOULDERS_TEXTURE = preload("res://textures/forest_boulders.svg")
-const CAVE_TEXTURE = preload("res://textures/forest_cave.svg")
-const DESERT_CACTUS_TEXTURE = preload("res://textures/desert_cactus.svg")
-const DESERT_OASIS_TEXTURE = preload("res://textures/desert_oasis.svg")
-const DESERT_DUNES_TEXTURE = preload("res://textures/desert_dunes.svg")
-const DESERT_RUINS_TEXTURE = preload("res://textures/desert_ruins.svg")
+const DESERT_GROUND_TEXTURE = preload("res://textures/desert_sand_ground.png")
+## The sand tile is pixel art; drawn at this scale its grains match the props.
+const DESERT_GROUND_SCALE := 2.0
+## Sand caves, natural arches and a butte, at most one per region. Collision is the base radius in world
+## pixels at scale 1; arches have none so the player can walk beneath them.
+const DESERT_LANDMARKS: Array[Dictionary] = [
+	{"texture": preload("res://textures/desert_cave_tunnel_arch.png"), "scale": Vector2(0.95, 1.1), "collision": 68.0},
+	{"texture": preload("res://textures/desert_cave_round.png"), "scale": Vector2(0.95, 1.1), "collision": 60.0},
+	{"texture": preload("res://textures/desert_cave_spire.png"), "scale": Vector2(1.05, 1.2), "collision": 38.0},
+	{"texture": preload("res://textures/desert_cave_crag.png"), "scale": Vector2(1.0, 1.15), "collision": 44.0},
+	{"texture": preload("res://textures/desert_cave_mesa.png"), "scale": Vector2(0.95, 1.1), "collision": 68.0},
+	{"texture": preload("res://textures/desert_cave_slab.png"), "scale": Vector2(0.95, 1.1), "collision": 64.0},
+	{"texture": preload("res://textures/desert_arch_a.png"), "scale": Vector2(1.25, 1.45), "collision": 0.0},
+	{"texture": preload("res://textures/desert_arch_b.png"), "scale": Vector2(1.25, 1.45), "collision": 0.0},
+	{"texture": preload("res://textures/desert_arch_c.png"), "scale": Vector2(1.25, 1.45), "collision": 0.0},
+	{"texture": preload("res://textures/desert_arch_d.png"), "scale": Vector2(1.2, 1.4), "collision": 0.0},
+	{"texture": preload("res://textures/desert_butte.png"), "scale": Vector2(1.0, 1.15), "collision": 46.0},
+]
+## Centrepieces for rock outcrops (see _make_rock_outcrop).
+const DESERT_OUTCROP_SPIRES: Array[Dictionary] = [
+	{"texture": preload("res://textures/desert_stalagmite_tall.png"), "scale": Vector2(1.8, 2.2), "collision": 18.0},
+	{"texture": preload("res://textures/desert_stalagmite_medium.png"), "scale": Vector2(1.8, 2.2), "collision": 18.0},
+	{"texture": preload("res://textures/desert_spire_tall.png"), "scale": Vector2(1.2, 1.4), "collision": 16.0},
+	{"texture": preload("res://textures/desert_hoodoo_a.png"), "scale": Vector2(1.15, 1.35), "collision": 12.0},
+	{"texture": preload("res://textures/desert_hoodoo_b.png"), "scale": Vector2(1.15, 1.35), "collision": 12.0},
+	{"texture": preload("res://textures/desert_rock_heap_tall.png"), "scale": Vector2(1.0, 1.15), "collision": 32.0},
+]
+const DESERT_RUIN_WALL = preload("res://textures/desert_ruin_wall.png")
+const DESERT_RUBBLE_LOW = preload("res://textures/desert_rubble_low.png")
+## Weathered columns for ruins (see _make_ruins).
+const DESERT_PILLARS: Array[Texture2D] = [
+	preload("res://textures/desert_pillar_ornate.png"),
+	preload("res://textures/desert_pillar_a.png"),
+	preload("res://textures/desert_pillar_b.png"),
+	preload("res://textures/desert_pillar_c.png"),
+	preload("res://textures/desert_pillar_d.png"),
+]
+## Centrepieces for cactus stands (see _make_cactus_stand).
+const DESERT_STAND_SAGUAROS: Array[Texture2D] = [
+	preload("res://textures/desert_saguaro_l.png"),
+	preload("res://textures/desert_saguaro_bloom_l.png"),
+	preload("res://textures/desert_saguaro_tall.png"),
+	preload("res://textures/desert_saguaro_holed.png"),
+	preload("res://textures/desert_saguaro_bent.png"),
+]
+## Cacti block movement at the trunk.
+const DESERT_CACTI: Array[Dictionary] = [
+	{"texture": preload("res://textures/desert_saguaro_xs.png"), "scale": Vector2(1.35, 1.6), "trunk": 6.0},
+	{"texture": preload("res://textures/desert_saguaro_s.png"), "scale": Vector2(1.35, 1.6), "trunk": 7.0},
+	{"texture": preload("res://textures/desert_saguaro_m.png"), "scale": Vector2(1.35, 1.6), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_saguaro_l.png"), "scale": Vector2(1.35, 1.6), "trunk": 9.0},
+	{"texture": preload("res://textures/desert_saguaro_bloom_l.png"), "scale": Vector2(1.35, 1.6), "trunk": 9.0},
+	{"texture": preload("res://textures/desert_saguaro_bloom_m.png"), "scale": Vector2(1.35, 1.6), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_saguaro_bent.png"), "scale": Vector2(1.35, 1.6), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_saguaro_tall.png"), "scale": Vector2(1.35, 1.6), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_saguaro_holed.png"), "scale": Vector2(1.35, 1.6), "trunk": 9.0},
+	{"texture": preload("res://textures/desert_cactus_column_a.png"), "scale": Vector2(1.1, 1.3), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_cactus_column_b.png"), "scale": Vector2(1.1, 1.3), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_cactus_column_c.png"), "scale": Vector2(1.1, 1.3), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_cactus_column_d.png"), "scale": Vector2(1.1, 1.3), "trunk": 7.0},
+	{"texture": preload("res://textures/desert_cactus_column_e.png"), "scale": Vector2(1.1, 1.3), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_cactus_flowering.png"), "scale": Vector2(1.1, 1.3), "trunk": 7.0},
+	{"texture": preload("res://textures/desert_cactus_broken.png"), "scale": Vector2(1.1, 1.3), "trunk": 7.0},
+	{"texture": preload("res://textures/desert_cactus_bud.png"), "scale": Vector2(1.0, 1.2), "trunk": 6.0},
+	{"texture": preload("res://textures/desert_barrel_bloom_a.png"), "scale": Vector2(0.8, 0.95), "trunk": 16.0},
+	{"texture": preload("res://textures/desert_barrel_bloom_b.png"), "scale": Vector2(0.8, 0.95), "trunk": 16.0},
+	{"texture": preload("res://textures/desert_barrel_bloom_c.png"), "scale": Vector2(0.8, 0.95), "trunk": 15.0},
+	{"texture": preload("res://textures/desert_barrel.png"), "scale": Vector2(0.75, 0.9), "trunk": 14.0},
+	{"texture": preload("res://textures/desert_saguaro_classic_a.png"), "scale": Vector2(1.0, 1.25), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_saguaro_classic_b.png"), "scale": Vector2(1.0, 1.25), "trunk": 8.0},
+	{"texture": preload("res://textures/desert_barrel_red.png"), "scale": Vector2(0.55, 0.7), "trunk": 15.0},
+	{"texture": preload("res://textures/desert_prickly_pear_tall.png"), "scale": Vector2(0.7, 0.85), "trunk": 13.0},
+	{"texture": preload("res://textures/desert_prickly_pear_bloom.png"), "scale": Vector2(0.7, 0.85), "trunk": 13.0},
+	{"texture": preload("res://textures/desert_cactus_rose.png"), "scale": Vector2(0.7, 0.85), "trunk": 7.0},
+]
+const DESERT_ROCKS: Array[Dictionary] = [
+	{"texture": preload("res://textures/desert_rock_boulder.png"), "scale": Vector2(1.2, 1.45), "collision": 18.0},
+	{"texture": preload("res://textures/desert_rock_pair.png"), "scale": Vector2(1.1, 1.3), "collision": 16.0},
+	{"texture": preload("res://textures/desert_rock_trio.png"), "scale": Vector2(1.1, 1.3), "collision": 14.0},
+	{"texture": preload("res://textures/desert_rock_cluster.png"), "scale": Vector2(1.1, 1.3), "collision": 14.0},
+	{"texture": preload("res://textures/desert_rock_flat.png"), "scale": Vector2(1.1, 1.3), "collision": 16.0},
+	{"texture": preload("res://textures/desert_rock_round.png"), "scale": Vector2(1.0, 1.25), "collision": 17.0},
+	{"texture": preload("res://textures/desert_rock_spire_broken.png"), "scale": Vector2(1.1, 1.3), "collision": 15.0},
+	{"texture": preload("res://textures/desert_stalagmite_small.png"), "scale": Vector2(1.1, 1.3), "collision": 14.0},
+	{"texture": preload("res://textures/desert_stalagmite_twin.png"), "scale": Vector2(1.1, 1.3), "collision": 13.0},
+	{"texture": preload("res://textures/desert_rock_pile_low.png"), "scale": Vector2(1.0, 1.15), "collision": 24.0},
+	{"texture": preload("res://textures/desert_rock_pile_mid.png"), "scale": Vector2(1.0, 1.15), "collision": 20.0},
+	{"texture": preload("res://textures/desert_rock_pile_small.png"), "scale": Vector2(1.0, 1.15), "collision": 16.0},
+	{"texture": preload("res://textures/desert_boulders_pair.png"), "scale": Vector2(1.0, 1.1), "collision": 22.0},
+	{"texture": preload("res://textures/desert_spire_mid.png"), "scale": Vector2(1.0, 1.2), "collision": 12.0},
+	{"texture": preload("res://textures/desert_spire_short.png"), "scale": Vector2(1.0, 1.2), "collision": 12.0},
+	{"texture": preload("res://textures/desert_rubble_heap.png"), "scale": Vector2(0.9, 1.05), "collision": 26.0},
+	{"texture": preload("res://textures/desert_rubble_low.png"), "scale": Vector2(0.95, 1.1), "collision": 18.0},
+]
+## Dry scrub that characters walk through.
+const DESERT_BRUSH: Array[Dictionary] = [
+	{"texture": preload("res://textures/desert_brush_a.png"), "scale": Vector2(0.75, 0.95)},
+	{"texture": preload("res://textures/desert_brush_b.png"), "scale": Vector2(0.75, 0.95)},
+	{"texture": preload("res://textures/desert_brush_c.png"), "scale": Vector2(0.75, 0.95)},
+	{"texture": preload("res://textures/desert_brush_d.png"), "scale": Vector2(0.7, 0.9)},
+	{"texture": preload("res://textures/desert_brush_e.png"), "scale": Vector2(0.7, 0.9)},
+	{"texture": preload("res://textures/desert_brush_f.png"), "scale": Vector2(0.7, 0.9)},
+	{"texture": preload("res://textures/desert_brush_g.png"), "scale": Vector2(0.7, 0.9)},
+	{"texture": preload("res://textures/desert_brush_h.png"), "scale": Vector2(0.7, 0.9)},
+	{"texture": preload("res://textures/desert_brush_i.png"), "scale": Vector2(0.7, 0.9)},
+	{"texture": preload("res://textures/desert_brush_j.png"), "scale": Vector2(0.8, 1.0)},
+	{"texture": preload("res://textures/desert_cactus_nub.png"), "scale": Vector2(0.9, 1.1)},
+	{"texture": preload("res://textures/desert_rocks_small.png"), "scale": Vector2(0.9, 1.1)},
+	{"texture": preload("res://textures/desert_agave.png"), "scale": Vector2(0.55, 0.7)},
+	{"texture": preload("res://textures/desert_dry_branches_a.png"), "scale": Vector2(0.55, 0.7)},
+	{"texture": preload("res://textures/desert_dry_branches_b.png"), "scale": Vector2(0.55, 0.7)},
+	{"texture": preload("res://textures/desert_dry_grass.png"), "scale": Vector2(0.5, 0.65)},
+]
+## Low plants that grow together in patches; collision > 0 for the prickly ones.
+const DESERT_PATCH_PLANTS: Array[Dictionary] = [
+	{"texture": preload("res://textures/desert_agave.png"), "scale": Vector2(0.55, 0.7), "collision": 0.0},
+	{"texture": preload("res://textures/desert_prickly_pear_bloom.png"), "scale": Vector2(0.65, 0.8), "collision": 13.0},
+	{"texture": preload("res://textures/desert_prickly_pear_tall.png"), "scale": Vector2(0.65, 0.8), "collision": 13.0},
+	{"texture": preload("res://textures/desert_barrel_red.png"), "scale": Vector2(0.5, 0.62), "collision": 15.0},
+	{"texture": preload("res://textures/desert_barrel_bloom_a.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/desert_dry_grass.png"), "scale": Vector2(0.45, 0.6), "collision": 0.0},
+	{"texture": preload("res://textures/desert_brush_d.png"), "scale": Vector2(0.65, 0.8), "collision": 0.0},
+	{"texture": preload("res://textures/desert_cactus_nub.png"), "scale": Vector2(0.9, 1.1), "collision": 0.0},
+]
+## Flat sand detail drawn under everything: tracks, cracks, sinkholes and scattered stones.
+const DESERT_GROUND_DECALS: Array[Dictionary] = [
+	{"texture": preload("res://textures/desert_sand_mound.png"), "scale": Vector2(1.3, 1.6)},
+	{"texture": preload("res://textures/desert_footprints.png"), "scale": Vector2(1.0, 1.2)},
+	{"texture": preload("res://textures/desert_tracks.png"), "scale": Vector2(1.0, 1.2)},
+	{"texture": preload("res://textures/desert_stone_ring.png"), "scale": Vector2(1.1, 1.3)},
+	{"texture": preload("res://textures/desert_cracked_earth.png"), "scale": Vector2(1.3, 1.6)},
+	{"texture": preload("res://textures/desert_sun_cracks.png"), "scale": Vector2(1.2, 1.5)},
+	{"texture": preload("res://textures/desert_pebbles.png"), "scale": Vector2(1.1, 1.3)},
+	{"texture": preload("res://textures/desert_sinkhole.png"), "scale": Vector2(1.1, 1.3)},
+]
 const ICE_GROUND_TEXTURE = preload("res://textures/ice_caves_ground.svg")
 const FROZEN_TREE_TEXTURE = preload("res://textures/frozen_ice_tree.svg")
 const AI_GROUND_TEXTURE = preload("res://textures/futuristic_ai_ground.svg")
@@ -89,6 +219,12 @@ const MAX_DESERT_ENEMIES = 15
 const MAX_ICE_ENEMIES = 12
 const MAX_AI_ENEMIES = 15
 const SPAWN_EDGE_MARGIN = 128.0
+## Restored monsters start at least this far from the player, outside Wolf.AGGRO_RANGE.
+const ARRIVAL_CLEARANCE = 700.0
+## Once every monster has spawned, survivors waiting out of range are brought to the player one at a
+## time, this often (seconds), after STRAGGLER_ARRIVAL_GRACE seconds in the level.
+const STRAGGLER_INTERVAL = 4.0
+const STRAGGLER_ARRIVAL_GRACE = 6.0
 const SCENERY_PRELOAD_RADIUS = 1
 const ITEM_DROP_CHANCE = 0.1
 ## Extra drops (e.g. from Hoarder monsters) scatter up to this far so they don't stack.
@@ -126,6 +262,8 @@ var scenery_placements_by_region: Dictionary = {}
 var active_scenery_region := Vector2i.ZERO
 var item_pool: Array[ItemData] = []
 var loot_random := RandomNumberGenerator.new()
+## Counts down to bringing in the next straggler; starts at the arrival grace period.
+var straggler_timer := STRAGGLER_ARRIVAL_GRACE
 
 
 func _ready() -> void:
@@ -136,6 +274,10 @@ func _ready() -> void:
 			ground.texture = FOREST_GROUND_TEXTURE
 			ground.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			ground.modulate = FOREST_GROUND_TINT
+		elif biome == 1:
+			ground.texture = DESERT_GROUND_TEXTURE
+			ground.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			ground.scale = Vector2.ONE * DESERT_GROUND_SCALE
 		elif biome == 2:
 			ground.texture = ICE_GROUND_TEXTURE
 		elif biome == 3:
@@ -181,6 +323,8 @@ func _ready() -> void:
 	player.died.connect(_on_player_died)
 	if biome == 0:
 		get_parent().add_child.call_deferred(ForestAmbience.new())
+	elif biome == 1:
+		get_parent().add_child.call_deferred(DesertAmbience.new())
 	call_deferred("_emit_initial_progress")
 
 
@@ -188,6 +332,8 @@ func _emit_initial_progress() -> void:
 	progress_changed.emit(enemies_defeated, _get_max_enemies())
 	if biome == 0 and boss_spawned:
 		boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
+	elif biome == 1 and boss_spawned:
+		boss_progress_changed.emit(0, 1)
 
 
 func _notification(what: int) -> void:
@@ -338,7 +484,7 @@ func _restore_active_enemies(raw_enemies: Variant) -> void:
 				"boss wolf position"
 			)
 			if boss_position != null:
-				_spawn_boss_wolf(boss_position, boss_role == "alpha", float(saved_health))
+				_spawn_boss_wolf(_clear_of_arrival(Vector2(boss_position)), boss_role == "alpha", float(saved_health))
 			continue
 		var enemy_scene := _get_enemy_scene(str(scene_path))
 		if enemy_scene == null:
@@ -359,15 +505,26 @@ func _restore_active_enemies(raw_enemies: Variant) -> void:
 		enemy.target_path = NodePath("../Player")
 		enemy.modifier_ids = MonsterModifiers.sanitize(enemy_record.get("modifiers", []))
 		if str(scene_path) == "res://desert_boss.tscn":
+			enemy.always_alert = true
 			enemy.died.connect(_on_desert_boss_died.bind(enemy))
 		else:
 			enemy.died.connect(_on_enemy_died.bind(enemy))
 		get_parent().add_child(enemy)
-		enemy.global_position = enemy_position
+		enemy.global_position = _clear_of_arrival(Vector2(enemy_position))
 		enemy.health = clampf(float(saved_health), 0.0, enemy.max_health)
 		var health_bar := enemy.get_node_or_null("HealthBar") as ProgressBar
 		if health_bar != null:
 			health_bar.value = enemy.health
+
+
+## Moves a restored monster that would be waiting on top of the player's arrival point out to
+## ARRIVAL_CLEARANCE, so returning to a level never drops the player into a fight.
+func _clear_of_arrival(world_position: Vector2) -> Vector2:
+	var offset := world_position - player.global_position
+	if offset.length() >= ARRIVAL_CLEARANCE:
+		return world_position
+	var direction := offset.normalized() if not offset.is_zero_approx() else Vector2.RIGHT.rotated(randf() * TAU)
+	return player.global_position + direction * ARRIVAL_CLEARANCE
 
 
 func _restore_level_drops(raw_drops: Variant) -> void:
@@ -493,8 +650,9 @@ func _get_level_id() -> int:
 	return GameState.get_level_id(current_scene.scene_file_path)
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if enemies_spawned >= _get_max_enemies():
+		_call_in_straggler(delta)
 		return
 
 	var camera_center := _get_camera_center()
@@ -510,6 +668,23 @@ func _physics_process(_delta: float) -> void:
 		current_region = entered_region
 
 	last_player_position = player.global_position
+
+
+## With nothing left to spawn, moves one survivor that is waiting out of range to just off-screen and sets
+## it on the player, so the last monsters of a level never have to be hunted down across the map.
+func _call_in_straggler(delta: float) -> void:
+	straggler_timer -= delta
+	if straggler_timer > 0.0:
+		return
+	straggler_timer = STRAGGLER_INTERVAL
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Wolf
+		if enemy == null or enemy.health <= 0.0 or enemy.is_alert:
+			continue
+		var direction := Vector2.RIGHT.rotated(randf() * TAU)
+		enemy.global_position = player.global_position + direction * _get_spawn_distance(direction)
+		enemy.alert()
+		return
 
 
 func _generate_nearby_scenery(center_region: Vector2i) -> void:
@@ -558,7 +733,7 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 	var safe_area := region_size * 0.39
 
 	if biome == 1:
-		_generate_desert_scenery(random, region_center, safe_area)
+		_generate_desert_scenery(random, region_center)
 		return
 	if biome == 2:
 		_generate_ice_scenery(random, region_center, safe_area)
@@ -586,26 +761,26 @@ func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, r
 	if random.randf() < 0.5:
 		var landmark: Dictionary = FOREST_LANDMARKS[random.randi() % FOREST_LANDMARKS.size()]
 		var collision: float = landmark["collision"]
-		_try_add_forest_prop(random, landmark, region_center, spread * 0.8, Vector2(collision, collision * 0.5), collision)
+		_try_add_prop(random, landmark, region_center, spread * 0.8, Vector2(collision, collision * 0.5), collision)
 
 	for _tree_index in random.randi_range(6, 9):
 		var tree: Dictionary = FOREST_TREES[random.randi() % FOREST_TREES.size()]
 		var trunk: float = tree["trunk"]
-		_try_add_forest_prop(random, tree, region_center, spread, Vector2(trunk + 30.0, 16.0), trunk)
+		_try_add_prop(random, tree, region_center, spread, Vector2(trunk + 30.0, 16.0), trunk)
 
 	for _debris_index in random.randi_range(1, 3):
 		var debris: Dictionary = FOREST_DEBRIS[random.randi() % FOREST_DEBRIS.size()]
 		var collision: float = debris["collision"]
-		_try_add_forest_prop(random, debris, region_center, spread, Vector2(collision + 10.0, 10.0), collision)
+		_try_add_prop(random, debris, region_center, spread, Vector2(collision + 10.0, 10.0), collision)
 
 	for _plant_index in random.randi_range(4, 7):
 		var plant: Dictionary = FOREST_UNDERGROWTH[random.randi() % FOREST_UNDERGROWTH.size()]
-		_try_add_forest_prop(random, plant, region_center, spread, Vector2(12.0, 8.0))
+		_try_add_prop(random, plant, region_center, spread, Vector2(12.0, 8.0))
 
 	for _cover_index in random.randi_range(6, 10):
 		var cover: Dictionary = FOREST_GROUND_COVER[random.randi() % FOREST_GROUND_COVER.size()]
 		var scale_range: Vector2 = cover["scale"]
-		_add_forest_sprite(
+		_add_flat_sprite(
 			cover["texture"],
 			region_center + _random_region_offset(random, spread),
 			random.randf_range(scale_range.x, scale_range.y),
@@ -616,7 +791,7 @@ func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, r
 func _add_forest_apple_tree(random: RandomNumberGenerator, apple_index: int, region_center: Vector2, spread: Vector2) -> void:
 	for _attempt in 32:
 		var base_position := region_center + _random_region_offset(random, spread * 0.8)
-		if not _claim_forest_spot(base_position, Vector2(34.0, 14.0)):
+		if not _claim_prop_spot(base_position, Vector2(34.0, 14.0)):
 			continue
 		var apple_tree := APPLE_TREE_SCENE.instantiate() as AppleTree
 		apple_tree.tree_index = apple_index
@@ -627,22 +802,26 @@ func _add_forest_apple_tree(random: RandomNumberGenerator, apple_index: int, reg
 	push_warning("No room for forest apple tree %d." % apple_index)
 
 
-## Places a standing prop at a free random spot, with a solid base when collision_radius > 0.
-func _try_add_forest_prop(
+## Places a standing prop at a free random spot, with a solid base when collision_radius > 0 and a
+## sun shadow on the sand when cast_shadow is set.
+func _try_add_prop(
 	random: RandomNumberGenerator,
 	prop: Dictionary,
 	region_center: Vector2,
 	spread: Vector2,
 	footprint: Vector2,
-	collision_radius := 0.0
+	collision_radius := 0.0,
+	cast_shadow := false
 ) -> void:
 	var scale_range: Vector2 = prop["scale"]
 	var uniform_scale := random.randf_range(scale_range.x, scale_range.y)
 	for _attempt in 12:
 		var base_position := region_center + _random_region_offset(random, spread)
-		if not _claim_forest_spot(base_position, footprint * maxf(uniform_scale, 0.6), collision_radius > 0.0):
+		if not _claim_prop_spot(base_position, footprint * maxf(uniform_scale, 0.6), collision_radius > 0.0):
 			continue
-		var sprite := _make_forest_sprite(prop["texture"], uniform_scale)
+		var sprite := _make_standing_sprite(prop["texture"], uniform_scale)
+		if cast_shadow:
+			_add_prop_shadow(sprite)
 		if collision_radius <= 0.0:
 			sprite.position = base_position
 			get_parent().call_deferred("add_child", sprite)
@@ -663,15 +842,15 @@ func _try_add_forest_prop(
 
 
 ## Flat ground cover drawn below characters; it may overlap anything.
-func _add_forest_sprite(texture: Texture2D, world_position: Vector2, uniform_scale: float, z := 0) -> void:
-	var sprite := _make_forest_sprite(texture, uniform_scale)
+func _add_flat_sprite(texture: Texture2D, world_position: Vector2, uniform_scale: float, z := 0) -> void:
+	var sprite := _make_standing_sprite(texture, uniform_scale)
 	sprite.position = world_position
 	sprite.z_index = z
 	get_parent().call_deferred("add_child", sprite)
 
 
 ## A sprite whose node origin is the bottom of the art, so y-sorting treats it as standing on the ground.
-func _make_forest_sprite(texture: Texture2D, uniform_scale: float) -> Sprite2D:
+func _make_standing_sprite(texture: Texture2D, uniform_scale: float) -> Sprite2D:
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -682,10 +861,10 @@ func _make_forest_sprite(texture: Texture2D, uniform_scale: float) -> Sprite2D:
 
 ## Reserves a footprint (half size, resting on base_position) if it is clear of other props and,
 ## for solid props, of the player's entry point.
-func _claim_forest_spot(base_position: Vector2, footprint: Vector2, solid := true) -> bool:
+func _claim_prop_spot(base_position: Vector2, footprint: Vector2, solid := true) -> bool:
 	var center := base_position - Vector2(0.0, footprint.y)
 	var entry_point := region_origin - player_camera.offset / player_camera.zoom
-	if solid and center.distance_to(entry_point) < FOREST_SPAWN_CLEARING + footprint.x:
+	if solid and center.distance_to(entry_point) < PROP_SPAWN_CLEARING + footprint.x:
 		return false
 	if not _has_scenery_clearance(center, footprint):
 		return false
@@ -695,60 +874,185 @@ func _claim_forest_spot(base_position: Vector2, footprint: Vector2, solid := tru
 	return true
 
 
-func _generate_desert_scenery(
+func _generate_desert_scenery(random: RandomNumberGenerator, region_center: Vector2) -> void:
+	# Regions tile edge to edge, so desert props may use the whole region.
+	var spread := region_size * 0.48
+	var floor_detail := DesertFloor.new()
+	floor_detail.seed_value = random.randi()
+	floor_detail.half_extents = region_size * 0.5
+	floor_detail.position = region_center
+	floor_detail.z_index = -8
+	get_parent().call_deferred("add_child", floor_detail)
+
+	for _decal_index in random.randi_range(4, 6):
+		var decal: Dictionary = DESERT_GROUND_DECALS[random.randi() % DESERT_GROUND_DECALS.size()]
+		var scale_range: Vector2 = decal["scale"]
+		var sprite := _make_standing_sprite(decal["texture"], random.randf_range(scale_range.x, scale_range.y))
+		sprite.position = region_center + _random_region_offset(random, spread)
+		sprite.flip_h = random.randf() < 0.5
+		sprite.z_index = -6
+		get_parent().call_deferred("add_child", sprite)
+
+	if random.randf() < 0.55:
+		var landmark: Dictionary = DESERT_LANDMARKS[random.randi() % DESERT_LANDMARKS.size()]
+		var collision: float = landmark["collision"]
+		_try_add_prop(random, landmark, region_center, spread * 0.8, Vector2(collision, collision * 0.5), collision, true)
+
+	if random.randf() < 0.5:
+		_try_add_cluster(random, _make_rock_outcrop(random), region_center, spread * 0.85, Vector2(80.0, 34.0))
+	if random.randf() < 0.3:
+		_try_add_cluster(random, _make_ruins(random), region_center, spread * 0.8, Vector2(160.0, 52.0))
+	for _stand_index in random.randi_range(3, 4):
+		_try_add_cluster(random, _make_cactus_stand(random), region_center, spread, Vector2(60.0, 26.0))
+	for _patch_index in random.randi_range(1, 2):
+		_try_add_cluster(random, _make_plant_patch(random), region_center, spread, Vector2(50.0, 22.0))
+
+	for _cactus_index in random.randi_range(5, 8):
+		var cactus: Dictionary = DESERT_CACTI[random.randi() % DESERT_CACTI.size()]
+		var trunk: float = cactus["trunk"]
+		_try_add_prop(random, cactus, region_center, spread, Vector2(trunk + 18.0, 12.0), trunk, true)
+
+	for _rock_index in random.randi_range(1, 2):
+		var rock: Dictionary = DESERT_ROCKS[random.randi() % DESERT_ROCKS.size()]
+		var collision: float = rock["collision"]
+		_try_add_prop(random, rock, region_center, spread, Vector2(collision + 10.0, 10.0), collision, true)
+
+	for _brush_index in random.randi_range(7, 11):
+		var brush: Dictionary = DESERT_BRUSH[random.randi() % DESERT_BRUSH.size()]
+		_try_add_prop(random, brush, region_center, spread, Vector2(12.0, 8.0), 0.0, true)
+
+
+## A rocky outcrop: one tall spire or rock heap with smaller rocks and scrub gathered around its base.
+func _make_rock_outcrop(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var spire: Dictionary = DESERT_OUTCROP_SPIRES[random.randi() % DESERT_OUTCROP_SPIRES.size()]
+	var pieces: Array[Dictionary] = [{
+		"texture": spire["texture"], "scale": _random_scale(random, spire),
+		"offset": Vector2.ZERO, "collision": spire["collision"],
+	}]
+	for _rock in random.randi_range(2, 3):
+		var rock: Dictionary = DESERT_ROCKS[random.randi() % DESERT_ROCKS.size()]
+		pieces.append({
+			"texture": rock["texture"], "scale": random.randf_range(1.0, 1.3),
+			"offset": _cluster_offset(random, 30.0, 58.0), "collision": rock["collision"],
+		})
+	for _scrub in random.randi_range(1, 2):
+		var brush: Dictionary = DESERT_BRUSH[random.randi() % DESERT_BRUSH.size()]
+		pieces.append({
+			"texture": brush["texture"], "scale": _random_scale(random, brush),
+			"offset": _cluster_offset(random, 50.0, 76.0), "collision": 0.0,
+		})
+	return pieces
+
+
+## Ruins: a crumbling wall with weathered pillars and rubble scattered around it.
+func _make_ruins(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = [{
+		"texture": DESERT_RUIN_WALL, "scale": random.randf_range(1.0, 1.15),
+		"offset": Vector2.ZERO, "collision": 34.0,
+	}]
+	for index in random.randi_range(2, 4):
+		# Pillars stand in a loose row, as if they once held up a roof.
+		var side := -1.0 if index % 2 == 0 else 1.0
+		pieces.append({
+			"texture": DESERT_PILLARS[random.randi() % DESERT_PILLARS.size()],
+			"scale": random.randf_range(0.9, 1.05),
+			"offset": Vector2(side * random.randf_range(75.0, 115.0), random.randf_range(-24.0, 30.0)),
+			"collision": 11.0,
+		})
+	for _rubble in random.randi_range(1, 2):
+		pieces.append({
+			"texture": DESERT_RUBBLE_LOW, "scale": random.randf_range(0.8, 1.0),
+			"offset": _cluster_offset(random, 50.0, 90.0), "collision": 0.0,
+		})
+	return pieces
+
+
+## A stand of cacti: one tall saguaro with smaller cacti and scrub at its feet.
+func _make_cactus_stand(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = [{
+		"texture": DESERT_STAND_SAGUAROS[random.randi() % DESERT_STAND_SAGUAROS.size()],
+		"scale": random.randf_range(1.5, 1.75), "offset": Vector2.ZERO, "collision": 9.0,
+	}]
+	for _cactus in random.randi_range(1, 2):
+		var cactus: Dictionary = DESERT_CACTI[random.randi() % DESERT_CACTI.size()]
+		pieces.append({
+			"texture": cactus["texture"], "scale": _random_scale(random, cactus) * 0.8,
+			"offset": _cluster_offset(random, 28.0, 52.0), "collision": cactus["trunk"],
+		})
+	for _scrub in random.randi_range(1, 2):
+		var brush: Dictionary = DESERT_BRUSH[random.randi() % DESERT_BRUSH.size()]
+		pieces.append({
+			"texture": brush["texture"], "scale": _random_scale(random, brush) * 0.9,
+			"offset": _cluster_offset(random, 36.0, 64.0), "collision": 0.0,
+		})
+	return pieces
+
+
+## A patch of low desert plants growing together.
+func _make_plant_patch(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = []
+	for index in random.randi_range(3, 5):
+		var plant: Dictionary = DESERT_PATCH_PLANTS[random.randi() % DESERT_PATCH_PLANTS.size()]
+		pieces.append({
+			"texture": plant["texture"], "scale": _random_scale(random, plant),
+			"offset": Vector2.ZERO if index == 0 else _cluster_offset(random, 22.0, 48.0),
+			"collision": plant["collision"],
+		})
+	return pieces
+
+
+## A scale within a prop table entry.s "scale" range.
+func _random_scale(random: RandomNumberGenerator, prop: Dictionary) -> float:
+	var scale_range: Vector2 = prop["scale"]
+	return random.randf_range(scale_range.x, scale_range.y)
+
+
+## A spot around a cluster's centre, flattened for the top-down view.
+func _cluster_offset(random: RandomNumberGenerator, min_radius: float, max_radius: float) -> Vector2:
+	var angle := random.randf() * TAU
+	return Vector2(cos(angle), sin(angle) * 0.5) * random.randf_range(min_radius, max_radius)
+
+
+## Places a group of props as one solid set piece. Each piece is {texture, scale, offset, collision};
+## pieces with collision > 0 get their own collision circle.
+func _try_add_cluster(
 	random: RandomNumberGenerator,
+	pieces: Array[Dictionary],
 	region_center: Vector2,
-	safe_area: Vector2
+	spread: Vector2,
+	footprint: Vector2
 ) -> void:
-	for _rock_index in range(random.randi_range(1, 2)):
-		_add_scenery_sprite(
-			BOULDERS_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.05),
-			44.0,
-			Vector2(0.0, 14.0)
-		)
+	for _attempt in 12:
+		var base_position := region_center + _random_region_offset(random, spread)
+		if not _claim_prop_spot(base_position, footprint):
+			continue
+		var cluster := StaticBody2D.new()
+		cluster.collision_mask = 0
+		cluster.position = base_position
+		# Pieces further back are drawn first so nearer ones overlap them.
+		pieces.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["offset"].y < b["offset"].y)
+		for piece in pieces:
+			var piece_scale: float = piece["scale"]
+			var sprite := _make_standing_sprite(piece["texture"], piece_scale)
+			sprite.position = piece["offset"]
+			sprite.flip_h = random.randf() < 0.5
+			_add_prop_shadow(sprite)
+			cluster.add_child(sprite)
+			var collision_radius: float = piece["collision"]
+			if collision_radius > 0.0:
+				var collision := CollisionShape2D.new()
+				var shape := CircleShape2D.new()
+				shape.radius = collision_radius * piece_scale
+				collision.shape = shape
+				collision.position = sprite.position + Vector2(0.0, -shape.radius * 0.6)
+				cluster.add_child(collision)
+		get_parent().call_deferred("add_child", cluster)
+		return
 
-	for _cactus_index in range(random.randi_range(3, 5)):
-		_add_scenery_sprite(
-			DESERT_CACTUS_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.15),
-			18.0,
-			Vector2(0.0, 55.0)
-		)
 
-	for _dune_index in range(random.randi_range(1, 2)):
-		_add_scenery_sprite(
-			DESERT_DUNES_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.1)
-		)
-
-	if random.randf() < 0.38:
-		_add_scenery_sprite(
-			DESERT_OASIS_TEXTURE,
-			region_center + _random_region_offset(random, safe_area * 0.65),
-			random.randf_range(0.75, 1.0)
-		)
-
-	if random.randf() < 0.2:
-		_add_scenery_sprite(
-			DESERT_RUINS_TEXTURE,
-			region_center + _random_region_offset(random, safe_area * 0.7),
-			random.randf_range(0.75, 1.1),
-			72.0,
-			Vector2(0.0, 15.0)
-		)
-
-	if random.randf() < 0.24:
-		_add_scenery_sprite(
-			CAVE_TEXTURE,
-			region_center + _random_region_offset(random, safe_area * 0.65),
-			random.randf_range(0.8, 1.05),
-			66.0,
-			Vector2(0.0, 44.0)
-		)
+## A sun shadow on the sand under a standing sprite (origin at the bottom of its art).
+func _add_prop_shadow(sprite: Sprite2D) -> void:
+	SunShadow.attach(sprite, Vector2(0.0, -2.0), sprite.texture.get_width() * 1.1)
 
 
 func _generate_ice_scenery(
@@ -957,6 +1261,8 @@ func _spawn_enemy(direction: Vector2) -> bool:
 	enemy.died.connect(_on_enemy_died.bind(enemy))
 	get_parent().add_child(enemy)
 	enemy.global_position = player.global_position + direction * _get_spawn_distance(direction)
+	# Fresh spawns are encounters ahead of the player, so they come straight at them.
+	enemy.alert()
 	enemies_spawned += 1
 	return true
 
@@ -968,6 +1274,7 @@ func _spawn_desert_boss() -> void:
 		set_physics_process(false)
 		return
 
+	boss.always_alert = true
 	boss.target_path = NodePath("../Player")
 	boss.died.connect(_on_desert_boss_died.bind(boss))
 	get_parent().add_child(boss)
@@ -976,6 +1283,8 @@ func _spawn_desert_boss() -> void:
 		spawn_direction = Vector2.RIGHT
 	boss.global_position = player.global_position + spawn_direction * _get_spawn_distance(spawn_direction)
 	boss_spawned = true
+	boss_incoming.emit()
+	boss_progress_changed.emit(0, 1)
 
 
 func _get_spawn_distance(direction: Vector2) -> float:
@@ -1046,6 +1355,7 @@ func _spawn_boss_wolf(world_position: Vector2, is_alpha: bool, saved_health := -
 
 	wolf.target_path = NodePath("../Player")
 	wolf.set_meta(BOSS_ROLE_META, "alpha" if is_alpha else "pack")
+	wolf.always_alert = true
 	if is_alpha:
 		wolf.name = "AlphaWolf"
 		wolf.scale = Vector2.ONE * ALPHA_WOLF_SCALE

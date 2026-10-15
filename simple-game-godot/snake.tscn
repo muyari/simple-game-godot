@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://Snake.gd" id="1_snake"]
-[ext_resource type="Texture2D" path="res://textures/snake.svg" id="2_texture"]
+[ext_resource type="Texture2D" path="res://textures/desert_snake_atlas.png" id="2_texture"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_snake"]
 radius = 12.0
@@ -9,20 +9,30 @@ height = 28.0
 
 [node name="Snake" type="CharacterBody2D"]
 script = ExtResource("1_snake")
+frame_size = Vector2i(72, 80)
+idle_frames = PackedInt32Array(0, 1, 2, 1)
+move_frames = PackedInt32Array(3, 4, 5, 4)
+attack_frames = PackedInt32Array(6, 6, 8)
+idle_frame_duration = 0.35
+move_frame_duration = 0.13
+move_bob = 0.0
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(0, -12)
+scale = Vector2(0.6, 0.6)
 texture = ExtResource("2_texture")
 region_enabled = true
-region_rect = Rect2(0, 0, 64, 64)
+region_rect = Rect2(0, 0, 72, 80)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_snake")
 
 [node name="HealthBar" type="ProgressBar" parent="."]
 offset_left = -24.0
-offset_top = -39.0
+offset_top = -42.0
 offset_right = 24.0
-offset_bottom = -33.0
+offset_bottom = -36.0
 show_percentage = false
 
 [node name="Swipe" type="Line2D" parent="."]
