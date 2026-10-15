@@ -12,6 +12,7 @@ config_version=5
 
 config/name="Exiles Reach"
 run/main_scene="res://Menu.tscn"
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -23,6 +24,7 @@ GameState="*res://GameState.gd"
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=4
 
 [input]
 
@@ -54,3 +56,5 @@ move_down={
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

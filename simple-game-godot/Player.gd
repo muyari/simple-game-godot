@@ -68,6 +68,11 @@ var health_heal_accumulator := 0.0
 var mana_heal_accumulator := 0.0
 var potion_ui_timer := 0.0
 var facing := Vector2.DOWN
+## Direction attacks and skills fire in. Matches facing unless free_aim is on
+## (touch controls) or an aim stick is held.
+var aim_direction := Vector2.DOWN
+var aim_held := false
+var free_aim := false
 var sprite_base_scale := Vector2.ONE
 var witch_attack_time_remaining := 0.0
 var chill_time_remaining := 0.0
@@ -254,7 +259,9 @@ func _physics_process(delta: float) -> void:
 			movement_velocity += knockback_velocity
 			knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 900.0 * delta)
 		velocity = velocity.move_toward(movement_velocity, ACCELERATION * delta)
-		facing = _cardinal_direction(direction)
+		if not aim_held:
+			facing = _cardinal_direction(direction)
+			aim_direction = direction.normalized() if free_aim else facing
 		animation_time += delta
 	else:
 		var movement_velocity := knockback_velocity
@@ -262,7 +269,7 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(movement_velocity, DECELERATION * delta)
 		animation_time = 0.0
 
-	if Input.is_action_just_pressed("ui_accept"):
+	if Input.is_action_just_pressed("ui_accept") or aim_held:
 		_use_primary_attack()
 
 	_update_sword(delta)
@@ -329,6 +336,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		_open_town_portal()
 
 
+## Held aim from a touch stick: turns the player and keeps the primary attack
+## firing in that direction until release_aim().
+func set_aim(direction: Vector2) -> void:
+	if direction.is_zero_approx():
+		return
+	aim_held = true
+	aim_direction = direction.normalized()
+	facing = _cardinal_direction(aim_direction)
+
+
+func release_aim() -> void:
+	aim_held = false
+
+
+func tap_attack() -> void:
+	if health <= 0 or is_casting_town_portal:
+		return
+	_use_primary_attack()
+
+
 func activate_skill_slot(slot: String) -> void:
 	if health <= 0 or is_casting_town_portal:
 		return
@@ -351,6 +378,15 @@ func activate_skill_slot(slot: String) -> void:
 
 
 func _try_interact() -> bool:
+	var nearest_interactable := get_interact_target()
+	if nearest_interactable == null:
+		return false
+	nearest_interactable.call("interact", self)
+	return true
+
+
+## Nearest interactable the player is in range of, or null.
+func get_interact_target() -> Node2D:
 	var nearest_interactable: Node2D
 	var nearest_distance_squared := INF
 	for candidate in get_tree().get_nodes_in_group("interactables"):
@@ -365,11 +401,13 @@ func _try_interact() -> bool:
 		if distance_squared < nearest_distance_squared:
 			nearest_interactable = interactable
 			nearest_distance_squared = distance_squared
+	return nearest_interactable
 
-	if nearest_interactable == null:
+
+func try_interact() -> bool:
+	if health <= 0 or is_casting_town_portal:
 		return false
-	nearest_interactable.call("interact", self)
-	return true
+	return _try_interact()
 
 
 func _use_primary_attack() -> void:
@@ -380,7 +418,7 @@ func _use_primary_attack() -> void:
 	elif selected_character == "Ranger":
 		if ranger_attack_cooldown_remaining <= 0.0:
 			_spawn_ranger_arrow(
-				facing,
+				aim_direction,
 				_get_ranger_hit_damage(1.5 + float(get_weapon_damage_bonus()) * 0.5)
 			)
 			ranger_attack_cooldown_remaining = 0.42
@@ -505,7 +543,7 @@ func _cast_assigned_ranger_skill(slot: String) -> bool:
 	match skill_id:
 		"power_shot":
 			_spawn_ranger_arrow(
-				facing,
+				aim_direction,
 				_get_ranger_hit_damage(
 					4.0 + float(rank) * 1.8 + float(get_weapon_damage_bonus())
 				),
@@ -516,15 +554,15 @@ func _cast_assigned_ranger_skill(slot: String) -> bool:
 			var damage := _get_ranger_hit_damage(
 				1.5 + float(rank) * 1.0 + float(get_weapon_damage_bonus()) * 0.5
 			)
-			_spawn_ranger_arrow(facing.rotated(-spread), damage)
-			_spawn_ranger_arrow(facing, damage)
-			_spawn_ranger_arrow(facing.rotated(spread), damage)
+			_spawn_ranger_arrow(aim_direction.rotated(-spread), damage)
+			_spawn_ranger_arrow(aim_direction, damage)
+			_spawn_ranger_arrow(aim_direction.rotated(spread), damage)
 		"explosive_arrow":
 			var trap_multiplier := 1.0 + float(
 				GameState.get_ranger_passive_stat_totals().get("trap_efficiency", 0.0)
 			)
 			_spawn_ranger_arrow(
-				facing,
+				aim_direction,
 				_get_ranger_hit_damage(
 					2.5 + float(rank) * 1.2 + float(get_weapon_damage_bonus())
 				),
@@ -685,7 +723,7 @@ func _warrior_leap_slam(rank: int) -> void:
 			nearest_distance = distance
 			nearest_enemy = enemy_node
 
-	var leap_direction := facing
+	var leap_direction := aim_direction
 	if nearest_enemy != null:
 		leap_direction = (nearest_enemy.global_position - global_position).normalized()
 	var leap_distance := mini(roundi(nearest_distance - 58.0), 150) if nearest_enemy != null else 110
@@ -719,15 +757,15 @@ func _start_warrior_skill_animation(skill_id: String) -> void:
 	sprite.scale = sprite_base_scale
 	sprite.modulate = Color.WHITE
 
-	var start_offset := -facing * 4.0
-	var strike_offset := facing * 8.0
+	var start_offset := -aim_direction * 4.0
+	var strike_offset := aim_direction * 8.0
 	var tint := Color.WHITE
 	match skill_id:
 		"heavy_strike":
-			strike_offset += facing * 3.0
+			strike_offset += aim_direction * 3.0
 			tint = Color("#ffe4a0")
 		"shield_bash":
-			strike_offset += facing * 9.0
+			strike_offset += aim_direction * 9.0
 			tint = Color("#9de8ff")
 		"cleave":
 			tint = Color("#ffd08a")
@@ -780,7 +818,7 @@ func _get_facing_enemy(max_distance: float, min_dot: float) -> Node2D:
 		var to_enemy := enemy_node.global_position - global_position
 		var distance := to_enemy.length()
 		if distance <= nearest_distance and distance > 0.0 \
-				and to_enemy.normalized().dot(facing) >= min_dot:
+				and to_enemy.normalized().dot(aim_direction) >= min_dot:
 			nearest_enemy = enemy_node
 			nearest_distance = distance
 	return nearest_enemy
@@ -801,7 +839,7 @@ func _damage_enemies_in_radius(radius: float, damage: float, facing_only: bool) 
 		if to_enemy.length() > radius:
 			continue
 		if facing_only and not to_enemy.is_zero_approx() \
-				and to_enemy.normalized().dot(facing) < -0.25:
+				and to_enemy.normalized().dot(aim_direction) < -0.25:
 			continue
 		enemy.call("take_damage", damage * _get_war_cry_attack_multiplier())
 
@@ -912,10 +950,10 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 
 func _cast_witch_firebolt(rank: int) -> void:
 	var projectile: Fireball = FIREBALL_SCENE.instantiate()
-	projectile.direction = facing
+	projectile.direction = aim_direction
 	projectile.direct_damage = (1.2 + float(rank) * 0.8 + get_weapon_damage_bonus()) * get_spell_damage_multiplier()
 	get_tree().current_scene.add_child(projectile)
-	projectile.global_position = global_position + facing * 20.0
+	projectile.global_position = global_position + aim_direction * 20.0
 
 
 func _cast_witch_frost_nova(rank: int) -> void:
@@ -1068,12 +1106,12 @@ func _cast_projectile(is_ice: bool, mana_cost: int) -> void:
 		mana -= mana_cost
 		mana_changed.emit(mana, get_max_mana())
 	var fireball: Fireball = FIREBALL_SCENE.instantiate()
-	fireball.direction = facing
+	fireball.direction = aim_direction
 	fireball.is_ice = is_ice
 	if is_ice:
 		fireball.ice_damage = _get_primary_attack_damage()
 	get_tree().current_scene.add_child(fireball)
-	fireball.global_position = global_position + facing * 20.0
+	fireball.global_position = global_position + aim_direction * 20.0
 	if selected_character == "Witch":
 		witch_attack_time_remaining = WITCH_ATTACK_DURATION
 
@@ -1356,6 +1394,16 @@ func get_damage_reduction() -> int:
 	return reduction
 
 
+func use_health_potion() -> void:
+	if health > 0:
+		_use_health_potion()
+
+
+func use_mana_potion() -> void:
+	if health > 0:
+		_use_mana_potion()
+
+
 func _use_health_potion() -> void:
 	if health_potions <= 0 or health >= get_max_health() or health_potion_time > 0.0:
 		return
@@ -1521,7 +1569,7 @@ func _update_sprite(is_moving: bool) -> void:
 
 
 func _update_sword(delta: float) -> void:
-	sword.position = facing * 8.0
+	sword.position = aim_direction * 8.0
 	if attack_time_remaining > 0.0:
 		attack_time_remaining = maxf(attack_time_remaining - delta, 0.0)
 		var special_swing := warrior_skill_animation_id in [
@@ -1539,7 +1587,7 @@ func _update_sword(delta: float) -> void:
 			"cleave":
 				swing_arc = 2.8
 		var progress := 1.0 - attack_time_remaining / swing_duration
-		sword.rotation = facing.angle() + lerpf(-swing_arc, swing_arc, progress)
+		sword.rotation = aim_direction.angle() + lerpf(-swing_arc, swing_arc, progress)
 		match warrior_skill_animation_id:
 			"heavy_strike":
 				sword.modulate = Color("#ffe4a0")
@@ -1557,7 +1605,7 @@ func _update_sword(delta: float) -> void:
 			_damage_wolves_in_swing()
 			attack_hit_applied = true
 	else:
-		sword.rotation = facing.angle()
+		sword.rotation = aim_direction.angle()
 		sword.modulate = Color.WHITE
 		sword.hide()
 
@@ -1569,7 +1617,7 @@ func _damage_wolves_in_swing() -> void:
 
 		var enemy_node := enemy as Node2D
 		var to_enemy := enemy_node.global_position - global_position
-		if to_enemy.length() <= SWORD_REACH and to_enemy.normalized().dot(facing) >= SWORD_HIT_DOT_THRESHOLD:
+		if to_enemy.length() <= SWORD_REACH and to_enemy.normalized().dot(aim_direction) >= SWORD_HIT_DOT_THRESHOLD:
 			enemy.call("take_damage", _get_primary_attack_damage())
 
 
@@ -1624,7 +1672,7 @@ func _draw() -> void:
 func _draw_warrior_skill_animation() -> void:
 	var progress := 1.0 - warrior_skill_animation_time_remaining / 0.58
 	var alpha := 1.0 - progress
-	var facing_angle := facing.angle()
+	var facing_angle := aim_direction.angle()
 	match warrior_skill_animation_id:
 		"heavy_strike":
 			draw_arc(
@@ -1637,7 +1685,7 @@ func _draw_warrior_skill_animation() -> void:
 				5.0
 			)
 		"shield_bash":
-			var impact_center := facing * 34.0
+			var impact_center := aim_direction * 34.0
 			draw_arc(
 				impact_center,
 				lerpf(5.0, 29.0, progress),

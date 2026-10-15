@@ -60,6 +60,7 @@ var pause_menu: PauseMenu
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	passive_tree_button.visible = player.selected_character in ["Witch", "Ranger"]
+	_build_touch_controls()
 	_build_pause_menu()
 	_connect_skill_slot_clicks()
 	_build_experience_bar()
@@ -257,6 +258,15 @@ func _unhandled_input(event: InputEvent) -> void:
 					and (waystone_overlay == null or not waystone_overlay.visible):
 				_open_ranger_passive_tree()
 				get_viewport().set_input_as_handled()
+
+
+func _build_touch_controls() -> void:
+	if not TouchControls.is_supported():
+		return
+	var touch_controls := TouchControls.create(player)
+	add_child(touch_controls)
+	# First child, so every other HUD control sits above it and takes touches first.
+	move_child(touch_controls, 0)
 
 
 func _build_pause_menu() -> void:
