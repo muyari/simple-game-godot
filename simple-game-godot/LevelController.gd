@@ -17,6 +17,10 @@ const NEUROCORE_DRONE_SCENE = preload("res://neurocore_drone.tscn")
 const TITANFORGE_EXO_UNIT_SCENE = preload("res://titanforge_exo_unit.tscn")
 const PHASE_SHIFT_INFILTRATOR_SCENE = preload("res://phase_shift_infiltrator.tscn")
 const DESERT_BOSS_SCENE = preload("res://desert_boss.tscn")
+const ICE_GOLEM_SCENE = preload("res://ice_golem.tscn")
+const ICE_BOSS_SCENE = preload("res://ice_boss.tscn")
+## Single-monster level bosses; beating one clears the level.
+const LEVEL_BOSS_SCENES: Array[String] = ["res://desert_boss.tscn", "res://ice_boss.tscn"]
 const ITEM_PICKUP_SCENE = preload("res://item_pickup.tscn")
 const GOLD_PICKUP_SCENE = preload("res://gold_pickup.tscn")
 const TREASURE_CHEST_SCENE = preload("res://treasure_chest.tscn")
@@ -208,8 +212,87 @@ const DESERT_GROUND_DECALS: Array[Dictionary] = [
 	{"texture": preload("res://textures/desert_pebbles.png"), "scale": Vector2(1.1, 1.3)},
 	{"texture": preload("res://textures/desert_sinkhole.png"), "scale": Vector2(1.1, 1.3)},
 ]
-const ICE_GROUND_TEXTURE = preload("res://textures/ice_caves_ground.svg")
-const FROZEN_TREE_TEXTURE = preload("res://textures/frozen_ice_tree.svg")
+const ICE_GROUND_TEXTURE = preload("res://textures/ice_snow_ground.png")
+## The snow tile is pixel art; drawn at this scale its ripples match the props.
+const ICE_GROUND_SCALE := 2.0
+const ICE_BLOCK = preload("res://textures/ice_block.png")
+## Carved ice columns for frozen ruins (see _make_frozen_ruins).
+const ICE_PILLARS: Array[Texture2D] = [
+	preload("res://textures/ice_pillar_twisted.png"),
+	preload("res://textures/ice_pillar_ornate.png"),
+	preload("res://textures/ice_pillar_slim.png"),
+]
+const ICE_CRYSTALS: Array[Dictionary] = [
+	{"texture": preload("res://textures/ice_crystals_a.png"), "scale": Vector2(0.8, 1.0), "collision": 16.0},
+	{"texture": preload("res://textures/ice_crystals_b.png"), "scale": Vector2(0.8, 1.0), "collision": 16.0},
+	{"texture": preload("res://textures/ice_crystals_c.png"), "scale": Vector2(0.8, 1.0), "collision": 16.0},
+	{"texture": preload("res://textures/ice_spike_tall.png"), "scale": Vector2(0.9, 1.1), "collision": 7.0},
+	{"texture": preload("res://textures/ice_spike_short.png"), "scale": Vector2(0.9, 1.1), "collision": 7.0},
+]
+## Frosted cave rock spires, centrepieces for rock outcrops (see _make_ice_outcrop).
+const ICE_STALAGMITES: Array[Dictionary] = [
+	{"texture": preload("res://textures/ice_stalagmite_a.png"), "scale": Vector2(0.95, 1.15), "collision": 12.0},
+	{"texture": preload("res://textures/ice_stalagmite_b.png"), "scale": Vector2(0.95, 1.15), "collision": 12.0},
+	{"texture": preload("res://textures/ice_stalagmite_c.png"), "scale": Vector2(0.95, 1.15), "collision": 12.0},
+	{"texture": preload("res://textures/ice_stalagmite_d.png"), "scale": Vector2(0.95, 1.15), "collision": 12.0},
+	{"texture": preload("res://textures/ice_stalagmite_e.png"), "scale": Vector2(0.95, 1.15), "collision": 11.0},
+]
+const ICE_ROCKS: Array[Dictionary] = [
+	{"texture": preload("res://textures/ice_rock_a.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_b.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_c.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+	{"texture": preload("res://textures/ice_rock_d.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_e.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_f.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+	{"texture": preload("res://textures/ice_rock_g.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_h.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_i.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_j.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_k.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+	{"texture": preload("res://textures/ice_rock_l.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_m.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_n.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_o.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_p.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_q.png"), "scale": Vector2(0.65, 0.8), "collision": 24.0},
+	{"texture": preload("res://textures/ice_rock_r.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+	{"texture": preload("res://textures/ice_rock_s.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+	{"texture": preload("res://textures/ice_rock_low.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+	{"texture": preload("res://textures/ice_rock_pile_a.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+	{"texture": preload("res://textures/ice_rock_pile_b.png"), "scale": Vector2(0.65, 0.8), "collision": 22.0},
+]
+## Frozen tree stumps, solid at the trunk.
+const ICE_STUMPS: Array[Dictionary] = [
+	{"texture": preload("res://textures/ice_stump_a.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/ice_stump_b.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/ice_stump_c.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/ice_stump_d.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/ice_stump_e.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/ice_stump_f.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/ice_stump_g.png"), "scale": Vector2(0.7, 0.85), "collision": 16.0},
+]
+## Low heaps of snow that characters wade through.
+const ICE_SNOW_PILES: Array[Dictionary] = [
+	{"texture": preload("res://textures/ice_snow_pile_a.png"), "scale": Vector2(0.6, 0.8)},
+	{"texture": preload("res://textures/ice_snow_pile_b.png"), "scale": Vector2(0.6, 0.8)},
+	{"texture": preload("res://textures/ice_snow_pile_c.png"), "scale": Vector2(0.6, 0.8)},
+	{"texture": preload("res://textures/ice_drift_small.png"), "scale": Vector2(0.9, 1.1)},
+]
+## Long wind-blown drifts, drawn flat under characters.
+const ICE_DRIFTS: Array[Dictionary] = [
+	{"texture": preload("res://textures/ice_drift_wide.png"), "scale": Vector2(0.8, 1.05)},
+	{"texture": preload("res://textures/ice_drift_wave.png"), "scale": Vector2(0.8, 1.05)},
+	{"texture": preload("res://textures/ice_drift_mid.png"), "scale": Vector2(0.8, 1.05)},
+	{"texture": preload("res://textures/ice_drift_round.png"), "scale": Vector2(0.8, 1.05)},
+	{"texture": preload("res://textures/ice_drift_large.png"), "scale": Vector2(0.8, 1.05)},
+]
+## Flat snow detail drawn under everything: scattered chunks of snow and ice.
+const ICE_GROUND_DECALS: Array[Dictionary] = [
+	{"texture": preload("res://textures/ice_snow_chunks_a.png"), "scale": Vector2(0.9, 1.1)},
+	{"texture": preload("res://textures/ice_snow_chunks_b.png"), "scale": Vector2(0.9, 1.1)},
+	{"texture": preload("res://textures/ice_snow_chunks_c.png"), "scale": Vector2(0.9, 1.1)},
+	{"texture": preload("res://textures/ice_drift_small.png"), "scale": Vector2(1.0, 1.2)},
+]
 const AI_GROUND_TEXTURE = preload("res://textures/futuristic_ai_ground.svg")
 const AI_RELAY_PYLON_TEXTURE = preload("res://textures/ai_relay_pylon.svg")
 const AI_SERVER_STACK_TEXTURE = preload("res://textures/ai_server_stack.svg")
@@ -280,6 +363,8 @@ func _ready() -> void:
 			ground.scale = Vector2.ONE * DESERT_GROUND_SCALE
 		elif biome == 2:
 			ground.texture = ICE_GROUND_TEXTURE
+			ground.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			ground.scale = Vector2.ONE * ICE_GROUND_SCALE
 		elif biome == 3:
 			ground.texture = AI_GROUND_TEXTURE
 
@@ -325,6 +410,8 @@ func _ready() -> void:
 		get_parent().add_child.call_deferred(ForestAmbience.new())
 	elif biome == 1:
 		get_parent().add_child.call_deferred(DesertAmbience.new())
+	elif biome == 2:
+		get_parent().add_child.call_deferred(IceAmbience.new())
 	call_deferred("_emit_initial_progress")
 
 
@@ -332,7 +419,7 @@ func _emit_initial_progress() -> void:
 	progress_changed.emit(enemies_defeated, _get_max_enemies())
 	if biome == 0 and boss_spawned:
 		boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
-	elif biome == 1 and boss_spawned:
+	elif _has_level_boss() and boss_spawned:
 		boss_progress_changed.emit(0, 1)
 
 
@@ -504,9 +591,9 @@ func _restore_active_enemies(raw_enemies: Variant) -> void:
 
 		enemy.target_path = NodePath("../Player")
 		enemy.modifier_ids = MonsterModifiers.sanitize(enemy_record.get("modifiers", []))
-		if str(scene_path) == "res://desert_boss.tscn":
+		if str(scene_path) in LEVEL_BOSS_SCENES:
 			enemy.always_alert = true
-			enemy.died.connect(_on_desert_boss_died.bind(enemy))
+			enemy.died.connect(_on_level_boss_died.bind(enemy))
 		else:
 			enemy.died.connect(_on_enemy_died.bind(enemy))
 		get_parent().add_child(enemy)
@@ -627,6 +714,10 @@ func _get_enemy_scene(scene_path: String) -> PackedScene:
 			return PHASE_SHIFT_INFILTRATOR_SCENE
 		"res://desert_boss.tscn":
 			return DESERT_BOSS_SCENE
+		"res://ice_golem.tscn":
+			return ICE_GOLEM_SCENE
+		"res://ice_boss.tscn":
+			return ICE_BOSS_SCENE
 	return null
 
 
@@ -736,7 +827,7 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 		_generate_desert_scenery(random, region_center)
 		return
 	if biome == 2:
-		_generate_ice_scenery(random, region_center, safe_area)
+		_generate_ice_scenery(random, region_center)
 		return
 	if biome == 3:
 		_generate_ai_scenery(random, region_center, safe_area)
@@ -1050,31 +1141,162 @@ func _try_add_cluster(
 		return
 
 
-## A sun shadow on the sand under a standing sprite (origin at the bottom of its art).
+## A sun shadow on the ground under a standing sprite (origin at the bottom of its art): warm on sand,
+## cold blue on snow.
 func _add_prop_shadow(sprite: Sprite2D) -> void:
-	SunShadow.attach(sprite, Vector2(0.0, -2.0), sprite.texture.get_width() * 1.1)
+	var color := IceCreature.SHADOW_COLOR if biome == 2 else SunShadow.COLOR
+	SunShadow.attach(sprite, Vector2(0.0, -2.0), sprite.texture.get_width() * 1.1, true, color)
 
 
-func _generate_ice_scenery(
-	random: RandomNumberGenerator,
-	region_center: Vector2,
-	safe_area: Vector2
-) -> void:
-	for _tree_index in range(random.randi_range(2, 3)):
-		_add_scenery_sprite(
-			FROZEN_TREE_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.75, 1.2)
-		)
+func _generate_ice_scenery(random: RandomNumberGenerator, region_center: Vector2) -> void:
+	# Regions tile edge to edge, so ice props may use the whole region.
+	var spread := region_size * 0.48
+	var floor_detail := IceFloor.new()
+	floor_detail.seed_value = random.randi()
+	floor_detail.half_extents = region_size * 0.5
+	floor_detail.position = region_center
+	floor_detail.z_index = -8
+	get_parent().call_deferred("add_child", floor_detail)
 
-	for _ice_rock_index in range(random.randi_range(2, 4)):
-		_add_scenery_sprite(
-			BOULDERS_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.75, 1.25),
-			42.0,
-			Vector2(0.0, 16.0)
-		)
+	for _decal_index in random.randi_range(3, 5):
+		var decal: Dictionary = ICE_GROUND_DECALS[random.randi() % ICE_GROUND_DECALS.size()]
+		var sprite := _make_standing_sprite(decal["texture"], _random_scale(random, decal))
+		sprite.position = region_center + _random_region_offset(random, spread)
+		sprite.flip_h = random.randf() < 0.5
+		sprite.z_index = -6
+		get_parent().call_deferred("add_child", sprite)
+
+	for _drift_index in random.randi_range(1, 2):
+		var drift: Dictionary = ICE_DRIFTS[random.randi() % ICE_DRIFTS.size()]
+		var drift_sprite := _make_standing_sprite(drift["texture"], _random_scale(random, drift))
+		drift_sprite.position = region_center + _random_region_offset(random, spread)
+		drift_sprite.flip_h = random.randf() < 0.5
+		drift_sprite.z_index = -4
+		get_parent().call_deferred("add_child", drift_sprite)
+
+	var landmark_roll := random.randf()
+	if landmark_roll < 0.3:
+		_try_add_cluster(random, _make_frozen_ruins(random), region_center, spread * 0.8, Vector2(130.0, 48.0))
+	elif landmark_roll < 0.55:
+		var block := {"texture": ICE_BLOCK, "scale": Vector2(0.75, 0.9)}
+		_try_add_prop(random, block, region_center, spread * 0.8, Vector2(52.0, 26.0), 44.0, true)
+
+	if random.randf() < 0.5:
+		_try_add_cluster(random, _make_ice_outcrop(random), region_center, spread * 0.85, Vector2(70.0, 30.0))
+	for _garden_index in random.randi_range(1, 2):
+		_try_add_cluster(random, _make_crystal_garden(random), region_center, spread, Vector2(56.0, 24.0))
+	if random.randf() < 0.45:
+		_try_add_cluster(random, _make_stump_grove(random), region_center, spread, Vector2(64.0, 26.0))
+
+	for _rock_index in random.randi_range(3, 4):
+		var rock: Dictionary = ICE_ROCKS[random.randi() % ICE_ROCKS.size()]
+		var collision: float = rock["collision"]
+		_try_add_prop(random, rock, region_center, spread, Vector2(collision + 6.0, 10.0), collision, true)
+	for _crystal_index in random.randi_range(2, 3):
+		var crystal: Dictionary = ICE_CRYSTALS[random.randi() % ICE_CRYSTALS.size()]
+		var crystal_collision: float = crystal["collision"]
+		_try_add_prop(random, crystal, region_center, spread, Vector2(crystal_collision + 10.0, 10.0), crystal_collision, true)
+	for _stump_index in random.randi_range(1, 2):
+		var stump: Dictionary = ICE_STUMPS[random.randi() % ICE_STUMPS.size()]
+		var stump_collision: float = stump["collision"]
+		_try_add_prop(random, stump, region_center, spread, Vector2(stump_collision + 8.0, 10.0), stump_collision, true)
+	if random.randf() < 0.7:
+		var spire: Dictionary = ICE_STALAGMITES[random.randi() % ICE_STALAGMITES.size()]
+		var spire_collision: float = spire["collision"]
+		_try_add_prop(random, spire, region_center, spread, Vector2(spire_collision + 10.0, 10.0), spire_collision, true)
+	for _pile_index in random.randi_range(4, 6):
+		var pile: Dictionary = ICE_SNOW_PILES[random.randi() % ICE_SNOW_PILES.size()]
+		_try_add_prop(random, pile, region_center, spread, Vector2(16.0, 8.0), 0.0, true)
+
+
+## Frozen ruins: carved ice columns in a loose row, with crystals and snow heaped around their feet.
+func _make_frozen_ruins(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = []
+	var column_count := random.randi_range(2, 4)
+	for index in column_count:
+		# Columns stand in a row, as if they once held up a roof; some have fallen.
+		var x := (index - (column_count - 1) * 0.5) * random.randf_range(62.0, 80.0)
+		pieces.append({
+			"texture": ICE_PILLARS[random.randi() % ICE_PILLARS.size()],
+			"scale": random.randf_range(0.85, 1.0),
+			"offset": Vector2(x, random.randf_range(-10.0, 14.0)),
+			"collision": 12.0,
+		})
+	for _crystal in random.randi_range(1, 2):
+		var crystal: Dictionary = ICE_CRYSTALS[random.randi() % 3]
+		pieces.append({
+			"texture": crystal["texture"], "scale": _random_scale(random, crystal) * 0.85,
+			"offset": _cluster_offset(random, 50.0, 100.0), "collision": crystal["collision"],
+		})
+	for _pile in random.randi_range(1, 2):
+		var pile: Dictionary = ICE_SNOW_PILES[random.randi() % ICE_SNOW_PILES.size()]
+		pieces.append({
+			"texture": pile["texture"], "scale": _random_scale(random, pile),
+			"offset": _cluster_offset(random, 40.0, 110.0), "collision": 0.0,
+		})
+	return pieces
+
+
+## A frosted rock outcrop: one cave spire with snowy boulders and a snow heap gathered at its base.
+func _make_ice_outcrop(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var spire: Dictionary = ICE_STALAGMITES[random.randi() % ICE_STALAGMITES.size()]
+	var pieces: Array[Dictionary] = [{
+		"texture": spire["texture"], "scale": _random_scale(random, spire) * 1.2,
+		"offset": Vector2.ZERO, "collision": spire["collision"],
+	}]
+	for _rock in random.randi_range(2, 3):
+		var rock: Dictionary = ICE_ROCKS[random.randi() % ICE_ROCKS.size()]
+		pieces.append({
+			"texture": rock["texture"], "scale": _random_scale(random, rock),
+			"offset": _cluster_offset(random, 34.0, 60.0), "collision": rock["collision"],
+		})
+	var pile: Dictionary = ICE_SNOW_PILES[random.randi() % ICE_SNOW_PILES.size()]
+	pieces.append({
+		"texture": pile["texture"], "scale": _random_scale(random, pile),
+		"offset": _cluster_offset(random, 50.0, 76.0), "collision": 0.0,
+	})
+	return pieces
+
+
+## A bed of ice crystals pushing up through the snow.
+func _make_crystal_garden(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var centre: Dictionary = ICE_CRYSTALS[random.randi() % 3]
+	var pieces: Array[Dictionary] = [{
+		"texture": centre["texture"], "scale": _random_scale(random, centre),
+		"offset": Vector2.ZERO, "collision": centre["collision"],
+	}]
+	for _spike in random.randi_range(1, 2):
+		var spike: Dictionary = ICE_CRYSTALS[3 + random.randi() % 2]
+		pieces.append({
+			"texture": spike["texture"], "scale": _random_scale(random, spike) * 0.8,
+			"offset": _cluster_offset(random, 26.0, 48.0), "collision": spike["collision"],
+		})
+	if random.randf() < 0.6:
+		var pile: Dictionary = ICE_SNOW_PILES[random.randi() % ICE_SNOW_PILES.size()]
+		pieces.append({
+			"texture": pile["texture"], "scale": _random_scale(random, pile) * 0.85,
+			"offset": _cluster_offset(random, 34.0, 60.0), "collision": 0.0,
+		})
+	return pieces
+
+
+## What is left of a frozen grove: a few iced-over stumps half buried in snow.
+func _make_stump_grove(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = []
+	for index in random.randi_range(2, 3):
+		var stump: Dictionary = ICE_STUMPS[random.randi() % ICE_STUMPS.size()]
+		pieces.append({
+			"texture": stump["texture"], "scale": _random_scale(random, stump),
+			"offset": Vector2.ZERO if index == 0 else _cluster_offset(random, 40.0, 70.0),
+			"collision": stump["collision"],
+		})
+	for _pile in random.randi_range(1, 2):
+		var pile: Dictionary = ICE_SNOW_PILES[random.randi() % ICE_SNOW_PILES.size()]
+		pieces.append({
+			"texture": pile["texture"], "scale": _random_scale(random, pile),
+			"offset": _cluster_offset(random, 30.0, 64.0), "collision": 0.0,
+		})
+	return pieces
 
 func _generate_ai_scenery(
 	random: RandomNumberGenerator,
@@ -1233,13 +1455,7 @@ func _spawn_enemy(direction: Vector2) -> bool:
 	if biome == 1:
 		enemy_scene = SCORPION_SCENE if loot_random.randf() < 0.75 else SNAKE_SCENE
 	elif biome == 2:
-		var ice_enemy_roll := loot_random.randf()
-		if ice_enemy_roll < 0.34:
-			enemy_scene = FROSTBOUND_WRAITH_SCENE
-		elif ice_enemy_roll < 0.67:
-			enemy_scene = CRYSTALBACK_YETI_SCENE
-		else:
-			enemy_scene = SHIVERFANG_ICE_SERPENT_SCENE
+		enemy_scene = CRYSTALBACK_YETI_SCENE if loot_random.randf() < 0.55 else ICE_GOLEM_SCENE
 	elif biome == 3:
 		var robot_roll := loot_random.randf()
 		if robot_roll < 0.25:
@@ -1267,16 +1483,22 @@ func _spawn_enemy(direction: Vector2) -> bool:
 	return true
 
 
-func _spawn_desert_boss() -> void:
-	var boss := DESERT_BOSS_SCENE.instantiate() as Wolf
+## Levels that end with a single boss monster rather than the forest's wolf pack.
+func _has_level_boss() -> bool:
+	return biome == 1 or biome == 2
+
+
+func _spawn_level_boss() -> void:
+	var boss_scene: PackedScene = ICE_BOSS_SCENE if biome == 2 else DESERT_BOSS_SCENE
+	var boss := boss_scene.instantiate() as Wolf
 	if boss == null:
-		push_error("The desert boss scene root must use the Wolf base script.")
+		push_error("The level boss scene root must use the Wolf base script.")
 		set_physics_process(false)
 		return
 
 	boss.always_alert = true
 	boss.target_path = NodePath("../Player")
-	boss.died.connect(_on_desert_boss_died.bind(boss))
+	boss.died.connect(_on_level_boss_died.bind(boss))
 	get_parent().add_child(boss)
 	var spawn_direction := player.facing
 	if spawn_direction.is_zero_approx():
@@ -1313,20 +1535,23 @@ func _on_enemy_died(enemy: Wolf) -> void:
 	if biome == 0 and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_wolf_boss_pack()
 		_save_level_state()
-	elif biome == 1 and enemies_defeated == max_enemies and not boss_spawned:
-		_spawn_desert_boss()
+	elif _has_level_boss() and enemies_defeated == max_enemies and not boss_spawned:
+		_spawn_level_boss()
 		_save_level_state()
-	elif biome > 1 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
+	elif biome == 3 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
 		_complete_current_level()
 	else:
 		_save_level_state()
 
 
-func _on_desert_boss_died(boss: Wolf) -> void:
+func _on_level_boss_died(boss: Wolf) -> void:
 	var experience_reward := _get_scaled_experience_reward(boss)
 	if not player.gain_experience(experience_reward):
-		push_error("Could not award %d XP for defeating the desert boss." % experience_reward)
+		push_error("Could not award %d XP for defeating the level boss." % experience_reward)
 	_drop_enemy_loot(boss, true)
+	if biome == 2:
+		# The Cryohydra guards a hoard as well.
+		_spawn_treasure_chest(boss.global_position + Vector2(0.0, 40.0))
 	_complete_current_level()
 
 
@@ -1424,11 +1649,12 @@ func _get_scaled_experience_reward(enemy: Wolf) -> int:
 	return maxi(roundi(enemy.experience_reward * area_multiplier), 1)
 
 
-func _drop_enemy_loot(enemy: Wolf, is_desert_boss := false) -> void:
+func _drop_enemy_loot(enemy: Wolf, is_level_boss := false) -> void:
 	var gold_amount := roundi(loot_random.randi_range(1, 3) * enemy.get_gold_multiplier())
 	_spawn_gold_pickup(enemy.global_position, gold_amount)
-	if is_desert_boss:
-		_spawn_item_pickup(_create_desert_gear(true), enemy.global_position)
+	if is_level_boss:
+		var boss_gear := _create_ice_gear(true) if biome == 2 else _create_desert_gear(true)
+		_spawn_item_pickup(boss_gear, enemy.global_position)
 	elif loot_random.randf() < ITEM_DROP_CHANCE:
 		_drop_random_enemy_item(enemy.global_position)
 	for _extra_drop in enemy.get_extra_item_drops():
@@ -1442,6 +1668,8 @@ func _drop_enemy_loot(enemy: Wolf, is_desert_boss := false) -> void:
 func _drop_random_enemy_item(world_position: Vector2) -> void:
 	if biome == 1 or biome == 3:
 		_spawn_item_pickup(_create_desert_gear(false), world_position)
+	elif biome == 2:
+		_spawn_item_pickup(_create_ice_gear(false), world_position)
 	elif not item_pool.is_empty():
 		_spawn_item_pickup(item_pool[loot_random.randi_range(0, item_pool.size() - 1)], world_position)
 
@@ -1468,6 +1696,34 @@ func _create_desert_gear(is_boss_drop: bool) -> ItemData:
 			item.display_name = "%s Signet Ring" % prefix
 			item.equipment_slot = "Ring"
 			item.icon_color = Color("#d8bc59")
+			item.damage_bonus = bonus
+
+	return item
+
+
+## Ice Caves gear, a step up from the desert's; the Cryohydra drops the best of it.
+func _create_ice_gear(is_boss_drop: bool) -> ItemData:
+	var gear_choice := loot_random.randi_range(0, 2)
+	var bonus := 4 if is_boss_drop else 3
+	var prefix := "Glacial" if is_boss_drop else "Rimefrost"
+	var item := ItemData.new()
+	item.price = 35
+
+	match gear_choice:
+		0:
+			item.display_name = "%s Axe" % prefix
+			item.equipment_slot = "Weapon"
+			item.icon_color = Color("#7fd0f5")
+			item.damage_bonus = bonus
+		1:
+			item.display_name = "%s Helm" % prefix
+			item.equipment_slot = "Helm"
+			item.icon_color = Color("#a9c8e6")
+			item.damage_reduction = bonus
+		2:
+			item.display_name = "%s Band" % prefix
+			item.equipment_slot = "Ring"
+			item.icon_color = Color("#c6ecff")
 			item.damage_bonus = bonus
 
 	return item

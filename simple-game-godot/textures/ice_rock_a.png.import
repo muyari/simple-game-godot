@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dwuc46l6wh8bo"
-path="res://.godot/imported/ice_caves_ground.svg-8755696d0c1b701763eda07089258332.ctex"
+uid="uid://d4kicuea6f7hj"
+path="res://.godot/imported/ice_rock_a.png-9cd0a59fd21095f4b4f670074f1df2c4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ice_caves_ground.svg"
-dest_files=["res://.godot/imported/ice_caves_ground.svg-8755696d0c1b701763eda07089258332.ctex"]
+source_file="res://textures/ice_rock_a.png"
+dest_files=["res://.godot/imported/ice_rock_a.png-9cd0a59fd21095f4b4f670074f1df2c4.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

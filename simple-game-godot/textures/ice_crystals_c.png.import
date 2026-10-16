@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c0j7iwjkddvc0"
-path="res://.godot/imported/frozen_ice_tree.svg-0ebaad16dc4de0d4aba08e3586167bbd.ctex"
+uid="uid://dq12c5qww6cbh"
+path="res://.godot/imported/ice_crystals_c.png-ac7bb764d57f7bc61a0aac2b419fa0b9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/frozen_ice_tree.svg"
-dest_files=["res://.godot/imported/frozen_ice_tree.svg-0ebaad16dc4de0d4aba08e3586167bbd.ctex"]
+source_file="res://textures/ice_crystals_c.png"
+dest_files=["res://.godot/imported/ice_crystals_c.png-ac7bb764d57f7bc61a0aac2b419fa0b9.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

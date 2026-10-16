@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://q8vxyu7vn73l"
-path="res://.godot/imported/crystalback_yeti.svg-3c2b132f86a85b0f8f6d65ba6dbad706.ctex"
+uid="uid://blx58jafs7bpf"
+path="res://.godot/imported/ice_snow_chunks_c.png-393a5f9c30da8839810326f489e0d5e3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/crystalback_yeti.svg"
-dest_files=["res://.godot/imported/crystalback_yeti.svg-3c2b132f86a85b0f8f6d65ba6dbad706.ctex"]
+source_file="res://textures/ice_snow_chunks_c.png"
+dest_files=["res://.godot/imported/ice_snow_chunks_c.png-393a5f9c30da8839810326f489e0d5e3.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false
