@@ -7,6 +7,8 @@ const MAX_RANGE = 520.0
 
 @export var damage := 8
 @export var chill_duration := 1.25
+## Drawn pointing along the flight path instead of the default glowing shard.
+@export var texture: Texture2D
 
 var direction := Vector2.DOWN
 ## Monster that fired this, told about hits so on-hit modifiers like Vampiric work.
@@ -56,6 +58,10 @@ func _find_hit_player(step_distance: float) -> Player:
 
 
 func _draw() -> void:
+	if texture != null:
+		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		draw_texture(texture, -texture.get_size() * 0.5)
+		return
 	var pulse := sin(animation_time * 18.0) * 1.5
 	draw_colored_polygon(
 		PackedVector2Array([

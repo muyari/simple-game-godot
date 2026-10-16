@@ -6,3 +6,10 @@
 
 [node name="LevelController" parent="." index="2"]
 biome = 2
+area_level = 3
+
+[node name="EnemyProgressLabel" parent="UI"]
+text = "Enemies defeated: 0/12"
+
+[node name="LevelCompleteLabel" parent="UI"]
+text = "Ice Caves Cleared!"
