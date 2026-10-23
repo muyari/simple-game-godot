@@ -7,14 +7,26 @@ class_name TouchButton
 
 signal activated
 
+var _last_activated_frame := -1
+
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch and event.pressed:
-		activated.emit()
+		_activate()
 		accept_event()
 	elif event is InputEventMouse and event.device == InputEvent.DEVICE_ID_EMULATION:
 		# Already handled as a touch above.
 		accept_event()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT \
 			and event.pressed:
-		activated.emit()
+		_activate()
+
+
+## Once per frame: with Emulate Touch From Mouse on, one click arrives as both a
+## mouse press and a touch.
+func _activate() -> void:
+	var frame := Engine.get_process_frames()
+	if frame == _last_activated_frame:
+		return
+	_last_activated_frame = frame
+	activated.emit()

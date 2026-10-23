@@ -94,6 +94,7 @@ func _build_menu() -> void:
 	hint.text = "Press Esc to resume"
 	hint.theme_type_variation = &"HintLabel"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.visible = not TouchControls.is_supported()
 	contents.add_child(hint)
 
 

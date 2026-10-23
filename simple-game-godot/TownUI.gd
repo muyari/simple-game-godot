@@ -18,7 +18,6 @@ const CAMERA_LIMIT_BOTTOM = 900
 @onready var mana_orb: ResourceGlobe = $ManaOrb
 @onready var health_potion: PotionFlask = $HealthPotion
 @onready var mana_potion: PotionFlask = $ManaPotion
-@onready var passive_tree_button: Button = $PassiveTreeButton
 
 var experience_bar: ProgressBar
 var experience_level_label: Label
@@ -59,7 +58,6 @@ var pause_menu: PauseMenu
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	passive_tree_button.visible = player.selected_character in ["Witch", "Ranger"]
 	_build_touch_controls()
 	_build_pause_menu()
 	_connect_skill_slot_clicks()
@@ -87,6 +85,9 @@ func _ready() -> void:
 	_build_quest_menu()
 	_build_waystone_menu()
 	_build_character_menu()
+	# Last, so it draws and takes clicks above the rest of the HUD. It hides itself
+	# whenever a menu has the player paused.
+	_build_hud_menu()
 	_on_inventory_changed(player.inventory)
 	_on_equipment_changed(player.equipment)
 	_on_progression_changed(
@@ -164,27 +165,27 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if witch_skill_tree != null and witch_skill_tree.visible:
-			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 				_on_witch_skill_tree_closed()
 			get_viewport().set_input_as_handled()
 			return
 		if warrior_skill_tree != null and warrior_skill_tree.visible:
-			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 				_on_warrior_skill_tree_closed()
 			get_viewport().set_input_as_handled()
 			return
 		if warrior_passive_tree != null and warrior_passive_tree.visible:
-			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 				_on_warrior_passive_tree_closed()
 			get_viewport().set_input_as_handled()
 			return
 		if ranger_skill_tree != null and ranger_skill_tree.visible:
-			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 				_on_ranger_skill_tree_closed()
 			get_viewport().set_input_as_handled()
 			return
 		if ranger_passive_tree != null and ranger_passive_tree.visible:
-			if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+			if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 				_on_ranger_passive_tree_closed()
 			get_viewport().set_input_as_handled()
 			return
@@ -229,35 +230,64 @@ func _unhandled_input(event: InputEvent) -> void:
 		if shop_overlay != null and shop_overlay.visible:
 			return
 		if event.keycode == KEY_C:
-			if character_overlay.visible and character_panel.visible:
-				_close_character_menu()
-			else:
-				_open_character_menu()
+			_toggle_character_menu()
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_I:
-			if character_overlay.visible and inventory_panel.visible:
-				_close_character_menu()
-			else:
-				_open_inventory_menu()
+			_toggle_inventory_menu()
 			get_viewport().set_input_as_handled()
 		elif event.keycode == KEY_J:
 			_open_quest_menu()
 			get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_P and witch_skill_tree != null:
-			if (shop_overlay == null or not shop_overlay.visible) \
-					and (dialogue_overlay == null or not dialogue_overlay.visible) \
-					and (waystone_overlay == null or not waystone_overlay.visible):
-				_open_witch_skill_tree("passives")
-				get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_P and warrior_skill_tree != null:
-			_open_warrior_passive_tree()
+		elif event.keycode == KEY_K:
+			_open_skill_tree()
 			get_viewport().set_input_as_handled()
-		elif event.keycode == KEY_P and ranger_skill_tree != null:
-			if (shop_overlay == null or not shop_overlay.visible) \
-					and (dialogue_overlay == null or not dialogue_overlay.visible) \
-					and (waystone_overlay == null or not waystone_overlay.visible):
-				_open_ranger_passive_tree()
-				get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_P:
+			_open_passive_tree()
+			get_viewport().set_input_as_handled()
+
+
+func _toggle_character_menu() -> void:
+	if character_overlay.visible and character_panel.visible:
+		_close_character_menu()
+	else:
+		_open_character_menu()
+
+
+func _toggle_inventory_menu() -> void:
+	if character_overlay.visible and inventory_panel.visible:
+		_close_character_menu()
+	else:
+		_open_inventory_menu()
+
+
+func _open_skill_tree() -> void:
+	if witch_skill_tree != null:
+		_open_witch_skill_tree("skills")
+	elif warrior_skill_tree != null:
+		_open_warrior_skill_tree()
+	elif ranger_skill_tree != null:
+		_open_ranger_skill_tree()
+
+
+func _open_passive_tree() -> void:
+	if witch_skill_tree != null:
+		_open_witch_skill_tree("passives")
+	elif warrior_skill_tree != null:
+		_open_warrior_passive_tree()
+	elif ranger_skill_tree != null:
+		_open_ranger_passive_tree()
+
+
+func _build_hud_menu() -> void:
+	var hud_menu := HudMenu.new()
+	hud_menu.is_available = player.is_physics_processing
+	add_child(hud_menu)
+	hud_menu.add_command("Character", "C", _toggle_character_menu)
+	hud_menu.add_command("Inventory", "I", _toggle_inventory_menu)
+	hud_menu.add_command("Skills", "K", _open_skill_tree)
+	hud_menu.add_command("Passives", "P", _open_passive_tree)
+	hud_menu.add_command("Quests", "J", _open_quest_menu)
+	hud_menu.add_command("Pause", "Esc", pause_menu.open_menu)
 
 
 func _build_touch_controls() -> void:
@@ -998,13 +1028,6 @@ func _open_character_menu() -> void:
 	dialogue_overlay.hide()
 
 
-func _on_passive_tree_button_pressed() -> void:
-	if player.selected_character == "Witch":
-		_open_witch_skill_tree("passives")
-	elif player.selected_character == "Ranger":
-		_open_ranger_passive_tree()
-
-
 func _open_inventory_menu() -> void:
 	if shop_overlay.visible or dialogue_overlay.visible or waystone_overlay.visible:
 		return
@@ -1397,11 +1420,3 @@ func _restore_town_return_destination() -> void:
 
 	return_portal.destination_scene = scene_path
 	return_portal.destination_position = world_position
-
-
-func _on_character_button_pressed() -> void:
-	_open_character_menu()
-
-
-func _on_inventory_button_pressed() -> void:
-	_open_inventory_menu()

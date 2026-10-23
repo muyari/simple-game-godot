@@ -81,6 +81,9 @@ func _ready() -> void:
 		_build_warrior_skill_tree()
 	elif player.selected_character == "Ranger":
 		_build_ranger_skill_tree()
+	# Last, so it draws and takes clicks above the rest of the HUD. It hides itself
+	# whenever a menu has the player paused.
+	_build_hud_menu(player)
 	health_orb.maximum = player.MAX_HEALTH
 	health_orb.value = player.health
 	mana_orb.maximum = player.MAX_MANA
@@ -181,27 +184,27 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if witch_skill_tree != null and witch_skill_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_witch_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if warrior_skill_tree != null and warrior_skill_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_warrior_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if warrior_passive_tree != null and warrior_passive_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_warrior_passive_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if ranger_skill_tree != null and ranger_skill_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_ranger_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if ranger_passive_tree != null and ranger_passive_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_ranger_passive_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
@@ -218,39 +221,80 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.keycode == KEY_C:
-		if character_menu.visible and character_panel.visible:
-			character_menu.hide()
-			_set_player_menu_paused(false)
-		else:
-			character_panel.show()
-			inventory_panel.hide()
-			character_menu.show()
-			_set_player_menu_paused(true)
+		_toggle_character_panel()
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_P and witch_skill_tree != null:
-		_open_witch_skill_tree("passives")
+	elif event.keycode == KEY_K:
+		_open_skill_tree()
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_P and warrior_skill_tree != null:
-		_open_warrior_passive_tree()
-		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_P and ranger_skill_tree != null:
-		_open_ranger_passive_tree()
+	elif event.keycode == KEY_P:
+		_open_passive_tree()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_I:
-		if character_menu.visible and inventory_panel.visible:
-			character_menu.hide()
-			_set_player_menu_paused(false)
-		else:
-			character_panel.hide()
-			inventory_panel.show()
-			character_menu.show()
-			_set_player_menu_paused(true)
+		_toggle_inventory_panel()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_J:
-		character_menu.hide()
-		_set_player_menu_paused(true)
-		quest_menu.open_menu()
+		_open_quest_menu()
 		get_viewport().set_input_as_handled()
+
+
+func _toggle_character_panel() -> void:
+	if character_menu.visible and character_panel.visible:
+		character_menu.hide()
+		_set_player_menu_paused(false)
+	else:
+		character_panel.show()
+		inventory_panel.hide()
+		character_menu.show()
+		_set_player_menu_paused(true)
+
+
+func _toggle_inventory_panel() -> void:
+	if character_menu.visible and inventory_panel.visible:
+		character_menu.hide()
+		_set_player_menu_paused(false)
+	else:
+		character_panel.hide()
+		inventory_panel.show()
+		character_menu.show()
+		_set_player_menu_paused(true)
+
+
+func _open_skill_tree() -> void:
+	if witch_skill_tree != null:
+		_open_witch_skill_tree("skills")
+	elif warrior_skill_tree != null:
+		_open_warrior_skill_tree()
+	elif ranger_skill_tree != null:
+		_open_ranger_skill_tree()
+
+
+func _open_passive_tree() -> void:
+	if witch_skill_tree != null:
+		_open_witch_skill_tree("passives")
+	elif warrior_skill_tree != null:
+		_open_warrior_passive_tree()
+	elif ranger_skill_tree != null:
+		_open_ranger_passive_tree()
+
+
+func _open_quest_menu() -> void:
+	character_menu.hide()
+	_set_player_menu_paused(true)
+	quest_menu.open_menu()
+
+
+func _build_hud_menu(player: Player) -> void:
+	var hud_menu := HudMenu.new()
+	hud_menu.is_available = func() -> bool:
+		return player.is_physics_processing() and player.health > 0
+	add_child(hud_menu)
+	hud_menu.add_command("Character", "C", _toggle_character_panel)
+	hud_menu.add_command("Inventory", "I", _toggle_inventory_panel)
+	hud_menu.add_command("Skills", "K", _open_skill_tree)
+	hud_menu.add_command("Passives", "P", _open_passive_tree)
+	hud_menu.add_command("Quests", "J", _open_quest_menu)
+	hud_menu.add_command("Town Portal", "T", player.cast_town_portal)
+	hud_menu.add_command("Pause", "Esc", pause_menu.open_menu)
 
 
 func _build_touch_controls(player: Player) -> void:

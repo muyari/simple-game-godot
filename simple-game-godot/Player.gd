@@ -412,6 +412,12 @@ func try_interact() -> bool:
 	return _try_interact()
 
 
+func cast_town_portal() -> void:
+	if health <= 0:
+		return
+	_open_town_portal()
+
+
 func _use_primary_attack() -> void:
 	if selected_character == "Witch":
 		if iceball_cooldown_remaining <= 0.0:
