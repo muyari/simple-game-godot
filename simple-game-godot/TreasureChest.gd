@@ -52,7 +52,7 @@ func interact(_player: Player) -> void:
 
 ## Call after taking items so the prompt disappears once the chest is empty.
 func update_prompt() -> void:
-	prompt.text = "E  Loot" if is_open else "E  Open"
+	prompt.text = MenuStyle.interact_prompt("Loot" if is_open else "Open")
 	prompt.visible = player_nearby and has_loot_left()
 
 

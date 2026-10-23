@@ -14,7 +14,7 @@ const AREAS := [
 	{"level_id": 1, "name": "Forest Outskirts"},
 	{"level_id": 2, "name": "Sunscorch Sands"},
 	{"level_id": 3, "name": "The Ice Caves"},
-	{"level_id": 4, "name": "The Futuristic AI Zone"},
+	{"level_id": 4, "name": "The Underworld"},
 ]
 
 const DEFINITIONS := {

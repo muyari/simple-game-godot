@@ -35,24 +35,12 @@ var active_quest_giver: QuestGiver
 var quest_menu: QuestMenu
 var waystone_overlay: Control
 var shop_overlay: Control
-var character_overlay: Control
-var character_panel: PanelContainer
-var inventory_panel: PanelContainer
+var character_sheet: CharacterSheet
 var witch_skill_tree: WitchSkillTree
 var warrior_skill_tree: WarriorSkillTree
 var warrior_passive_tree: WarriorPassiveTree
 var ranger_skill_tree: RangerSkillTree
 var ranger_passive_tree: RangerPassiveTree
-var equipment_stats_label: Label
-var character_progression_label: Label
-var equipment_slot_labels: Dictionary = {}
-var inventory_grid: GridContainer
-var selected_item_label: Label
-var equip_item_button: Button
-var equip_best_button: Button
-var inventory_gold_label: Label
-var inventory_slots: Array[Button] = []
-var selected_inventory_index := -1
 var pause_menu: PauseMenu
 
 
@@ -63,6 +51,7 @@ func _ready() -> void:
 	_connect_skill_slot_clicks()
 	_build_experience_bar()
 	_update_gold(GameState.gold)
+	MenuStyle.outline_hud_label(gold_label)
 	GameState.gold_changed.connect(_update_gold)
 	_restore_town_return_destination()
 	_apply_camera_limits()
@@ -88,8 +77,6 @@ func _ready() -> void:
 	# Last, so it draws and takes clicks above the rest of the HUD. It hides itself
 	# whenever a menu has the player paused.
 	_build_hud_menu()
-	_on_inventory_changed(player.inventory)
-	_on_equipment_changed(player.equipment)
 	_on_progression_changed(
 		GameState.player_level,
 		GameState.experience,
@@ -201,7 +188,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_close_dialogue()
 			elif shop_overlay != null and shop_overlay.visible:
 				_close_shop()
-			elif character_overlay != null and character_overlay.visible:
+			elif character_sheet.visible:
 				_close_character_menu()
 			else:
 				pause_menu.open_menu()
@@ -247,14 +234,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _toggle_character_menu() -> void:
-	if character_overlay.visible and character_panel.visible:
+	if character_sheet.is_character_shown():
 		_close_character_menu()
 	else:
 		_open_character_menu()
 
 
 func _toggle_inventory_menu() -> void:
-	if character_overlay.visible and inventory_panel.visible:
+	if character_sheet.is_inventory_shown():
 		_close_character_menu()
 	else:
 		_open_inventory_menu()
@@ -319,7 +306,7 @@ func _on_return_to_character_selection_requested() -> void:
 		str(get_tree().get_meta("selected_character_id", ""))
 	)
 	pause_menu.close_menu()
-	var error := get_tree().change_scene_to_file("res://Menu.tscn")
+	var error := GameState.change_scene("res://Menu.tscn")
 	if error != OK:
 		get_tree().remove_meta("return_to_character_select")
 		get_tree().remove_meta("selected_character_id")
@@ -399,7 +386,7 @@ func _build_shop() -> void:
 	contents.add_child(status_label)
 
 	var close_button := Button.new()
-	close_button.text = "Close  (Esc)"
+	close_button.text = "Close" + MenuStyle.key_hint("Esc")
 	_style_menu_button(close_button, 48.0)
 	close_button.pressed.connect(_close_shop)
 	contents.add_child(close_button)
@@ -425,6 +412,7 @@ func _build_shop_column(parent: HBoxContainer, heading_text: String) -> VBoxCont
 	scroll.name = "Scroll"
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
 
 	var rows := VBoxContainer.new()
@@ -475,13 +463,13 @@ func _build_dialogue() -> void:
 	contents.add_child(dialogue)
 
 	var browse_button := Button.new()
-	browse_button.text = "Browse wares  (E)"
+	browse_button.text = "Browse wares" + MenuStyle.key_hint("E")
 	_style_menu_button(browse_button, 48.0)
 	browse_button.pressed.connect(_open_shop)
 	contents.add_child(browse_button)
 
 	var close_button := Button.new()
-	close_button.text = "Not now  (Esc)"
+	close_button.text = "Not now" + MenuStyle.key_hint("Esc")
 	_style_menu_button(close_button, 48.0)
 	close_button.pressed.connect(_close_dialogue)
 	contents.add_child(close_button)
@@ -549,8 +537,7 @@ func _build_quest_menu() -> void:
 
 
 func _open_quest_menu() -> void:
-	if character_overlay.visible:
-		character_overlay.hide()
+	character_sheet.hide()
 	player.set_physics_process(false)
 	player.set_process_unhandled_input(false)
 	quest_menu.open_menu()
@@ -592,10 +579,10 @@ func _build_waystone_menu() -> void:
 	contents.add_child(description)
 
 	var level_options := [
-		[1, "res://main.tscn", "Forest Outskirts"],
-		[2, "res://desert.tscn", "Sunscorch Sands"],
-		[3, "res://ice_caves.tscn", "The Ice Caves"],
-		[4, "res://futuristic_ai_zone.tscn", "The Futuristic AI Zone"]
+		[1, "res://main.tscn", GameState.LEVEL_NAMES[1]],
+		[2, "res://desert.tscn", GameState.LEVEL_NAMES[2]],
+		[3, "res://ice_caves.tscn", GameState.LEVEL_NAMES[3]],
+		[4, "res://underworld.tscn", GameState.LEVEL_NAMES[4]]
 	]
 	for level_option in level_options:
 		var level_id: int = level_option[0]
@@ -609,156 +596,19 @@ func _build_waystone_menu() -> void:
 		contents.add_child(level_button)
 
 	var close_button := Button.new()
-	close_button.text = "Close  (Esc)"
+	close_button.text = "Close" + MenuStyle.key_hint("Esc")
 	_style_menu_button(close_button, 48.0)
 	close_button.pressed.connect(_close_waystone)
 	contents.add_child(close_button)
 
 
 func _build_character_menu() -> void:
-	character_overlay = Control.new()
-	character_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	character_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	character_overlay.visible = false
-	add_child(character_overlay)
+	character_sheet = CharacterSheet.create(player)
+	add_child(character_sheet)
+	character_sheet.closed.connect(_close_character_menu)
+	character_sheet.skills_requested.connect(_open_skill_tree)
+	character_sheet.passives_requested.connect(_open_passive_tree)
 
-	var backdrop := ColorRect.new()
-	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.02, 0.03, 0.025, 0.72)
-	character_overlay.add_child(backdrop)
-
-	character_panel = _create_menu_panel(Vector2(560, 600))
-	inventory_panel = _create_menu_panel(Vector2(600, 620))
-	character_overlay.add_child(character_panel)
-	character_overlay.add_child(inventory_panel)
-
-	var character_contents := VBoxContainer.new()
-	character_contents.add_theme_constant_override("separation", 12)
-	character_panel.add_child(character_contents)
-	_add_menu_title(character_contents, "Character")
-
-	equipment_stats_label = Label.new()
-	equipment_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	character_contents.add_child(equipment_stats_label)
-
-	character_progression_label = Label.new()
-	character_progression_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	character_progression_label.add_theme_color_override("font_color", Color("#f3dfae"))
-	character_contents.add_child(character_progression_label)
-
-	var equipment_grid := GridContainer.new()
-	equipment_grid.columns = 2
-	equipment_grid.add_theme_constant_override("h_separation", 10)
-	equipment_grid.add_theme_constant_override("v_separation", 10)
-	character_contents.add_child(equipment_grid)
-	for slot_name in ["Weapon", "Helm", "Chest", "Legs", "Gloves", "Boots", "Ring 1", "Ring 2", "Amulet"]:
-		var slot_label := Label.new()
-		slot_label.custom_minimum_size = Vector2(235, 48)
-		slot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		slot_label.text = "%s  -  Empty" % slot_name
-		equipment_grid.add_child(slot_label)
-		equipment_slot_labels[slot_name] = slot_label
-
-	var character_close_button := Button.new()
-	character_close_button.text = "Close  (C / Esc)"
-	_style_menu_button(character_close_button, 42.0)
-	character_close_button.pressed.connect(_close_character_menu)
-	if player.selected_character == "Witch":
-		var skill_tree_button := Button.new()
-		skill_tree_button.text = "Witch Active Skills"
-		_style_menu_button(skill_tree_button, 42.0)
-		skill_tree_button.pressed.connect(_open_witch_skill_tree.bind("skills"))
-		character_contents.add_child(skill_tree_button)
-
-		var passive_tree_button_menu := Button.new()
-		passive_tree_button_menu.text = "Witch Passive Tree (P)"
-		_style_menu_button(passive_tree_button_menu, 42.0)
-		passive_tree_button_menu.pressed.connect(_open_witch_skill_tree.bind("passives"))
-		character_contents.add_child(passive_tree_button_menu)
-	elif player.selected_character == "Warrior":
-		var warrior_skill_tree_button := Button.new()
-		warrior_skill_tree_button.text = "Warrior Skill Tree"
-		_style_menu_button(warrior_skill_tree_button, 42.0)
-		warrior_skill_tree_button.pressed.connect(_open_warrior_skill_tree)
-		character_contents.add_child(warrior_skill_tree_button)
-
-		var warrior_passive_tree_button := Button.new()
-		warrior_passive_tree_button.text = "Warrior Passive Tree (P)"
-		_style_menu_button(warrior_passive_tree_button, 42.0)
-		warrior_passive_tree_button.pressed.connect(_open_warrior_passive_tree)
-		character_contents.add_child(warrior_passive_tree_button)
-	elif player.selected_character == "Ranger":
-		var ranger_skill_tree_button := Button.new()
-		ranger_skill_tree_button.text = "Ranger Active Skills"
-		_style_menu_button(ranger_skill_tree_button, 42.0)
-		ranger_skill_tree_button.pressed.connect(_open_ranger_skill_tree)
-		character_contents.add_child(ranger_skill_tree_button)
-
-		var ranger_passive_tree_button := Button.new()
-		ranger_passive_tree_button.text = "Ranger Passive Tree (P)"
-		_style_menu_button(ranger_passive_tree_button, 42.0)
-		ranger_passive_tree_button.pressed.connect(_open_ranger_passive_tree)
-		character_contents.add_child(ranger_passive_tree_button)
-	character_contents.add_child(character_close_button)
-
-	var inventory_contents := VBoxContainer.new()
-	inventory_contents.add_theme_constant_override("separation", 12)
-	inventory_panel.add_child(inventory_contents)
-	_add_menu_title(inventory_contents, "Inventory")
-
-	inventory_gold_label = Label.new()
-	inventory_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	inventory_gold_label.add_theme_color_override("font_color", Color("#ffdc83"))
-	inventory_contents.add_child(inventory_gold_label)
-	_update_gold(GameState.gold)
-
-	selected_item_label = Label.new()
-	selected_item_label.custom_minimum_size.y = 42
-	selected_item_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	selected_item_label.text = "Select an item to inspect it."
-	inventory_contents.add_child(selected_item_label)
-
-	inventory_grid = GridContainer.new()
-	inventory_grid.columns = 5
-	inventory_grid.add_theme_constant_override("h_separation", 8)
-	inventory_grid.add_theme_constant_override("v_separation", 8)
-	inventory_contents.add_child(inventory_grid)
-	for slot_index in range(Player.MAX_INVENTORY_SIZE):
-		var slot := Button.new()
-		slot.custom_minimum_size = Vector2(76, 54)
-		slot.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		slot.add_theme_font_size_override("font_size", 11)
-		slot.pressed.connect(_on_inventory_slot_pressed.bind(slot_index))
-		inventory_grid.add_child(slot)
-		inventory_slots.append(slot)
-
-	equip_item_button = Button.new()
-	equip_item_button.text = "Equip Selected Item"
-	_style_menu_button(equip_item_button, 42.0)
-	equip_item_button.disabled = true
-	equip_item_button.pressed.connect(_on_equip_item_pressed)
-	var inventory_action_row := HBoxContainer.new()
-	inventory_action_row.add_theme_constant_override("separation", 8)
-	inventory_contents.add_child(inventory_action_row)
-	inventory_action_row.add_child(equip_item_button)
-	equip_item_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	equip_best_button = Button.new()
-	equip_best_button.text = "Equip Best"
-	equip_best_button.tooltip_text = "Upgrade each slot using damage bonus and damage reduction."
-	_style_menu_button(equip_best_button, 42.0)
-	equip_best_button.add_theme_font_size_override("font_size", 18)
-	equip_best_button.pressed.connect(_on_equip_best_pressed)
-	inventory_action_row.add_child(equip_best_button)
-
-	var inventory_close_button := Button.new()
-	inventory_close_button.text = "Close  (I / Esc)"
-	_style_menu_button(inventory_close_button, 42.0)
-	inventory_close_button.pressed.connect(_close_character_menu)
-	inventory_contents.add_child(inventory_close_button)
-
-	_show_character_panel()
 	if player.selected_character == "Witch":
 		witch_skill_tree = WitchSkillTree.new()
 		add_child(witch_skill_tree)
@@ -855,7 +705,7 @@ func _on_ranger_passive_tree_closed() -> void:
 
 func _on_ranger_passives_changed() -> void:
 	player.refresh_passives_and_vitals()
-	_on_equipment_changed(player.equipment)
+	character_sheet.refresh()
 	_refresh_ranger_skill_slots()
 
 
@@ -892,7 +742,7 @@ func _on_witch_skill_tree_closed() -> void:
 
 func _on_witch_passives_changed() -> void:
 	player.refresh_passives_and_vitals()
-	_on_equipment_changed(player.equipment)
+	character_sheet.refresh()
 	_refresh_witch_skill_slots()
 
 
@@ -932,7 +782,7 @@ func _on_warrior_passive_tree_closed() -> void:
 
 func _on_warrior_passives_changed() -> void:
 	player.refresh_passives_and_vitals()
-	_on_equipment_changed(player.equipment)
+	character_sheet.refresh()
 	_refresh_warrior_skill_slots()
 
 
@@ -1008,44 +858,31 @@ func _update_potion_counts(
 	mana_potion.set_charges(mana_count, mana_refill, Player.POTION_REFILL_TIME)
 
 
-func _show_character_panel() -> void:
-	character_panel.show()
-	inventory_panel.hide()
-
-
-func _show_inventory_panel() -> void:
-	character_panel.hide()
-	inventory_panel.show()
-
-
 func _open_character_menu() -> void:
 	if shop_overlay.visible or dialogue_overlay.visible or waystone_overlay.visible:
 		return
-	_show_character_panel()
-	character_overlay.show()
+	character_sheet.show_character()
 	player.set_physics_process(false)
 	player.set_process_unhandled_input(false)
-	dialogue_overlay.hide()
 
 
 func _open_inventory_menu() -> void:
 	if shop_overlay.visible or dialogue_overlay.visible or waystone_overlay.visible:
 		return
-	_show_inventory_panel()
-	character_overlay.show()
+	character_sheet.show_inventory()
 	player.set_physics_process(false)
 	player.set_process_unhandled_input(false)
-	dialogue_overlay.hide()
 
 
+## Hides the sheet if it is open and gives control back to the player.
 func _close_character_menu() -> void:
-	character_overlay.hide()
+	character_sheet.hide()
 	player.set_physics_process(true)
 	player.set_process_unhandled_input(true)
 
 
 func _open_waystone() -> void:
-	if shop_overlay.visible or dialogue_overlay.visible or character_overlay.visible:
+	if shop_overlay.visible or dialogue_overlay.visible or character_sheet.visible:
 		return
 	waystone_overlay.show()
 	player.set_physics_process(false)
@@ -1071,7 +908,7 @@ func _enter_waystone_level(scene_path: String, level_name: String) -> void:
 		"health": player.health,
 		"mana": player.mana
 	})
-	var error := get_tree().change_scene_to_file(scene_path)
+	var error := GameState.change_scene(scene_path)
 	if error != OK:
 		get_tree().remove_meta(Player.TOWN_RETURN_SCENE_META)
 		get_tree().remove_meta(Player.TOWN_RETURN_POSITION_META)
@@ -1083,95 +920,14 @@ func _enter_waystone_level(scene_path: String, level_name: String) -> void:
 		])
 
 
-func _on_inventory_changed(items: Array[ItemData]) -> void:
-	if selected_inventory_index >= items.size():
-		selected_inventory_index = -1
-	for index in range(inventory_slots.size()):
-		var slot := inventory_slots[index]
-		if index < items.size():
-			slot.text = items[index].display_name
-			slot.tooltip_text = "%s (%s)" % [items[index].display_name, items[index].equipment_slot]
-			slot.add_theme_color_override("font_color", items[index].icon_color)
-		else:
-			slot.text = "-"
-			slot.tooltip_text = "Empty"
-			slot.add_theme_color_override("font_color", Color(0.52, 0.53, 0.49, 1))
-	_update_selected_item(items)
-	equip_best_button.disabled = items.is_empty()
+func _on_inventory_changed(_items: Array[ItemData]) -> void:
 	if item_list != null and shop_overlay != null and shop_overlay.visible:
 		_refresh_shop_items()
 
 
-func _on_inventory_slot_pressed(slot_index: int) -> void:
-	selected_inventory_index = slot_index if slot_index < player.inventory.size() else -1
-	_update_selected_item(player.inventory)
-
-
-func _update_selected_item(items: Array[ItemData]) -> void:
-	if selected_inventory_index < 0 or selected_inventory_index >= items.size():
-		selected_inventory_index = -1
-		selected_item_label.text = "Select an item to inspect it."
-		equip_item_button.disabled = true
-		return
-	var item := items[selected_inventory_index]
-	selected_item_label.text = "%s  |  %s\n%s" % [
-		item.display_name,
-		item.equipment_slot,
-		_get_item_stat_text(item)
-	]
-	equip_item_button.disabled = false
-
-
-func _on_equip_item_pressed() -> void:
-	if selected_inventory_index < 0:
-		return
-	if player.equip_inventory_item(selected_inventory_index):
-		selected_inventory_index = -1
-		_update_selected_item(player.inventory)
-
-
-func _on_equip_best_pressed() -> void:
-	selected_inventory_index = -1
-	var equipped_slots := player.equip_best_inventory_items()
-	if equipped_slots < 0:
-		selected_item_label.text = "Could not equip best gear. See the error log."
-	elif equipped_slots == 0:
-		selected_item_label.text = "You're already wearing your best gear."
-	else:
-		selected_item_label.text = "Equipped best gear in %d slot(s)." % equipped_slots
-
-
-func _on_equipment_changed(equipment: Dictionary) -> void:
-	var attack_name := "Spell damage" if player.selected_character == "Witch" \
-		else "Bow damage" if player.selected_character == "Ranger" \
-		else "Sword damage"
-	var base_dmg := (1 + player.get_weapon_damage_bonus())
-	var dmg_str := str(base_dmg)
-	if player.selected_character == "Witch":
-		var mult := player.get_spell_damage_multiplier()
-		dmg_str = "%.1f (x%.2f)" % [float(base_dmg) * mult, mult]
-	var evasion_info := ""
-	if player.selected_character in ["Witch", "Ranger"]:
-		evasion_info = "  |  Evasion: %d%%" % roundi(player.get_evasion() * 100.0)
-	equipment_stats_label.text = "%s: %s  |  Damage reduced: %d%s" % [
-		attack_name,
-		dmg_str,
-		player.get_damage_reduction(),
-		evasion_info
-	]
+func _on_equipment_changed(_equipment: Dictionary) -> void:
 	if player.selected_character == "Witch":
 		_refresh_witch_skill_slots()
-	for slot_name in equipment_slot_labels:
-		var label: Label = equipment_slot_labels[slot_name]
-		if equipment.has(slot_name):
-			var item: ItemData = equipment[slot_name]
-			label.text = "%s  -  %s" % [slot_name, item.display_name]
-			label.tooltip_text = _get_item_stat_text(item)
-			label.add_theme_color_override("font_color", item.icon_color)
-		else:
-			label.text = "%s  -  Empty" % slot_name
-			label.tooltip_text = ""
-			label.add_theme_color_override("font_color", Color(0.88, 0.83, 0.72, 1))
 
 
 func _on_progression_changed(
@@ -1182,7 +938,6 @@ func _on_progression_changed(
 	_passive_points: int,
 	_skill_points: int
 ) -> void:
-	character_progression_label.text = GameState.get_progression_summary()
 	experience_level_label.text = "Lv. %d" % GameState.player_level
 	if GameState.player_level >= GameState.MAX_PLAYER_LEVEL:
 		experience_bar.max_value = 1.0
@@ -1273,18 +1028,20 @@ func _refresh_shop_items() -> void:
 
 		var description := Label.new()
 		description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		description.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		description.text = "%s  (%s)  -  %s" % [
 			item.display_name,
 			item.equipment_slot,
-			_get_item_stat_text(item)
+			CharacterSheet.item_stat_text(item)
 		]
 		description.add_theme_color_override("font_color", item.icon_color)
 		row.add_child(description)
 
 		var buy_button := Button.new()
-		buy_button.custom_minimum_size.x = 112
+		buy_button.custom_minimum_size.x = 128
 		buy_button.text = "Buy  %d G" % item.price
 		_style_menu_button(buy_button, 42.0)
+		buy_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		buy_button.pressed.connect(_on_buy_item_pressed.bind(item))
 		row.add_child(buy_button)
 
@@ -1304,29 +1061,23 @@ func _refresh_shop_items() -> void:
 
 		var description := Label.new()
 		description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		description.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		description.text = "%s  (%s)  -  %s" % [
 			owned_item.display_name,
 			owned_item.equipment_slot,
-			_get_item_stat_text(owned_item)
+			CharacterSheet.item_stat_text(owned_item)
 		]
 		description.add_theme_color_override("font_color", owned_item.icon_color)
 		row.add_child(description)
 
 		var sell_price := GameState.get_item_sell_price(owned_item)
 		var sell_button := Button.new()
-		sell_button.custom_minimum_size.x = 112
+		sell_button.custom_minimum_size.x = 128
 		sell_button.text = "Sell  %d G" % sell_price
 		_style_menu_button(sell_button, 42.0)
+		sell_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		sell_button.pressed.connect(_on_sell_item_pressed.bind(inventory_index))
 		row.add_child(sell_button)
-
-
-func _get_item_stat_text(item: ItemData) -> String:
-	if item.damage_bonus > 0:
-		return "+%d damage" % item.damage_bonus
-	if item.damage_reduction > 0:
-		return "-%d damage taken" % item.damage_reduction
-	return "No combat bonus"
 
 
 func _on_buy_item_pressed(item: ItemData) -> void:
@@ -1356,14 +1107,14 @@ func _on_sell_item_pressed(inventory_index: int) -> void:
 
 
 func _open_dialogue() -> void:
-	character_overlay.hide()
+	character_sheet.hide()
 	dialogue_overlay.show()
 	player.set_physics_process(false)
 
 
 func _open_shop() -> void:
 	dialogue_overlay.hide()
-	character_overlay.hide()
+	character_sheet.hide()
 	_refresh_shop_items()
 	status_label.text = ""
 	shop_overlay.show()
@@ -1388,8 +1139,6 @@ func _update_gold(total_gold: int) -> void:
 	gold_label.text = "Gold: %d" % total_gold
 	if shop_gold_label != null:
 		shop_gold_label.text = "Gold: %d" % total_gold
-	if is_instance_valid(inventory_gold_label):
-		inventory_gold_label.text = "Gold: %d" % total_gold
 
 
 func _apply_camera_limits() -> void:

@@ -100,7 +100,7 @@ func switch_tab(tab_name: Variant = "passives") -> void:
 func _build_ui() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.02, 0.03, 0.92)
+	backdrop.color = Color(0.015, 0.02, 0.018, 0.88)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
@@ -111,9 +111,9 @@ func _build_ui() -> void:
 	panel.offset_right = -16.0
 	panel.offset_bottom = -16.0
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.05, 0.07, 0.09, 0.98)
+	panel_style.bg_color = Color(0.055, 0.07, 0.063, 0.98)
 	panel_style.set_border_width_all(2)
-	panel_style.border_color = Color("#4fb8c7")
+	panel_style.border_color = Color("#9e7d4a")
 	panel_style.set_corner_radius_all(6)
 	panel_style.content_margin_left = 16.0
 	panel_style.content_margin_right = 16.0
@@ -152,11 +152,11 @@ func _build_ui() -> void:
 	points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	points_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	points_label.add_theme_font_size_override("font_size", 15)
-	points_label.add_theme_color_override("font_color", Color("#aee8dd"))
+	points_label.add_theme_color_override("font_color", Color("#a9c08a"))
 	header.add_child(points_label)
 
 	var close_button := Button.new()
-	close_button.text = "Close (Esc)"
+	close_button.text = "Close" + MenuStyle.key_hint("Esc")
 	close_button.custom_minimum_size = Vector2(96.0, 36.0)
 	close_button.pressed.connect(_on_close_pressed)
 	header.add_child(close_button)
@@ -182,13 +182,13 @@ func _style_tab_button(button: Button, is_active: bool) -> void:
 	style.content_margin_top = 6.0
 	style.content_margin_bottom = 6.0
 	if is_active:
-		style.bg_color = Color(0.1, 0.22, 0.25, 0.95)
-		style.border_color = Color("#66cfc8")
+		style.bg_color = Color(0.2, 0.17, 0.1, 0.95)
+		style.border_color = Color("#e8c77e")
 		button.add_theme_color_override("font_color", Color("#ffd559"))
 	else:
-		style.bg_color = Color(0.04, 0.06, 0.08, 0.8)
-		style.border_color = Color(0.24, 0.32, 0.36, 0.6)
-		button.add_theme_color_override("font_color", Color("#8ea2a0"))
+		style.bg_color = Color(0.06, 0.07, 0.065, 0.8)
+		style.border_color = Color(0.62, 0.49, 0.29, 0.35)
+		button.add_theme_color_override("font_color", Color("#9c9886"))
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("hover", style)
 	button.add_theme_stylebox_override("pressed", style)
@@ -235,7 +235,7 @@ func _build_skills_tab(parent: Control) -> void:
 	skill_details_label.custom_minimum_size.y = 66.0
 	skill_details_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_details_label.add_theme_font_size_override("font_size", 14)
-	skill_details_label.add_theme_color_override("font_color", Color("#d5e5df"))
+	skill_details_label.add_theme_color_override("font_color", Color("#ebe3cd"))
 	skills_container.add_child(skill_details_label)
 
 	var action_row := HBoxContainer.new()
@@ -348,14 +348,14 @@ func _refresh_skills() -> void:
 			style.bg_color = Color(0.35, 0.24, 0.05, 0.95)
 			style.border_color = Color("#ffffff") if is_selected else Color("#ffd559")
 		elif rank > 0:
-			style.bg_color = Color(0.08, 0.28, 0.24, 0.95)
-			style.border_color = Color("#ffffff") if is_selected else Color("#55e6c7")
+			style.bg_color = Color(0.14, 0.2, 0.11, 0.95)
+			style.border_color = Color("#ffffff") if is_selected else Color("#a9c08a")
 		elif can_upgrade:
-			style.bg_color = Color(0.12, 0.18, 0.24, 0.92)
-			style.border_color = Color("#ffffff") if is_selected else Color("#86cbe6")
+			style.bg_color = Color(0.17, 0.15, 0.1, 0.92)
+			style.border_color = Color("#ffffff") if is_selected else Color("#c9a463")
 		else:
-			style.bg_color = Color(0.05, 0.07, 0.09, 0.85)
-			style.border_color = Color("#ffffff") if is_selected else Color(0.28, 0.34, 0.4, 0.8)
+			style.bg_color = Color(0.06, 0.07, 0.065, 0.85)
+			style.border_color = Color("#ffffff") if is_selected else Color(0.32, 0.31, 0.27, 0.8)
 
 		tile.add_theme_stylebox_override("normal", style)
 		tile.add_theme_stylebox_override("hover", style)
@@ -372,7 +372,7 @@ func _refresh_skills() -> void:
 			int(definition["required_level"])
 		]
 
-		var font_col := Color("#ffd559") if is_selected else (Color("#b6f0e2") if rank > 0 else Color("#d6e0df"))
+		var font_col := Color("#ffd559") if is_selected else (Color("#d4e3b8") if rank > 0 else Color("#ebe3cd"))
 		tile.add_theme_color_override("font_color", font_col)
 
 	_refresh_skill_details()
@@ -489,7 +489,7 @@ func _build_passives_tab(parent: Control) -> void:
 	stats_summary_label = Label.new()
 	stats_summary_label.custom_minimum_size.y = 22.0
 	stats_summary_label.add_theme_font_size_override("font_size", 13)
-	stats_summary_label.add_theme_color_override("font_color", Color("#9be8c9"))
+	stats_summary_label.add_theme_color_override("font_color", Color("#a9c08a"))
 	passives_container.add_child(stats_summary_label)
 
 	# Node Details Card
@@ -497,7 +497,7 @@ func _build_passives_tab(parent: Control) -> void:
 	passive_details_label.custom_minimum_size.y = 64.0
 	passive_details_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	passive_details_label.add_theme_font_size_override("font_size", 13)
-	passive_details_label.add_theme_color_override("font_color", Color("#e4eee9"))
+	passive_details_label.add_theme_color_override("font_color", Color("#ebe3cd"))
 	passives_container.add_child(passive_details_label)
 
 	# Action Row
@@ -726,7 +726,7 @@ func _on_node_container_draw() -> void:
 		for prereq_id in prereqs:
 			var req_center := _get_node_center(str(prereq_id))
 			var prereq_unlocked := _is_passive_unlocked(str(prereq_id))
-			var line_color := Color("#73f4e1") if (is_unlocked and prereq_unlocked) else Color(0.36, 0.48, 0.56, 0.85)
+			var line_color := Color("#d8b866") if (is_unlocked and prereq_unlocked) else Color(0.42, 0.4, 0.33, 0.85)
 			var line_width := 4.0 if (is_unlocked and prereq_unlocked) else 2.0
 			node_container.draw_line(req_center, p_center, line_color, line_width, true)
 
@@ -785,14 +785,14 @@ func _refresh_node_styles() -> void:
 			style.shadow_size = 8
 
 		if is_unlocked:
-			style.bg_color = Color(0.08, 0.28, 0.24, 0.95) if not is_super else Color(0.35, 0.24, 0.05, 0.95)
-			style.border_color = Color("#55e6c7") if not is_super else Color("#ffd559")
+			style.bg_color = Color(0.14, 0.2, 0.11, 0.95) if not is_super else Color(0.35, 0.24, 0.05, 0.95)
+			style.border_color = Color("#a9c08a") if not is_super else Color("#ffd559")
 		elif can_unlock:
-			style.bg_color = Color(0.12, 0.18, 0.24, 0.92)
-			style.border_color = Color("#86cbe6")
+			style.bg_color = Color(0.17, 0.15, 0.1, 0.92)
+			style.border_color = Color("#c9a463")
 		else:
-			style.bg_color = Color(0.05, 0.07, 0.09, 0.85)
-			style.border_color = Color(0.28, 0.34, 0.4, 0.8)
+			style.bg_color = Color(0.06, 0.07, 0.065, 0.85)
+			style.border_color = Color(0.32, 0.31, 0.27, 0.8)
 
 		if passive_id == selected_passive_id:
 			style.border_color = Color("#ffffff")
@@ -803,7 +803,7 @@ func _refresh_node_styles() -> void:
 		node_btn.add_theme_stylebox_override("pressed", style)
 		node_btn.text = ("★" if is_super else "") + _get_node_initials(str(def.get("name", "")))
 
-		var font_col := Color("#ffd559") if is_super else (Color("#b6f0e2") if is_unlocked else Color("#d6e0df"))
+		var font_col := Color("#ffd559") if is_super else (Color("#d4e3b8") if is_unlocked else Color("#ebe3cd"))
 		node_btn.add_theme_color_override("font_color", font_col)
 
 	node_container.queue_redraw()

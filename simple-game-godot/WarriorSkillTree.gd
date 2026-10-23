@@ -38,7 +38,7 @@ func open_tree() -> void:
 func _build_ui() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.02, 0.03, 0.92)
+	backdrop.color = Color(0.015, 0.02, 0.018, 0.88)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
@@ -49,9 +49,9 @@ func _build_ui() -> void:
 	panel.offset_right = -8.0
 	panel.offset_bottom = -8.0
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#0d1216")
+	panel_style.bg_color = Color("#0e1210")
 	panel_style.set_border_width_all(2)
-	panel_style.border_color = Color("#4fb8c7")
+	panel_style.border_color = Color("#9e7d4a")
 	panel_style.set_corner_radius_all(6)
 	panel_style.content_margin_left = 14.0
 	panel_style.content_margin_right = 14.0
@@ -84,18 +84,18 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = _get_class_name()
 	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color("#d5e5df"))
+	title.add_theme_color_override("font_color", Color("#ebe3cd"))
 	header.add_child(title)
 
 	points_label = Label.new()
 	points_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	points_label.add_theme_font_size_override("font_size", 15)
-	points_label.add_theme_color_override("font_color", Color("#aee8dd"))
+	points_label.add_theme_color_override("font_color", Color("#a9c08a"))
 	header.add_child(points_label)
 
 	var close_button := Button.new()
-	close_button.text = "Close (Esc)"
+	close_button.text = "Close" + MenuStyle.key_hint("Esc")
 	close_button.custom_minimum_size = Vector2(96.0, 36.0)
 	close_button.pressed.connect(_on_close_pressed)
 	header.add_child(close_button)
@@ -131,7 +131,7 @@ func _build_ui() -> void:
 	details_label.custom_minimum_size.y = 66.0
 	details_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	details_label.add_theme_font_size_override("font_size", 14)
-	details_label.add_theme_color_override("font_color", Color("#d5e5df"))
+	details_label.add_theme_color_override("font_color", Color("#ebe3cd"))
 	contents.add_child(details_label)
 
 	var action_row := HBoxContainer.new()
@@ -169,14 +169,14 @@ func _style_tab_button(button: Button, is_active: bool) -> void:
 	style.set_corner_radius_all(6)
 	style.set_border_width_all(2)
 	if is_active:
-		style.bg_color = Color("#17363b")
-		style.border_color = Color("#66cfc8")
+		style.bg_color = Color("#332b18")
+		style.border_color = Color("#e8c77e")
 		button.add_theme_color_override("font_color", Color("#ffd559"))
 		button.add_theme_color_override("font_disabled_color", Color("#ffd559"))
 	else:
-		style.bg_color = Color("#11181c")
-		style.border_color = Color("#3d5158")
-		button.add_theme_color_override("font_color", Color("#9aacab"))
+		style.bg_color = Color("#121612")
+		style.border_color = Color("#4a4434")
+		button.add_theme_color_override("font_color", Color("#b7bdae"))
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("disabled", style)
 
@@ -295,17 +295,17 @@ func _refresh() -> void:
 		var branch_style := StyleBoxFlat.new()
 		branch_style.set_corner_radius_all(4)
 		branch_style.set_border_width_all(1)
-		branch_style.bg_color = Color("#19383a") if is_selected_branch else Color("#13181b")
-		branch_style.border_color = Color("#5bc7c4") if is_selected_branch \
-			else Color("#20272b")
+		branch_style.bg_color = Color("#332b18") if is_selected_branch else Color("#151915")
+		branch_style.border_color = Color("#e8c77e") if is_selected_branch \
+			else Color("#2a2a22")
 		button.add_theme_stylebox_override("normal", branch_style)
 		button.add_theme_stylebox_override("hover", branch_style)
 		button.add_theme_stylebox_override("disabled", branch_style)
 		button.add_theme_color_override(
 			"font_color",
-			Color("#d6f1e7") if is_selected_branch else Color("#cbd2d1")
+			Color("#f6e4b4") if is_selected_branch else Color("#d2cbb8")
 		)
-		button.add_theme_color_override("font_disabled_color", Color("#d6f1e7"))
+		button.add_theme_color_override("font_disabled_color", Color("#f6e4b4"))
 
 	for definition in _get_skill_definitions():
 		var skill_id := str(definition["id"])
@@ -326,7 +326,7 @@ func _refresh() -> void:
 			definition["required_level"]
 		]
 		skill_icons[skill_id].modulate = Color.WHITE if rank > 0 or can_unlock \
-			else Color(0.62, 0.68, 0.72, 1.0)
+			else Color(0.72, 0.74, 0.68, 1.0)
 
 		var style := StyleBoxFlat.new()
 		style.set_corner_radius_all(6)
@@ -339,28 +339,28 @@ func _refresh() -> void:
 			style.bg_color = Color("#27352c")
 			style.border_color = Color("#ffd559") if is_selected else Color("#c99b52")
 		elif rank > 0:
-			style.bg_color = Color("#15443b")
-			style.border_color = Color.WHITE if is_selected else Color("#55e6c7")
+			style.bg_color = Color("#2a3a1e")
+			style.border_color = Color.WHITE if is_selected else Color("#a9c08a")
 		elif can_unlock:
-			style.bg_color = Color("#202e39")
-			style.border_color = Color.WHITE if is_selected else Color("#86c9e3")
+			style.bg_color = Color("#2c2a20")
+			style.border_color = Color.WHITE if is_selected else Color("#c9a463")
 		else:
-			style.bg_color = Color("#11181c")
-			style.border_color = Color.WHITE if is_selected else Color("#3d5158")
+			style.bg_color = Color("#121612")
+			style.border_color = Color.WHITE if is_selected else Color("#4a4434")
 		button.add_theme_stylebox_override("normal", style)
 		button.add_theme_stylebox_override("hover", style)
 		button.add_theme_stylebox_override("pressed", style)
 		button.add_theme_color_override(
 			"font_color",
-			Color("#ffd559") if is_selected else Color("#d6e0df")
+			Color("#ffd559") if is_selected else Color("#ebe3cd")
 		)
 		skill_name_labels[skill_id].add_theme_color_override(
 			"font_color",
-			Color("#ffd559") if is_selected else Color("#d6e0df")
+			Color("#ffd559") if is_selected else Color("#ebe3cd")
 		)
 		skill_summary_labels[skill_id].add_theme_color_override(
 			"font_color",
-			Color("#aee8dd") if rank > 0 else Color("#aebdc0")
+			Color("#a9c08a") if rank > 0 else Color("#b7bdae")
 		)
 
 	_refresh_details()

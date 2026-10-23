@@ -15,6 +15,7 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	interaction_prompt.hide()
+	interaction_prompt.text = MenuStyle.interact_prompt(interaction_prompt.text.trim_prefix("E  "))
 
 
 func can_interact(player: Player) -> bool:
@@ -70,7 +71,7 @@ func _change_scene(player: Player) -> void:
 		"health": player.health,
 		"mana": player.mana
 	})
-	var error := get_tree().change_scene_to_file(destination_scene)
+	var error := GameState.change_scene(destination_scene)
 	if error != OK:
 		get_tree().remove_meta("portal_spawn_position")
 		get_tree().remove_meta("portal_player_vitals")
