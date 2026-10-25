@@ -39,6 +39,12 @@ var target: Player
 @export var max_health: float = MAX_HEALTH
 @export var attack_damage: int = ATTACK_DAMAGE
 @export_range(1, 10000, 1) var experience_reward := 15
+## Shown on the HUD's target bar.
+@export var monster_name := "Monster"
+
+## The monster the player damaged most recently. Touch screens have no mouse to hover with, so their
+## target bar follows this instead.
+static var last_hit: Wolf
 
 var health: float
 var state := State.CHASING
@@ -234,6 +240,7 @@ func take_damage(amount: float) -> void:
 	var damage_taken := minf(amount * curse_damage_multiplier * (1.0 - reduction), health)
 	health -= damage_taken
 	health_bar.value = health
+	last_hit = self
 	_reflect_damage(damage_taken)
 	if health == 0:
 		died.emit()

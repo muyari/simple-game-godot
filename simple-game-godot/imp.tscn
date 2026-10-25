@@ -9,6 +9,7 @@ height = 32
 
 [node name="Imp" type="CharacterBody2D"]
 script = ExtResource("1_script")
+monster_name = "Imp"
 frame_size = Vector2i(140, 72)
 animations = {
 "attack": Vector2i(2, 3),

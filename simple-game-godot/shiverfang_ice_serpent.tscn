@@ -9,6 +9,7 @@ height = 30.0
 
 [node name="ShiverfangIceSerpent" type="CharacterBody2D"]
 script = ExtResource("1_serpent")
+monster_name = "Shiverfang Ice Serpent"
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_serpent_texture")
