@@ -1104,50 +1104,17 @@ offset_bottom = 78.0
 theme_override_colors/font_color = Color(0.95, 0.92, 0.84, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 3
-text = "C Character  |  I Inventory  |  J Quests  |  Waystone: replay any level."
-
-[node name="CharacterButton" type="Button" parent="TownUI" unique_id=1758047099]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -270.0
-offset_top = 16.0
-offset_right = -150.0
-offset_bottom = 48.0
-text = "Character (C)"
-
-[node name="PassiveTreeButton" type="Button" parent="TownUI" unique_id=1595471938]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -440.0
-offset_top = 16.0
-offset_right = -280.0
-offset_bottom = 48.0
-text = "Skills & Passives (P)"
-
-[node name="InventoryButton" type="Button" parent="TownUI" unique_id=1438421924]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -140.0
-offset_top = 16.0
-offset_right = -20.0
-offset_bottom = 48.0
-text = "Inventory (I)"
+text = "Waystone: replay any level."
 
 [node name="GoldLabel" type="Label" parent="TownUI" unique_id=44291346]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -180.0
-offset_top = 52.0
-offset_right = -20.0
-offset_bottom = 78.0
+offset_top = 78.0
+offset_right = -16.0
+offset_bottom = 104.0
 theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
 text = "Gold: 0"
 horizontal_alignment = 2
 
-[connection signal="pressed" from="TownUI/CharacterButton" to="TownUI" method="_on_character_button_pressed"]
-[connection signal="pressed" from="TownUI/PassiveTreeButton" to="TownUI" method="_on_passive_tree_button_pressed"]
-[connection signal="pressed" from="TownUI/InventoryButton" to="TownUI" method="_on_inventory_button_pressed"]

@@ -12,15 +12,23 @@ const SNAKE_SCENE = preload("res://snake.tscn")
 const FROSTBOUND_WRAITH_SCENE = preload("res://frostbound_wraith.tscn")
 const CRYSTALBACK_YETI_SCENE = preload("res://crystalback_yeti.tscn")
 const SHIVERFANG_ICE_SERPENT_SCENE = preload("res://shiverfang_ice_serpent.tscn")
-const SENTINEL_HEXWALKER_SCENE = preload("res://sentinel_hexwalker.tscn")
-const NEUROCORE_DRONE_SCENE = preload("res://neurocore_drone.tscn")
-const TITANFORGE_EXO_UNIT_SCENE = preload("res://titanforge_exo_unit.tscn")
-const PHASE_SHIFT_INFILTRATOR_SCENE = preload("res://phase_shift_infiltrator.tscn")
+const IMP_SCENE = preload("res://imp.tscn")
+const HELLHOUND_SCENE = preload("res://hellhound.tscn")
+const FIRE_FIEND_SCENE = preload("res://fire_fiend.tscn")
 const DESERT_BOSS_SCENE = preload("res://desert_boss.tscn")
 const ICE_GOLEM_SCENE = preload("res://ice_golem.tscn")
 const ICE_BOSS_SCENE = preload("res://ice_boss.tscn")
+const ARCHDEMON_SCENE = preload("res://archdemon.tscn")
 ## Single-monster level bosses; beating one clears the level.
-const LEVEL_BOSS_SCENES: Array[String] = ["res://desert_boss.tscn", "res://ice_boss.tscn"]
+const LEVEL_BOSS_SCENES: Array[String] = ["res://desert_boss.tscn", "res://ice_boss.tscn", "res://archdemon.tscn"]
+## Level 4 was once a robot zone; monsters from saves made back then come back as their underworld
+## counterparts so those levels can still be finished.
+const LEGACY_ENEMY_SCENES := {
+	"res://sentinel_hexwalker.tscn": "res://hellhound.tscn",
+	"res://neurocore_drone.tscn": "res://fire_fiend.tscn",
+	"res://titanforge_exo_unit.tscn": "res://imp.tscn",
+	"res://phase_shift_infiltrator.tscn": "res://imp.tscn",
+}
 const ITEM_PICKUP_SCENE = preload("res://item_pickup.tscn")
 const GOLD_PICKUP_SCENE = preload("res://gold_pickup.tscn")
 const TREASURE_CHEST_SCENE = preload("res://treasure_chest.tscn")
@@ -293,14 +301,95 @@ const ICE_GROUND_DECALS: Array[Dictionary] = [
 	{"texture": preload("res://textures/ice_snow_chunks_c.png"), "scale": Vector2(0.9, 1.1)},
 	{"texture": preload("res://textures/ice_drift_small.png"), "scale": Vector2(1.0, 1.2)},
 ]
-const AI_GROUND_TEXTURE = preload("res://textures/futuristic_ai_ground.svg")
-const AI_RELAY_PYLON_TEXTURE = preload("res://textures/ai_relay_pylon.svg")
-const AI_SERVER_STACK_TEXTURE = preload("res://textures/ai_server_stack.svg")
-const AI_COMMAND_CORE_TEXTURE = preload("res://textures/ai_command_core.svg")
+const UNDERWORLD_GROUND_TEXTURE = preload("res://textures/underworld_ground.png")
+## The cobble tile is pixel art; drawn at this scale its stones match the props.
+const UNDERWORLD_GROUND_SCALE := 2.0
+const SOOT_SHADOW := Color(0.08, 0.02, 0.02, 0.45)
+## Flat lava-veined patches of ground drawn under everything.
+const UNDERWORLD_DECALS: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_decal_lava_ring.png"), "scale": Vector2(0.9, 1.2)},
+]
+const OBSIDIAN_CRAGS: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_obsidian_crag_a.png"), "scale": Vector2(0.85, 1.0), "collision": 30.0},
+	{"texture": preload("res://textures/underworld_obsidian_crag_b.png"), "scale": Vector2(0.85, 1.0), "collision": 32.0},
+	{"texture": preload("res://textures/underworld_obsidian_cluster_a.png"), "scale": Vector2(0.85, 1.0), "collision": 30.0},
+	{"texture": preload("res://textures/underworld_obsidian_cluster_tall.png"), "scale": Vector2(0.85, 1.0), "collision": 28.0},
+]
+const OBSIDIAN_SPIRES: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_obsidian_spire_a.png"), "scale": Vector2(0.85, 1.05), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_obsidian_spire_b.png"), "scale": Vector2(0.85, 1.05), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_obsidian_spire_c.png"), "scale": Vector2(0.85, 1.05), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_obsidian_spire_d.png"), "scale": Vector2(0.85, 1.05), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_obsidian_spire_e.png"), "scale": Vector2(0.85, 1.05), "collision": 13.0},
+	{"texture": preload("res://textures/underworld_obsidian_column.png"), "scale": Vector2(0.85, 1.05), "collision": 14.0},
+]
+const OBSIDIAN_ROCKS: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_obsidian_boulder.png"), "scale": Vector2(0.8, 0.95), "collision": 22.0},
+	{"texture": preload("res://textures/underworld_obsidian_rock_flat.png"), "scale": Vector2(0.85, 1.0), "collision": 16.0},
+	{"texture": preload("res://textures/underworld_obsidian_nub_a.png"), "scale": Vector2(0.9, 1.1), "collision": 9.0},
+	{"texture": preload("res://textures/underworld_obsidian_nub_b.png"), "scale": Vector2(0.9, 1.1), "collision": 10.0},
+]
+## Ruined gateways, the centrepiece of a gate ruin (see _make_ruined_gate).
+const UNDERWORLD_ARCHES: Array[Texture2D] = [
+	preload("res://textures/underworld_arch_dark.png"),
+	preload("res://textures/underworld_arch_gargoyle.png"),
+	preload("res://textures/underworld_arch_brimstone.png"),
+	preload("res://textures/underworld_arch_chained.png"),
+	preload("res://textures/underworld_arch_demon.png"),
+]
+const UNDERWORLD_PILLARS: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_pillar_gothic_a.png"), "scale": Vector2(0.85, 1.0), "collision": 14.0},
+	{"texture": preload("res://textures/underworld_pillar_gothic_b.png"), "scale": Vector2(0.85, 1.0), "collision": 14.0},
+	{"texture": preload("res://textures/underworld_pillar_skull_a.png"), "scale": Vector2(0.8, 0.95), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_pillar_skull_b.png"), "scale": Vector2(0.8, 0.95), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_pillar_skeleton.png"), "scale": Vector2(0.8, 0.95), "collision": 14.0},
+	{"texture": preload("res://textures/underworld_column_broken.png"), "scale": Vector2(0.85, 1.0), "collision": 11.0},
+	{"texture": preload("res://textures/underworld_column_skull.png"), "scale": Vector2(0.85, 1.0), "collision": 12.0},
+]
+const UNDERWORLD_BONES: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_bones_pile_a.png"), "scale": Vector2(0.75, 0.9)},
+	{"texture": preload("res://textures/underworld_bones_pile_b.png"), "scale": Vector2(0.7, 0.85)},
+]
+const UNDERWORLD_SKELETON = preload("res://textures/underworld_skeleton.png")
+## Torture-yard pieces; "glow" props get firelight (see _ignite).
+const UNDERWORLD_TORMENTS: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_rack.png"), "scale": Vector2(0.75, 0.85), "collision": 30.0},
+	{"texture": preload("res://textures/underworld_iron_maiden.png"), "scale": Vector2(0.8, 0.9), "collision": 18.0},
+	{"texture": preload("res://textures/underworld_wheel.png"), "scale": Vector2(0.75, 0.85), "collision": 22.0},
+	{"texture": preload("res://textures/underworld_cage.png"), "scale": Vector2(0.8, 0.9), "collision": 24.0},
+	{"texture": preload("res://textures/underworld_chains_a.png"), "scale": Vector2(0.75, 0.85), "collision": 16.0},
+	{"texture": preload("res://textures/underworld_chains_b.png"), "scale": Vector2(0.75, 0.85), "collision": 10.0},
+	{"texture": preload("res://textures/underworld_shackles.png"), "scale": Vector2(0.7, 0.8), "collision": 0.0},
+]
+const UNDERWORLD_SUPPLIES: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_crate_a.png"), "scale": Vector2(0.75, 0.85), "collision": 14.0},
+	{"texture": preload("res://textures/underworld_crate_b.png"), "scale": Vector2(0.75, 0.85), "collision": 15.0},
+	{"texture": preload("res://textures/underworld_barrel_a.png"), "scale": Vector2(0.75, 0.85), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_barrel_b.png"), "scale": Vector2(0.75, 0.85), "collision": 12.0},
+	{"texture": preload("res://textures/underworld_crate_skull_a.png"), "scale": Vector2(0.7, 0.8), "collision": 20.0},
+	{"texture": preload("res://textures/underworld_crate_skull_b.png"), "scale": Vector2(0.7, 0.8), "collision": 20.0},
+]
+## Fires burning in the dark. "flame" is the height of the flames above the base, as a fraction of the art.
+const UNDERWORLD_FIRES: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_brazier_box.png"), "scale": Vector2(0.75, 0.85), "collision": 18.0, "flame": 0.75},
+	{"texture": preload("res://textures/underworld_cauldron.png"), "scale": Vector2(0.85, 0.95), "collision": 12.0, "flame": 0.8},
+	{"texture": preload("res://textures/underworld_fire_grate.png"), "scale": Vector2(0.75, 0.85), "collision": 18.0, "flame": 0.5},
+]
+const UNDERWORLD_ALTARS: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_altar_stone.png"), "scale": Vector2(0.75, 0.85), "collision": 34.0},
+	{"texture": preload("res://textures/underworld_altar_demon.png"), "scale": Vector2(0.8, 0.9), "collision": 26.0},
+	{"texture": preload("res://textures/underworld_altar_blood.png"), "scale": Vector2(0.75, 0.85), "collision": 34.0},
+	{"texture": preload("res://textures/underworld_altar_candles.png"), "scale": Vector2(0.75, 0.85), "collision": 34.0, "flame": 0.85},
+]
+const UNDERWORLD_GARGOYLES: Array[Dictionary] = [
+	{"texture": preload("res://textures/underworld_gargoyle_a.png"), "scale": Vector2(0.75, 0.85), "collision": 18.0},
+	{"texture": preload("res://textures/underworld_gargoyle_b.png"), "scale": Vector2(0.75, 0.85), "collision": 18.0},
+	{"texture": preload("res://textures/underworld_gargoyle_c.png"), "scale": Vector2(0.75, 0.85), "collision": 20.0},
+]
 const MAX_FOREST_ENEMIES = 10
 const MAX_DESERT_ENEMIES = 15
 const MAX_ICE_ENEMIES = 12
-const MAX_AI_ENEMIES = 15
+const MAX_UNDERWORLD_ENEMIES = 16
 const SPAWN_EDGE_MARGIN = 128.0
 ## Restored monsters start at least this far from the player, outside Wolf.AGGRO_RANGE.
 const ARRIVAL_CLEARANCE = 700.0
@@ -324,7 +413,7 @@ const CHEST_MIN_ITEMS = 1
 const CHEST_MAX_ITEMS = 2
 
 @export var player_path: NodePath = NodePath("../Player")
-@export_enum("Forest", "Desert", "Ice Caves", "Futuristic AI Zone") var biome := 0
+@export_enum("Forest", "Desert", "Ice Caves", "Underworld") var biome := 0
 @export_range(1, 25, 1) var area_level := 1
 
 var player: Player
@@ -366,7 +455,9 @@ func _ready() -> void:
 			ground.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			ground.scale = Vector2.ONE * ICE_GROUND_SCALE
 		elif biome == 3:
-			ground.texture = AI_GROUND_TEXTURE
+			ground.texture = UNDERWORLD_GROUND_TEXTURE
+			ground.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			ground.scale = Vector2.ONE * UNDERWORLD_GROUND_SCALE
 
 	player = get_node_or_null(player_path) as Player
 	if player == null:
@@ -412,6 +503,8 @@ func _ready() -> void:
 		get_parent().add_child.call_deferred(DesertAmbience.new())
 	elif biome == 2:
 		get_parent().add_child.call_deferred(IceAmbience.new())
+	elif biome == 3:
+		get_parent().add_child.call_deferred(UnderworldAmbience.new())
 	call_deferred("_emit_initial_progress")
 
 
@@ -487,7 +580,9 @@ func save_current_level_state() -> bool:
 	var enemy_records: Array[Dictionary] = []
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := enemy_node as Wolf
-		if enemy == null or enemy.health <= 0.0 or enemy.scene_file_path.is_empty():
+		# Imps an Archdemon summons are part of its fight, not the level's tally.
+		if enemy == null or enemy.health <= 0.0 or enemy.scene_file_path.is_empty() \
+				or enemy.has_meta(Archdemon.SUMMONED_META):
 			continue
 		enemy_records.append({
 			"scene_path": enemy.scene_file_path,
@@ -691,6 +786,8 @@ func _item_from_record(raw_item: Dictionary) -> ItemData:
 
 
 func _get_enemy_scene(scene_path: String) -> PackedScene:
+	if LEGACY_ENEMY_SCENES.has(scene_path):
+		scene_path = LEGACY_ENEMY_SCENES[scene_path]
 	match scene_path:
 		"res://wolf.tscn":
 			return WOLF_SCENE
@@ -704,14 +801,14 @@ func _get_enemy_scene(scene_path: String) -> PackedScene:
 			return CRYSTALBACK_YETI_SCENE
 		"res://shiverfang_ice_serpent.tscn":
 			return SHIVERFANG_ICE_SERPENT_SCENE
-		"res://sentinel_hexwalker.tscn":
-			return SENTINEL_HEXWALKER_SCENE
-		"res://neurocore_drone.tscn":
-			return NEUROCORE_DRONE_SCENE
-		"res://titanforge_exo_unit.tscn":
-			return TITANFORGE_EXO_UNIT_SCENE
-		"res://phase_shift_infiltrator.tscn":
-			return PHASE_SHIFT_INFILTRATOR_SCENE
+		"res://imp.tscn":
+			return IMP_SCENE
+		"res://hellhound.tscn":
+			return HELLHOUND_SCENE
+		"res://fire_fiend.tscn":
+			return FIRE_FIEND_SCENE
+		"res://archdemon.tscn":
+			return ARCHDEMON_SCENE
 		"res://desert_boss.tscn":
 			return DESERT_BOSS_SCENE
 		"res://ice_golem.tscn":
@@ -821,7 +918,6 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 	var random := RandomNumberGenerator.new()
 	random.seed = int(region.x) * 73856093 ^ int(region.y) * 19349663
 	var region_center := region_origin + Vector2(region) * region_size
-	var safe_area := region_size * 0.39
 
 	if biome == 1:
 		_generate_desert_scenery(random, region_center)
@@ -830,7 +926,7 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 		_generate_ice_scenery(random, region_center)
 		return
 	if biome == 3:
-		_generate_ai_scenery(random, region_center, safe_area)
+		_generate_underworld_scenery(random, region_center)
 		return
 	_generate_forest_scenery(random, region, region_center)
 
@@ -911,6 +1007,8 @@ func _try_add_prop(
 		if not _claim_prop_spot(base_position, footprint * maxf(uniform_scale, 0.6), collision_radius > 0.0):
 			continue
 		var sprite := _make_standing_sprite(prop["texture"], uniform_scale)
+		if prop.has("flame"):
+			_ignite(sprite, prop["flame"])
 		if cast_shadow:
 			_add_prop_shadow(sprite)
 		if collision_radius <= 0.0:
@@ -1128,6 +1226,8 @@ func _try_add_cluster(
 			sprite.position = piece["offset"]
 			sprite.flip_h = random.randf() < 0.5
 			_add_prop_shadow(sprite)
+			if piece.has("flame"):
+				_ignite(sprite, piece["flame"])
 			cluster.add_child(sprite)
 			var collision_radius: float = piece["collision"]
 			if collision_radius > 0.0:
@@ -1141,10 +1241,14 @@ func _try_add_cluster(
 		return
 
 
-## A sun shadow on the ground under a standing sprite (origin at the bottom of its art): warm on sand,
-## cold blue on snow.
+## A shadow on the ground under a standing sprite (origin at the bottom of its art): warm on sand,
+## cold blue on snow, sooty in the underworld.
 func _add_prop_shadow(sprite: Sprite2D) -> void:
-	var color := IceCreature.SHADOW_COLOR if biome == 2 else SunShadow.COLOR
+	var color := SunShadow.COLOR
+	if biome == 2:
+		color = IceCreature.SHADOW_COLOR
+	elif biome == 3:
+		color = SOOT_SHADOW
 	SunShadow.attach(sprite, Vector2(0.0, -2.0), sprite.texture.get_width() * 1.1, true, color)
 
 
@@ -1298,37 +1402,202 @@ func _make_stump_grove(random: RandomNumberGenerator) -> Array[Dictionary]:
 		})
 	return pieces
 
-func _generate_ai_scenery(
-	random: RandomNumberGenerator,
-	region_center: Vector2,
-	safe_area: Vector2
-) -> void:
-	for _pylon_index in range(random.randi_range(2, 3)):
-		_add_scenery_sprite(
-			AI_RELAY_PYLON_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.75, 1.15),
-			24.0,
-			Vector2(0.0, 28.0)
-		)
 
-	for _server_index in range(random.randi_range(1, 2)):
-		_add_scenery_sprite(
-			AI_SERVER_STACK_TEXTURE,
-			region_center + _random_region_offset(random, safe_area),
-			random.randf_range(0.7, 1.0),
-			38.0,
-			Vector2(0.0, 18.0)
-		)
+func _generate_underworld_scenery(random: RandomNumberGenerator, region_center: Vector2) -> void:
+	# Regions tile edge to edge, so underworld props may use the whole region.
+	var spread := region_size * 0.48
+	var floor_detail := UnderworldFloor.new()
+	floor_detail.seed_value = random.randi()
+	floor_detail.half_extents = region_size * 0.5
+	floor_detail.position = region_center
+	floor_detail.z_index = -8
+	get_parent().call_deferred("add_child", floor_detail)
 
-	if random.randf() < 0.6:
-		_add_scenery_sprite(
-			AI_COMMAND_CORE_TEXTURE,
-			region_center + _random_region_offset(random, safe_area * 0.65),
-			random.randf_range(0.75, 1.0),
-			44.0,
-			Vector2(0.0, 20.0)
-		)
+	for _decal_index in random.randi_range(1, 3):
+		var decal: Dictionary = UNDERWORLD_DECALS[random.randi() % UNDERWORLD_DECALS.size()]
+		var sprite := _make_standing_sprite(decal["texture"], _random_scale(random, decal))
+		sprite.position = region_center + _random_region_offset(random, spread)
+		sprite.flip_h = random.randf() < 0.5
+		sprite.z_index = -6
+		get_parent().call_deferred("add_child", sprite)
+
+	for _pool_index in random.randi_range(0, 2):
+		_try_add_lava_pool(random, region_center, spread * 0.85)
+
+	var landmark_roll := random.randf()
+	if landmark_roll < 0.3:
+		_try_add_cluster(random, _make_ruined_gate(random), region_center, spread * 0.8, Vector2(150.0, 50.0))
+	elif landmark_roll < 0.55:
+		_try_add_cluster(random, _make_dark_shrine(random), region_center, spread * 0.8, Vector2(140.0, 50.0))
+
+	if random.randf() < 0.55:
+		_try_add_cluster(random, _make_obsidian_outcrop(random), region_center, spread * 0.85, Vector2(80.0, 32.0))
+	for _field_index in random.randi_range(1, 2):
+		_try_add_cluster(random, _make_bone_field(random), region_center, spread, Vector2(64.0, 26.0))
+	if random.randf() < 0.35:
+		_try_add_cluster(random, _make_torture_yard(random), region_center, spread * 0.85, Vector2(110.0, 40.0))
+	if random.randf() < 0.3:
+		_try_add_cluster(random, _make_supply_cache(random), region_center, spread, Vector2(60.0, 24.0))
+
+	for _spire_index in random.randi_range(2, 3):
+		var spire: Dictionary = OBSIDIAN_SPIRES[random.randi() % OBSIDIAN_SPIRES.size()]
+		var spire_collision: float = spire["collision"]
+		_try_add_prop(random, spire, region_center, spread, Vector2(spire_collision + 10.0, 10.0), spire_collision, true)
+	for _rock_index in random.randi_range(2, 3):
+		var rock: Dictionary = OBSIDIAN_ROCKS[random.randi() % OBSIDIAN_ROCKS.size()]
+		var rock_collision: float = rock["collision"]
+		_try_add_prop(random, rock, region_center, spread, Vector2(rock_collision + 8.0, 10.0), rock_collision, true)
+	for _fire_index in random.randi_range(1, 2):
+		var fire: Dictionary = UNDERWORLD_FIRES[random.randi() % UNDERWORLD_FIRES.size()]
+		var fire_collision: float = fire["collision"]
+		_try_add_prop(random, fire, region_center, spread, Vector2(fire_collision + 10.0, 10.0), fire_collision, true)
+	for _bones_index in random.randi_range(2, 3):
+		var bones: Dictionary = UNDERWORLD_BONES[random.randi() % UNDERWORLD_BONES.size()]
+		_try_add_prop(random, bones, region_center, spread, Vector2(18.0, 8.0), 0.0, true)
+
+
+## A pool of lava set into the ground; it burns, so it keeps clear of props and the entry point.
+func _try_add_lava_pool(random: RandomNumberGenerator, region_center: Vector2, spread: Vector2) -> void:
+	var half_size := Vector2(random.randf_range(52.0, 96.0), 0.0)
+	half_size.y = half_size.x * random.randf_range(0.42, 0.52)
+	for _attempt in 12:
+		var center := region_center + _random_region_offset(random, spread)
+		if not _claim_prop_spot(center + Vector2(0.0, half_size.y), half_size * 1.15):
+			continue
+		var pool := LavaPool.new()
+		pool.seed_value = random.randi()
+		pool.half_size = half_size
+		pool.position = center
+		pool.z_index = -5
+		get_parent().call_deferred("add_child", pool)
+		return
+
+
+## A ruined gateway: an arch flanked by pillars, with obsidian rubble strewn about.
+func _make_ruined_gate(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = [{
+		"texture": UNDERWORLD_ARCHES[random.randi() % UNDERWORLD_ARCHES.size()],
+		"scale": random.randf_range(0.9, 1.05), "offset": Vector2.ZERO, "collision": 0.0,
+	}]
+	for side in [-1.0, 1.0]:
+		if random.randf() < 0.75:
+			var pillar: Dictionary = UNDERWORLD_PILLARS[random.randi() % 2]
+			pieces.append({
+				"texture": pillar["texture"], "scale": _random_scale(random, pillar),
+				"offset": Vector2(side * random.randf_range(95.0, 125.0), random.randf_range(-6.0, 16.0)),
+				"collision": pillar["collision"],
+			})
+	for _rubble in random.randi_range(1, 2):
+		var rock: Dictionary = OBSIDIAN_ROCKS[random.randi() % OBSIDIAN_ROCKS.size()]
+		pieces.append({
+			"texture": rock["texture"], "scale": _random_scale(random, rock) * 0.85,
+			"offset": _cluster_offset(random, 70.0, 120.0), "collision": rock["collision"],
+		})
+	return pieces
+
+
+## A dark shrine: an altar watched over by gargoyles, lit by braziers.
+func _make_dark_shrine(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var altar: Dictionary = UNDERWORLD_ALTARS[random.randi() % UNDERWORLD_ALTARS.size()]
+	var pieces: Array[Dictionary] = [_piece(random, altar, Vector2.ZERO)]
+	for side in [-1.0, 1.0]:
+		var gargoyle: Dictionary = UNDERWORLD_GARGOYLES[random.randi() % UNDERWORLD_GARGOYLES.size()]
+		pieces.append(_piece(random, gargoyle, Vector2(side * random.randf_range(85.0, 105.0), random.randf_range(-14.0, -4.0))))
+	for side in [-1.0, 1.0]:
+		if random.randf() < 0.7:
+			var fire: Dictionary = UNDERWORLD_FIRES[1 if random.randf() < 0.6 else 0]
+			pieces.append(_piece(random, fire, Vector2(side * random.randf_range(52.0, 66.0), random.randf_range(20.0, 34.0))))
+	return pieces
+
+
+## An obsidian outcrop: one big crag with spires and shards gathered around its base.
+func _make_obsidian_outcrop(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var crag: Dictionary = OBSIDIAN_CRAGS[random.randi() % OBSIDIAN_CRAGS.size()]
+	var pieces: Array[Dictionary] = [_piece(random, crag, Vector2.ZERO)]
+	for _spire in random.randi_range(1, 2):
+		var spire: Dictionary = OBSIDIAN_SPIRES[random.randi() % OBSIDIAN_SPIRES.size()]
+		pieces.append(_piece(random, spire, _cluster_offset(random, 40.0, 66.0), 0.85))
+	for _rock in random.randi_range(1, 2):
+		var rock: Dictionary = OBSIDIAN_ROCKS[random.randi() % OBSIDIAN_ROCKS.size()]
+		pieces.append(_piece(random, rock, _cluster_offset(random, 46.0, 76.0)))
+	return pieces
+
+
+## Where something died badly: bone heaps, a skeleton and a skull-capped column or two.
+func _make_bone_field(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = []
+	var pillar: Dictionary = UNDERWORLD_PILLARS[2 + random.randi() % 5]
+	pieces.append(_piece(random, pillar, Vector2.ZERO))
+	for _bones in random.randi_range(2, 3):
+		var bones: Dictionary = UNDERWORLD_BONES[random.randi() % UNDERWORLD_BONES.size()]
+		pieces.append(_piece(random, bones, _cluster_offset(random, 30.0, 64.0)))
+	if random.randf() < 0.4:
+		pieces.append({
+			"texture": UNDERWORLD_SKELETON, "scale": random.randf_range(0.75, 0.85),
+			"offset": _cluster_offset(random, 36.0, 60.0), "collision": 0.0,
+		})
+	return pieces
+
+
+## Torture yard: a few instruments of torment around a burning brazier.
+func _make_torture_yard(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = []
+	var choices := range(UNDERWORLD_TORMENTS.size())
+	choices.shuffle()
+	for index in random.randi_range(2, 3):
+		var torment: Dictionary = UNDERWORLD_TORMENTS[choices[index]]
+		var x := (index - 1) * random.randf_range(62.0, 78.0)
+		pieces.append(_piece(random, torment, Vector2(x, random.randf_range(-12.0, 12.0))))
+	pieces.append(_piece(random, UNDERWORLD_FIRES[0], _cluster_offset(random, 60.0, 90.0) + Vector2(0.0, 26.0)))
+	return pieces
+
+
+## A cache of crates and barrels, some packed with skulls.
+func _make_supply_cache(random: RandomNumberGenerator) -> Array[Dictionary]:
+	var pieces: Array[Dictionary] = []
+	for index in random.randi_range(2, 4):
+		var supply: Dictionary = UNDERWORLD_SUPPLIES[random.randi() % UNDERWORLD_SUPPLIES.size()]
+		pieces.append(_piece(random, supply, Vector2.ZERO if index == 0 else _cluster_offset(random, 26.0, 50.0)))
+	return pieces
+
+
+## A cluster piece from a prop table entry, carrying its collision and any flames.
+func _piece(random: RandomNumberGenerator, prop: Dictionary, offset: Vector2, scale_factor := 1.0) -> Dictionary:
+	var piece := {
+		"texture": prop["texture"], "scale": _random_scale(random, prop) * scale_factor,
+		"offset": offset, "collision": prop.get("collision", 0.0),
+	}
+	if prop.has("flame"):
+		piece["flame"] = prop["flame"]
+	return piece
+
+
+## Firelight and rising embers for a burning prop; `flame` is how high up the art the fire sits.
+func _ignite(sprite: Sprite2D, flame: float) -> void:
+	var height := sprite.texture.get_height()
+	var flame_position := Vector2(0.0, -height * flame)
+	FireGlow.attach(sprite, flame_position, height * 1.7, Color("#ff6a1f"), 0.6)
+	var embers := CPUParticles2D.new()
+	embers.position = flame_position
+	embers.amount = 6
+	embers.lifetime = 1.4
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(sprite.texture.get_width() * 0.2, 3.0)
+	embers.direction = Vector2.UP
+	embers.spread = 20.0
+	embers.gravity = Vector2.ZERO
+	embers.initial_velocity_min = 18.0
+	embers.initial_velocity_max = 36.0
+	embers.scale_amount_min = 1.5
+	embers.scale_amount_max = 2.5
+	var fade := Gradient.new()
+	fade.offsets = PackedFloat32Array([0.0, 0.4, 1.0])
+	fade.colors = PackedColorArray([Color("#fff1a8"), Color("#ff8a2a"), Color(0.85, 0.2, 0.05, 0.0)])
+	embers.color_ramp = fade
+	var additive := CanvasItemMaterial.new()
+	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	embers.material = additive
+	sprite.add_child(embers)
 
 
 func _random_region_offset(random: RandomNumberGenerator, safe_area: Vector2) -> Vector2:
@@ -1336,81 +1605,6 @@ func _random_region_offset(random: RandomNumberGenerator, safe_area: Vector2) ->
 		random.randf_range(-safe_area.x, safe_area.x),
 		random.randf_range(-safe_area.y, safe_area.y)
 	)
-
-
-func _add_scenery_sprite(
-	texture: Texture2D,
-	world_position: Vector2,
-	uniform_scale: float,
-	collision_radius := 0.0,
-	collision_offset := Vector2.ZERO
-) -> void:
-	var sprite_size := Vector2(texture.get_width(), texture.get_height()) * uniform_scale
-	var half_size := sprite_size * 0.5
-	if collision_radius > 0.0:
-		var collision_extent := Vector2(
-			collision_radius * uniform_scale + absf(collision_offset.x * uniform_scale),
-			collision_radius * uniform_scale + absf(collision_offset.y * uniform_scale)
-		)
-		half_size.x = maxf(half_size.x, collision_extent.x)
-		half_size.y = maxf(half_size.y, collision_extent.y)
-	if not _has_scenery_clearance(world_position, half_size):
-		return
-
-	var placements: Array = scenery_placements_by_region.get(active_scenery_region, [])
-	placements.append({"position": world_position, "half_size": half_size})
-	scenery_placements_by_region[active_scenery_region] = placements
-
-	var scenery := Sprite2D.new()
-	scenery.texture = texture
-	scenery.scale = Vector2.ONE * uniform_scale
-	if biome == 2:
-		scenery.modulate = Color("#9bd9f5")
-	elif biome == 3:
-		scenery.modulate = Color("#67d9ce")
-	scenery.z_index = -1
-	if collision_radius <= 0.0:
-		scenery.position = world_position
-		get_parent().call_deferred("add_child", scenery)
-		return
-
-	var obstacle := StaticBody2D.new()
-	obstacle.position = world_position
-	var collision := CollisionShape2D.new()
-	var shape := CircleShape2D.new()
-	shape.radius = collision_radius * uniform_scale
-	collision.shape = shape
-	collision.position = collision_offset * uniform_scale
-	obstacle.add_child(collision)
-	obstacle.add_child(scenery)
-	get_parent().call_deferred("add_child", obstacle)
-
-
-func _add_random_scenery_sprite(
-	random: RandomNumberGenerator,
-	texture: Texture2D,
-	region_center: Vector2,
-	safe_area: Vector2,
-	uniform_scale: float,
-	collision_radius := 0.0,
-	collision_offset := Vector2.ZERO
-) -> bool:
-	for _attempt in range(32):
-		var existing_placement_count: int = scenery_placements_by_region.get(
-			active_scenery_region,
-			[]
-		).size()
-		_add_scenery_sprite(
-			texture,
-			region_center + _random_region_offset(random, safe_area),
-			uniform_scale,
-			collision_radius,
-			collision_offset
-		)
-		var updated_placements: Array = scenery_placements_by_region.get(active_scenery_region, [])
-		if updated_placements.size() > existing_placement_count:
-			return true
-	return false
 
 
 func _has_scenery_clearance(world_position: Vector2, half_size: Vector2) -> bool:
@@ -1446,7 +1640,7 @@ func _get_max_enemies() -> int:
 		2:
 			return MAX_ICE_ENEMIES
 		3:
-			return MAX_AI_ENEMIES
+			return MAX_UNDERWORLD_ENEMIES
 	return MAX_FOREST_ENEMIES
 
 
@@ -1457,15 +1651,13 @@ func _spawn_enemy(direction: Vector2) -> bool:
 	elif biome == 2:
 		enemy_scene = CRYSTALBACK_YETI_SCENE if loot_random.randf() < 0.55 else ICE_GOLEM_SCENE
 	elif biome == 3:
-		var robot_roll := loot_random.randf()
-		if robot_roll < 0.25:
-			enemy_scene = SENTINEL_HEXWALKER_SCENE
-		elif robot_roll < 0.5:
-			enemy_scene = NEUROCORE_DRONE_SCENE
-		elif robot_roll < 0.75:
-			enemy_scene = TITANFORGE_EXO_UNIT_SCENE
+		var demon_roll := loot_random.randf()
+		if demon_roll < 0.45:
+			enemy_scene = IMP_SCENE
+		elif demon_roll < 0.75:
+			enemy_scene = HELLHOUND_SCENE
 		else:
-			enemy_scene = PHASE_SHIFT_INFILTRATOR_SCENE
+			enemy_scene = FIRE_FIEND_SCENE
 	var enemy := enemy_scene.instantiate() as Wolf
 	if enemy == null:
 		push_error("The enemy scene root must use the Wolf base script.")
@@ -1485,11 +1677,15 @@ func _spawn_enemy(direction: Vector2) -> bool:
 
 ## Levels that end with a single boss monster rather than the forest's wolf pack.
 func _has_level_boss() -> bool:
-	return biome == 1 or biome == 2
+	return biome in [1, 2, 3]
 
 
 func _spawn_level_boss() -> void:
-	var boss_scene: PackedScene = ICE_BOSS_SCENE if biome == 2 else DESERT_BOSS_SCENE
+	var boss_scene: PackedScene = DESERT_BOSS_SCENE
+	if biome == 2:
+		boss_scene = ICE_BOSS_SCENE
+	elif biome == 3:
+		boss_scene = ARCHDEMON_SCENE
 	var boss := boss_scene.instantiate() as Wolf
 	if boss == null:
 		push_error("The level boss scene root must use the Wolf base script.")
@@ -1538,8 +1734,6 @@ func _on_enemy_died(enemy: Wolf) -> void:
 	elif _has_level_boss() and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_level_boss()
 		_save_level_state()
-	elif biome == 3 and enemies_spawned == max_enemies and enemies_defeated == max_enemies:
-		_complete_current_level()
 	else:
 		_save_level_state()
 
@@ -1549,8 +1743,8 @@ func _on_level_boss_died(boss: Wolf) -> void:
 	if not player.gain_experience(experience_reward):
 		push_error("Could not award %d XP for defeating the level boss." % experience_reward)
 	_drop_enemy_loot(boss, true)
-	if biome == 2:
-		# The Cryohydra guards a hoard as well.
+	if biome in [2, 3]:
+		# The Cryohydra and the Archdemon guard a hoard as well.
 		_spawn_treasure_chest(boss.global_position + Vector2(0.0, 40.0))
 	_complete_current_level()
 
@@ -1653,7 +1847,11 @@ func _drop_enemy_loot(enemy: Wolf, is_level_boss := false) -> void:
 	var gold_amount := roundi(loot_random.randi_range(1, 3) * enemy.get_gold_multiplier())
 	_spawn_gold_pickup(enemy.global_position, gold_amount)
 	if is_level_boss:
-		var boss_gear := _create_ice_gear(true) if biome == 2 else _create_desert_gear(true)
+		var boss_gear := _create_desert_gear(true)
+		if biome == 2:
+			boss_gear = _create_ice_gear(true)
+		elif biome == 3:
+			boss_gear = _create_underworld_gear(true)
 		_spawn_item_pickup(boss_gear, enemy.global_position)
 	elif loot_random.randf() < ITEM_DROP_CHANCE:
 		_drop_random_enemy_item(enemy.global_position)
@@ -1666,10 +1864,12 @@ func _drop_enemy_loot(enemy: Wolf, is_level_boss := false) -> void:
 
 
 func _drop_random_enemy_item(world_position: Vector2) -> void:
-	if biome == 1 or biome == 3:
+	if biome == 1:
 		_spawn_item_pickup(_create_desert_gear(false), world_position)
 	elif biome == 2:
 		_spawn_item_pickup(_create_ice_gear(false), world_position)
+	elif biome == 3:
+		_spawn_item_pickup(_create_underworld_gear(false), world_position)
 	elif not item_pool.is_empty():
 		_spawn_item_pickup(item_pool[loot_random.randi_range(0, item_pool.size() - 1)], world_position)
 
@@ -1732,3 +1932,31 @@ func _create_ice_gear(is_boss_drop: bool) -> ItemData:
 func _on_player_died() -> void:
 	set_physics_process(false)
 	_save_level_state()
+
+
+## Underworld gear, a step up from the Ice Caves'; the Archdemon drops the best of it.
+func _create_underworld_gear(is_boss_drop: bool) -> ItemData:
+	var gear_choice := loot_random.randi_range(0, 2)
+	var bonus := 5 if is_boss_drop else 4
+	var prefix := "Hellforged" if is_boss_drop else "Brimstone"
+	var item := ItemData.new()
+	item.price = 45
+
+	match gear_choice:
+		0:
+			item.display_name = "%s Trident" % prefix
+			item.equipment_slot = "Weapon"
+			item.icon_color = Color("#ff7a3d")
+			item.damage_bonus = bonus
+		1:
+			item.display_name = "%s Horned Helm" % prefix
+			item.equipment_slot = "Helm"
+			item.icon_color = Color("#d9573a")
+			item.damage_reduction = bonus
+		2:
+			item.display_name = "%s Ember Ring" % prefix
+			item.equipment_slot = "Ring"
+			item.icon_color = Color("#ffb347")
+			item.damage_bonus = bonus
+
+	return item

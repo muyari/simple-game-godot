@@ -4,11 +4,11 @@ class_name QuestMenu
 
 signal closed
 
-const PANEL_BG := Color("#0d1216")
-const PANEL_BORDER := Color("#4fb8c7")
-const TEXT := Color("#d5e5df")
-const MUTED := Color("#9aacab")
-const ACCENT := Color("#aee8dd")
+const PANEL_BG := Color("#0e1210")
+const PANEL_BORDER := Color("#9e7d4a")
+const TEXT := Color("#ebe3cd")
+const MUTED := Color("#b7bdae")
+const ACCENT := Color("#a9c08a")
 const GOLD := Color("#ffd559")
 ## Tab key for the Quest Rewards tab (area tabs use their level id, which start at 1).
 const REWARDS_TAB := 0
@@ -65,7 +65,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_ui() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.015, 0.02, 0.03, 0.92)
+	backdrop.color = Color(0.015, 0.02, 0.018, 0.88)
 	add_child(backdrop)
 
 	var panel := PanelContainer.new()
@@ -88,7 +88,7 @@ func _build_ui() -> void:
 	title_tab.text = "Quest Log"
 	title_tab.custom_minimum_size = Vector2(130.0, 36.0)
 	title_tab.disabled = true
-	title_tab.add_theme_stylebox_override("disabled", _box(Color("#17363b"), Color("#66cfc8"), 2))
+	title_tab.add_theme_stylebox_override("disabled", _box(Color("#332b18"), Color("#e8c77e"), 2))
 	title_tab.add_theme_color_override("font_disabled_color", GOLD)
 	header.add_child(title_tab)
 	count_label = Label.new()
@@ -98,7 +98,7 @@ func _build_ui() -> void:
 	count_label.add_theme_color_override("font_color", ACCENT)
 	header.add_child(count_label)
 	var close_button := Button.new()
-	close_button.text = "Close (J / Esc)"
+	close_button.text = "Close" + MenuStyle.key_hint("J / Esc")
 	close_button.custom_minimum_size = Vector2(120.0, 36.0)
 	close_button.pressed.connect(close_menu)
 	header.add_child(close_button)
@@ -138,7 +138,7 @@ func _build_ui() -> void:
 
 	detail_panel = PanelContainer.new()
 	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_panel.add_theme_stylebox_override("panel", _box(Color("#11181c"), Color("#3d5158"), 2, 16.0, 12.0))
+	detail_panel.add_theme_stylebox_override("panel", _box(Color("#121612"), Color("#4a4434"), 2, 16.0, 12.0))
 	body.add_child(detail_panel)
 	var details := VBoxContainer.new()
 	details.add_theme_constant_override("separation", 8)
@@ -216,11 +216,11 @@ func _refresh() -> void:
 func _style_tab(button: Button, label: String, count: int, is_selected: bool) -> void:
 	button.text = "%s (%d)" % [label, count] if count > 0 else label
 	button.add_theme_stylebox_override("normal", _box(
-		Color("#19383a") if is_selected else Color("#13181b"),
-		Color("#5bc7c4") if is_selected else Color("#20272b"),
+		Color("#332b18") if is_selected else Color("#151915"),
+		Color("#e8c77e") if is_selected else Color("#2a2a22"),
 		2
 	))
-	button.add_theme_color_override("font_color", Color("#d6f1e7") if is_selected else Color("#cbd2d1"))
+	button.add_theme_color_override("font_color", Color("#f6e4b4") if is_selected else Color("#d2cbb8"))
 
 
 func _make_card(text: String, key: String, is_selected: bool, is_completed: bool) -> Button:
@@ -229,7 +229,7 @@ func _make_card(text: String, key: String, is_selected: bool, is_completed: bool
 	card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	card.text = text
 	card.add_theme_font_size_override("font_size", 14)
-	var text_color := MUTED if is_completed else Color("#d6e0df")
+	var text_color := MUTED if is_completed else Color("#ebe3cd")
 	card.add_theme_color_override("font_color", GOLD if is_selected else text_color)
 	var border := Color("#4f8f6a") if is_completed else Color("#c99b52")
 	card.add_theme_stylebox_override("normal", _box(

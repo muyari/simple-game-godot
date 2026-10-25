@@ -1,10 +1,6 @@
 extends Control
 
-const LEVEL_NAMES = {
-	2: "II.   Sunscorch Sands",
-	3: "III.   The Ice Caves",
-	4: "IV.   The Futuristic AI Zone",
-}
+const LEVEL_NUMERALS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
 @onready var backdrop: TextureRect = $Backdrop
 @onready var campfire: TitleCampfire = %Campfire
@@ -23,6 +19,7 @@ const LEVEL_NAMES = {
 @onready var ranger_button: Button = %RangerButton
 @onready var level_subtitle: Label = %LevelSubtitle
 @onready var level_status: Label = %LevelStatus
+@onready var level1_button: Button = %Level1Button
 @onready var level2_button: Button = %Level2Button
 @onready var level3_button: Button = %Level3Button
 @onready var level4_button: Button = %Level4Button
@@ -161,11 +158,13 @@ func _show_level_screen() -> void:
 
 
 func _refresh_level_buttons() -> void:
-	for entry in [[level2_button, 2], [level3_button, 3], [level4_button, 4]]:
+	for entry in [[level1_button, 1], [level2_button, 2], [level3_button, 3], [level4_button, 4]]:
 		var button: Button = entry[0]
 		var level_id: int = entry[1]
 		button.disabled = not GameState.is_level_unlocked(level_id)
-		button.text = LEVEL_NAMES[level_id] + ("   (Locked)" if button.disabled else "")
+		button.text = "%s.   %s" % [LEVEL_NUMERALS[level_id], GameState.LEVEL_NAMES[level_id]]
+		if button.disabled:
+			button.text += "   (Locked)"
 
 
 func _on_roster_create_pressed() -> void:
@@ -260,19 +259,19 @@ func _on_character_continue() -> void:
 
 
 func _on_level_1_selected() -> void:
-	_load_level("res://main.tscn", "Forest Level 1")
+	_load_level("res://main.tscn", GameState.LEVEL_NAMES[1])
 
 
 func _on_level_2_selected() -> void:
-	_load_level("res://desert.tscn", "Sunscorch Sands")
+	_load_level("res://desert.tscn", GameState.LEVEL_NAMES[2])
 
 
 func _on_level_3_selected() -> void:
-	_load_level("res://ice_caves.tscn", "The Ice Caves")
+	_load_level("res://ice_caves.tscn", GameState.LEVEL_NAMES[3])
 
 
 func _on_level_4_selected() -> void:
-	_load_level("res://futuristic_ai_zone.tscn", "The Futuristic AI Zone")
+	_load_level("res://underworld.tscn", GameState.LEVEL_NAMES[4])
 
 
 func _load_level(scene_path: String, level_name: String) -> void:
@@ -286,7 +285,7 @@ func _load_level(scene_path: String, level_name: String) -> void:
 
 	get_tree().set_meta("selected_character", selected_character_class)
 	get_tree().set_meta("selected_character_id", selected_character_id)
-	var error := get_tree().change_scene_to_file(scene_path)
+	var error := GameState.change_scene(scene_path)
 	if error != OK:
 		push_error("Could not load %s: %s" % [level_name, error_string(error)])
 
@@ -301,7 +300,7 @@ func _on_start_in_town_pressed() -> void:
 
 	get_tree().set_meta("selected_character", selected_character_class)
 	get_tree().set_meta("selected_character_id", selected_character_id)
-	var error := get_tree().change_scene_to_file("res://town.tscn")
+	var error := GameState.change_scene("res://town.tscn")
 	if error != OK:
 		push_error("Could not load town: %s" % error_string(error))
 

@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://main.tscn" id="1_level_base"]
+
+[node name="Level4Underworld" instance=ExtResource("1_level_base")]
+
+[node name="LevelController" parent="." index="2"]
+biome = 3
+area_level = 4
+
+[node name="EnemyProgressLabel" parent="UI"]
+text = "Enemies defeated: 0/16"

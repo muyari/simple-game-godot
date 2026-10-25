@@ -25,6 +25,7 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	prompt.hide()
+	prompt.text = MenuStyle.interact_prompt(prompt.text.trim_prefix("E  "))
 	refresh_marker()
 
 

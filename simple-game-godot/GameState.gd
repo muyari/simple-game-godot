@@ -9,11 +9,19 @@ const SAVE_PATH = "user://character_save.json"
 const SAVE_VERSION = 8
 const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
+const SCENE_FADE_OUT_TIME = 0.22
+const SCENE_FADE_IN_TIME = 0.35
+const LEVEL_NAMES = {
+	1: "Forest Outskirts",
+	2: "Sunscorch Sands",
+	3: "The Ice Caves",
+	4: "The Underworld",
+}
 const LEVEL_SCENES = {
 	"res://main.tscn": 1,
 	"res://desert.tscn": 2,
 	"res://ice_caves.tscn": 3,
-	"res://futuristic_ai_zone.tscn": 4
+	"res://underworld.tscn": 4
 }
 const WITCH_SKILL_ORDER = [
 	"firebolt",
@@ -901,6 +909,7 @@ var _equipment_records: Dictionary = {}
 var _characters: Array[Dictionary] = []
 var _active_character_id := ""
 var _active_save_path := SAVE_PATH
+var _scene_fade: ColorRect
 var _roster_loaded := false
 var gold := 0
 var player_level := 1
@@ -919,8 +928,55 @@ var ranger_unlocked_passives: Array[String] = []
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	# One theme for every scene, so in-game panels and buttons match the menus.
+	# Merged into the engine default because HUD controls sit under CanvasLayers,
+	# which stop theme inheritance from the root window.
+	ThemeDB.get_default_theme().merge_with(MenuStyle.get_theme())
+	_build_scene_fade()
 	_load_roster()
 	_load_character()
+
+
+## Fades to black, swaps scenes, then fades back in. Returns an error straight
+## away if the scene is missing, like change_scene_to_file().
+func change_scene(scene_path: String) -> Error:
+	if not ResourceLoader.exists(scene_path):
+		return ERR_FILE_NOT_FOUND
+	if _scene_fade.mouse_filter == Control.MOUSE_FILTER_STOP:
+		return ERR_BUSY
+	_scene_fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	get_tree().paused = true
+	var fade_out := _fade_scene_to(1.0, SCENE_FADE_OUT_TIME)
+	fade_out.finished.connect(_finish_scene_change.bind(scene_path))
+	return OK
+
+
+func _finish_scene_change(scene_path: String) -> void:
+	var error := get_tree().change_scene_to_file(scene_path)
+	get_tree().paused = false
+	if error != OK:
+		push_error("Could not change scene to %s: %s" % [scene_path, error_string(error)])
+	_fade_scene_to(0.0, SCENE_FADE_IN_TIME).finished.connect(
+		func() -> void: _scene_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	)
+
+
+func _fade_scene_to(alpha: float, duration: float) -> Tween:
+	var tween := create_tween().set_trans(Tween.TRANS_SINE)
+	tween.tween_property(_scene_fade, "color:a", alpha, duration)
+	return tween
+
+
+func _build_scene_fade() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 128
+	add_child(layer)
+	_scene_fade = ColorRect.new()
+	_scene_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_scene_fade.color = Color(0.0, 0.0, 0.0, 0.0)
+	_scene_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(_scene_fade)
 
 
 func _notification(what: int) -> void:
@@ -968,6 +1024,10 @@ func get_character(character_id: String) -> Dictionary:
 		if character["id"] == character_id:
 			return character.duplicate()
 	return {}
+
+
+func get_active_character() -> Dictionary:
+	return get_character(_active_character_id)
 
 
 func get_completed_levels() -> Array[int]:

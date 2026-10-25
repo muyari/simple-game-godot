@@ -314,6 +314,7 @@ text = "Your selected hero: Warrior"
 layout_mode = 2
 
 [node name="Level1Button" type="Button" parent="Layout/Row/MenuPanel/LevelScreen"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 text = "I.   Forest Outskirts"
@@ -337,7 +338,7 @@ alignment = 0
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-text = "IV.   The Futuristic AI Zone"
+text = "IV.   The Underworld"
 alignment = 0
 
 [node name="LevelStatus" type="Label" parent="Layout/Row/MenuPanel/LevelScreen"]

@@ -222,3 +222,22 @@ static func _box(bg: Color, border: Color, border_width: int, radius: int) -> St
 	box.set_corner_radius_all(radius)
 	box.anti_aliasing = true
 	return box
+
+
+## Key hint for a button label, e.g. "Close" + key_hint("Esc") -> "Close  (Esc)".
+## Empty on touch devices, which have no keyboard.
+static func key_hint(keys: String) -> String:
+	return "" if TouchControls.is_supported() else "  (%s)" % keys
+
+
+## World prompt over an interactable, e.g. "E  Talk". Touch devices drop the key
+## since the on-screen Interact button shows the same text.
+static func interact_prompt(action: String) -> String:
+	return action if TouchControls.is_supported() else "E  %s" % action
+
+
+## Dark outline for HUD text drawn straight over the world, so it stays readable
+## on bright ground like sand and snow.
+static func outline_hud_label(label: Label) -> void:
+	label.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.04, 0.9))
+	label.add_theme_constant_override("outline_size", 4)

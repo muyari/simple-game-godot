@@ -10,14 +10,16 @@ const QUEST_BANNER_COLOR := Color("#ffd34d")
 @onready var mana_orb: ResourceGlobe = $ManaOrb
 @onready var health_potion: PotionFlask = $HealthPotion
 @onready var mana_potion: PotionFlask = $ManaPotion
-@onready var defeated_label: Label = $DefeatedLabel
-@onready var return_to_town_button: Button = $ReturnToTownButton
 @onready var enemy_progress_label: Label = $EnemyProgressLabel
 @onready var gold_label: Label = $GoldLabel
 @onready var portal_hint_label: Label = $PortalHintLabel
-@onready var level_complete_label: Label = $LevelCompleteLabel
-@onready var return_to_levels_button: Button = $ReturnToLevelsButton
 var experience_bar: ProgressBar
+var outcome_overlay: Control
+var outcome_eyebrow: Label
+var outcome_title: Label
+var outcome_subtitle: Label
+var outcome_actions: VBoxContainer
+var return_to_town_button: Button
 var experience_level_label: Label
 var experience_tooltip: PanelContainer
 var experience_tooltip_label: Label
@@ -34,30 +36,7 @@ var warrior_passive_tree: WarriorPassiveTree
 var ranger_skill_tree: RangerSkillTree
 var ranger_passive_tree: RangerPassiveTree
 var pause_menu: PauseMenu
-@onready var character_menu: Control = $CharacterMenu
-@onready var character_panel: PanelContainer = $CharacterMenu/Panel
-@onready var inventory_panel: PanelContainer = $CharacterMenu/InventoryPanel
-@onready var inventory_grid: GridContainer = $CharacterMenu/InventoryPanel/Contents/InventoryGrid
-@onready var selected_item_label: Label = $CharacterMenu/InventoryPanel/Contents/SelectedItem
-@onready var equip_item_button: Button = $CharacterMenu/InventoryPanel/Contents/EquipButton
-@onready var inventory_gold_label: Label = $CharacterMenu/InventoryPanel/Contents/GoldTotal
-@onready var equipment_stats_label: Label = $CharacterMenu/Panel/Contents/EquipmentStats
-@onready var character_progression_label: Label = $CharacterMenu/Panel/Contents/ProgressionStats
-@onready var equipment_slot_labels: Dictionary = {
-	"Weapon": $CharacterMenu/Panel/Contents/EquipmentGrid/WeaponSlot/SlotLabel,
-	"Helm": $CharacterMenu/Panel/Contents/EquipmentGrid/HelmSlot/SlotLabel,
-	"Chest": $CharacterMenu/Panel/Contents/EquipmentGrid/ChestSlot/SlotLabel,
-	"Legs": $CharacterMenu/Panel/Contents/EquipmentGrid/LegsSlot/SlotLabel,
-	"Gloves": $CharacterMenu/Panel/Contents/EquipmentGrid/GlovesSlot/SlotLabel,
-	"Boots": $CharacterMenu/Panel/Contents/EquipmentGrid/BootsSlot/SlotLabel,
-	"Ring 1": $CharacterMenu/Panel/Contents/EquipmentGrid/Ring1Slot/SlotLabel,
-	"Ring 2": $CharacterMenu/Panel/Contents/EquipmentGrid/Ring2Slot/SlotLabel,
-	"Amulet": $CharacterMenu/Panel/Contents/EquipmentGrid/AmuletSlot/SlotLabel
-}
-
-var inventory_slots: Array[Button] = []
-var selected_inventory_index := -1
-var equip_best_button: Button
+var character_sheet: CharacterSheet
 
 
 func _ready() -> void:
@@ -68,19 +47,23 @@ func _ready() -> void:
 	quest_menu = QuestMenu.new()
 	quest_menu.closed.connect(_set_player_menu_paused.bind(false))
 	add_child(quest_menu)
-	_build_inventory_slots()
 	_build_pause_menu()
-	equip_item_button.pressed.connect(_on_equip_item_pressed)
-	_build_equip_best_button()
 	var player: Player = get_node("../Player")
 	_build_touch_controls(player)
 	_connect_skill_slot_clicks(player)
+	_build_character_sheet(player)
+	_build_outcome_overlay()
+	for label in [enemy_progress_label, gold_label, portal_hint_label]:
+		MenuStyle.outline_hud_label(label)
 	if player.selected_character == "Witch":
 		_build_witch_skill_tree()
 	elif player.selected_character == "Warrior":
 		_build_warrior_skill_tree()
 	elif player.selected_character == "Ranger":
 		_build_ranger_skill_tree()
+	# Last, so it draws and takes clicks above the rest of the HUD. It hides itself
+	# whenever a menu has the player paused.
+	_build_hud_menu(player)
 	health_orb.maximum = player.MAX_HEALTH
 	health_orb.value = player.health
 	mana_orb.maximum = player.MAX_MANA
@@ -89,8 +72,6 @@ func _ready() -> void:
 	player.health_changed.connect(_on_health_changed)
 	player.mana_changed.connect(_on_mana_changed)
 	player.potion_counts_changed.connect(_update_potion_counts)
-	player.inventory_changed.connect(_on_inventory_changed)
-	player.equipment_changed.connect(_on_equipment_changed)
 	player.town_portal_cast_started.connect(_on_town_portal_cast_started)
 	player.town_portal_cast_cancelled.connect(_on_town_portal_cast_cancelled)
 	player.town_portal_opened.connect(_on_town_portal_opened)
@@ -98,8 +79,6 @@ func _ready() -> void:
 	GameState.progression_changed.connect(_on_progression_changed)
 	GameState.experience_gained.connect(_on_experience_gained)
 	GameState.player_leveled_up.connect(_on_player_leveled_up)
-	_on_inventory_changed(player.inventory)
-	_on_equipment_changed(player.equipment)
 	_on_gold_changed(GameState.gold)
 	_on_progression_changed(
 		GameState.player_level,
@@ -181,27 +160,27 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if witch_skill_tree != null and witch_skill_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_witch_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if warrior_skill_tree != null and warrior_skill_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_warrior_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if warrior_passive_tree != null and warrior_passive_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_warrior_passive_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if ranger_skill_tree != null and ranger_skill_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_ranger_skill_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
 	if ranger_passive_tree != null and ranger_passive_tree.visible:
-		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
+		if event.keycode in [KEY_ESCAPE, KEY_P, KEY_K]:
 			_on_ranger_passive_tree_closed()
 		get_viewport().set_input_as_handled()
 		return
@@ -209,48 +188,90 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.keycode == KEY_ESCAPE:
 		if pause_menu.visible:
 			pause_menu.close_menu()
-		elif character_menu.visible:
-			character_menu.hide()
-			_set_player_menu_paused(false)
+		elif character_sheet.visible:
+			character_sheet.close()
 		else:
 			pause_menu.open_menu()
 		get_viewport().set_input_as_handled()
 		return
 
 	if event.keycode == KEY_C:
-		if character_menu.visible and character_panel.visible:
-			character_menu.hide()
-			_set_player_menu_paused(false)
-		else:
-			character_panel.show()
-			inventory_panel.hide()
-			character_menu.show()
-			_set_player_menu_paused(true)
+		_toggle_character_panel()
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_P and witch_skill_tree != null:
-		_open_witch_skill_tree("passives")
+	elif event.keycode == KEY_K:
+		_open_skill_tree()
 		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_P and warrior_skill_tree != null:
-		_open_warrior_passive_tree()
-		get_viewport().set_input_as_handled()
-	elif event.keycode == KEY_P and ranger_skill_tree != null:
-		_open_ranger_passive_tree()
+	elif event.keycode == KEY_P:
+		_open_passive_tree()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_I:
-		if character_menu.visible and inventory_panel.visible:
-			character_menu.hide()
-			_set_player_menu_paused(false)
-		else:
-			character_panel.hide()
-			inventory_panel.show()
-			character_menu.show()
-			_set_player_menu_paused(true)
+		_toggle_inventory_panel()
 		get_viewport().set_input_as_handled()
 	elif event.keycode == KEY_J:
-		character_menu.hide()
-		_set_player_menu_paused(true)
-		quest_menu.open_menu()
+		_open_quest_menu()
 		get_viewport().set_input_as_handled()
+
+
+func _toggle_character_panel() -> void:
+	if character_sheet.is_character_shown():
+		character_sheet.close()
+	else:
+		character_sheet.show_character()
+		_set_player_menu_paused(true)
+
+
+func _toggle_inventory_panel() -> void:
+	if character_sheet.is_inventory_shown():
+		character_sheet.close()
+	else:
+		character_sheet.show_inventory()
+		_set_player_menu_paused(true)
+
+
+func _build_character_sheet(player: Player) -> void:
+	character_sheet = CharacterSheet.create(player)
+	add_child(character_sheet)
+	character_sheet.closed.connect(_set_player_menu_paused.bind(false))
+	character_sheet.skills_requested.connect(_open_skill_tree)
+	character_sheet.passives_requested.connect(_open_passive_tree)
+
+
+func _open_skill_tree() -> void:
+	if witch_skill_tree != null:
+		_open_witch_skill_tree("skills")
+	elif warrior_skill_tree != null:
+		_open_warrior_skill_tree()
+	elif ranger_skill_tree != null:
+		_open_ranger_skill_tree()
+
+
+func _open_passive_tree() -> void:
+	if witch_skill_tree != null:
+		_open_witch_skill_tree("passives")
+	elif warrior_skill_tree != null:
+		_open_warrior_passive_tree()
+	elif ranger_skill_tree != null:
+		_open_ranger_passive_tree()
+
+
+func _open_quest_menu() -> void:
+	character_sheet.hide()
+	_set_player_menu_paused(true)
+	quest_menu.open_menu()
+
+
+func _build_hud_menu(player: Player) -> void:
+	var hud_menu := HudMenu.new()
+	hud_menu.is_available = func() -> bool:
+		return player.is_physics_processing() and player.health > 0
+	add_child(hud_menu)
+	hud_menu.add_command("Character", "C", _toggle_character_panel)
+	hud_menu.add_command("Inventory", "I", _toggle_inventory_panel)
+	hud_menu.add_command("Skills", "K", _open_skill_tree)
+	hud_menu.add_command("Passives", "P", _open_passive_tree)
+	hud_menu.add_command("Quests", "J", _open_quest_menu)
+	hud_menu.add_command("Town Portal", "T", player.cast_town_portal)
+	hud_menu.add_command("Pause", "Esc", pause_menu.open_menu)
 
 
 func _build_touch_controls(player: Player) -> void:
@@ -286,7 +307,7 @@ func _on_return_to_character_selection_requested() -> void:
 		str(get_tree().get_meta("selected_character_id", ""))
 	)
 	pause_menu.close_menu()
-	var error := get_tree().change_scene_to_file("res://Menu.tscn")
+	var error := GameState.change_scene("res://Menu.tscn")
 	if error != OK:
 		get_tree().remove_meta("return_to_character_select")
 		get_tree().remove_meta("selected_character_id")
@@ -306,26 +327,6 @@ func _on_close_game_requested() -> void:
 
 
 func _build_witch_skill_tree() -> void:
-	var character_contents: VBoxContainer = $CharacterMenu/Panel/Contents
-	var skill_tree_button := Button.new()
-	skill_tree_button.text = "Witch Active Skills"
-	skill_tree_button.custom_minimum_size.y = 42.0
-	skill_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	skill_tree_button.add_theme_font_size_override("font_size", 18)
-	skill_tree_button.pressed.connect(_open_witch_skill_tree.bind("skills"))
-	var close_button: Button = character_contents.get_node("CloseButton")
-	character_contents.add_child(skill_tree_button)
-	character_contents.move_child(skill_tree_button, close_button.get_index())
-
-	var passive_tree_button := Button.new()
-	passive_tree_button.text = "Witch Passive Tree (P)"
-	passive_tree_button.custom_minimum_size.y = 42.0
-	passive_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	passive_tree_button.add_theme_font_size_override("font_size", 18)
-	passive_tree_button.pressed.connect(_open_witch_skill_tree.bind("passives"))
-	character_contents.add_child(passive_tree_button)
-	character_contents.move_child(passive_tree_button, close_button.get_index())
-
 	witch_skill_tree = WitchSkillTree.new()
 	add_child(witch_skill_tree)
 	witch_skill_tree.hide()
@@ -337,26 +338,6 @@ func _build_witch_skill_tree() -> void:
 
 
 func _build_warrior_skill_tree() -> void:
-	var character_contents: VBoxContainer = $CharacterMenu/Panel/Contents
-	var skill_tree_button := Button.new()
-	skill_tree_button.text = "Warrior Skill Tree"
-	skill_tree_button.custom_minimum_size.y = 42.0
-	skill_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	skill_tree_button.add_theme_font_size_override("font_size", 18)
-	skill_tree_button.pressed.connect(_open_warrior_skill_tree)
-	var close_button: Button = character_contents.get_node("CloseButton")
-	character_contents.add_child(skill_tree_button)
-	character_contents.move_child(skill_tree_button, close_button.get_index())
-
-	var passive_tree_button := Button.new()
-	passive_tree_button.text = "Warrior Passive Tree (P)"
-	passive_tree_button.custom_minimum_size.y = 42.0
-	passive_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	passive_tree_button.add_theme_font_size_override("font_size", 18)
-	passive_tree_button.pressed.connect(_open_warrior_passive_tree)
-	character_contents.add_child(passive_tree_button)
-	character_contents.move_child(passive_tree_button, close_button.get_index())
-
 	warrior_skill_tree = WarriorSkillTree.new()
 	add_child(warrior_skill_tree)
 	warrior_skill_tree.hide()
@@ -374,26 +355,6 @@ func _build_warrior_skill_tree() -> void:
 
 
 func _build_ranger_skill_tree() -> void:
-	var character_contents: VBoxContainer = $CharacterMenu/Panel/Contents
-	var close_button: Button = character_contents.get_node("CloseButton")
-	var skill_tree_button := Button.new()
-	skill_tree_button.text = "Ranger Active Skills"
-	skill_tree_button.custom_minimum_size.y = 42.0
-	skill_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	skill_tree_button.add_theme_font_size_override("font_size", 18)
-	skill_tree_button.pressed.connect(_open_ranger_skill_tree)
-	character_contents.add_child(skill_tree_button)
-	character_contents.move_child(skill_tree_button, close_button.get_index())
-
-	var passive_tree_button := Button.new()
-	passive_tree_button.text = "Ranger Passive Tree (P)"
-	passive_tree_button.custom_minimum_size.y = 42.0
-	passive_tree_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	passive_tree_button.add_theme_font_size_override("font_size", 18)
-	passive_tree_button.pressed.connect(_open_ranger_passive_tree)
-	character_contents.add_child(passive_tree_button)
-	character_contents.move_child(passive_tree_button, close_button.get_index())
-
 	ranger_skill_tree = RangerSkillTree.new()
 	add_child(ranger_skill_tree)
 	ranger_skill_tree.hide()
@@ -425,7 +386,7 @@ func _on_ranger_skill_tree_closed() -> void:
 	if ranger_skill_tree == null:
 		return
 	ranger_skill_tree.hide()
-	character_menu.hide()
+	character_sheet.hide()
 	_set_player_menu_paused(false)
 
 
@@ -444,7 +405,7 @@ func _on_ranger_passive_tree_closed() -> void:
 	if ranger_passive_tree == null:
 		return
 	ranger_passive_tree.hide()
-	character_menu.hide()
+	character_sheet.hide()
 	_set_player_menu_paused(false)
 	_on_ranger_passives_changed()
 
@@ -453,7 +414,7 @@ func _on_ranger_passives_changed() -> void:
 	var player: Player = get_node_or_null("../Player")
 	if player != null:
 		player.refresh_passives_and_vitals()
-		_on_equipment_changed(player.equipment)
+		character_sheet.refresh()
 	_refresh_ranger_skill_slots()
 
 
@@ -489,7 +450,7 @@ func _on_warrior_skill_tree_closed() -> void:
 	if warrior_skill_tree == null:
 		return
 	warrior_skill_tree.hide()
-	character_menu.hide()
+	character_sheet.hide()
 	_set_player_menu_paused(false)
 
 
@@ -508,7 +469,7 @@ func _on_warrior_passive_tree_closed() -> void:
 	if warrior_passive_tree == null:
 		return
 	warrior_passive_tree.hide()
-	character_menu.hide()
+	character_sheet.hide()
 	_set_player_menu_paused(false)
 	_on_warrior_passives_changed()
 
@@ -517,7 +478,7 @@ func _on_warrior_passives_changed() -> void:
 	var player: Player = get_node_or_null("../Player")
 	if player != null:
 		player.refresh_passives_and_vitals()
-		_on_equipment_changed(player.equipment)
+		character_sheet.refresh()
 	_refresh_warrior_skill_slots()
 
 
@@ -551,7 +512,7 @@ func _on_witch_skill_tree_closed() -> void:
 	if witch_skill_tree == null:
 		return
 	witch_skill_tree.hide()
-	character_menu.hide()
+	character_sheet.hide()
 	_set_player_menu_paused(false)
 	_on_witch_passives_changed()
 
@@ -560,7 +521,7 @@ func _on_witch_passives_changed() -> void:
 	var player: Player = get_node_or_null("../Player")
 	if player != null:
 		player.refresh_passives_and_vitals()
-		_on_equipment_changed(player.equipment)
+		character_sheet.refresh()
 	_refresh_witch_skill_slots()
 
 
@@ -587,154 +548,6 @@ func _refresh_witch_skill_slots() -> void:
 		skill_slot.queue_redraw()
 
 
-func _build_inventory_slots() -> void:
-	for slot_index in range(25):
-		var slot := Button.new()
-		slot.custom_minimum_size = Vector2(76, 54)
-		slot.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		slot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		slot.add_theme_font_size_override("font_size", 11)
-
-		var slot_style := StyleBoxFlat.new()
-		slot_style.bg_color = Color(0.13, 0.15, 0.14, 1)
-		slot_style.set_border_width_all(2)
-		slot_style.border_color = Color(0.48, 0.4, 0.29, 1)
-		slot_style.set_corner_radius_all(5)
-		slot.add_theme_stylebox_override("normal", slot_style)
-		slot.pressed.connect(_on_inventory_slot_pressed.bind(slot_index))
-		inventory_grid.add_child(slot)
-		inventory_slots.append(slot)
-
-
-func _build_equip_best_button() -> void:
-	var contents := equip_item_button.get_parent() as VBoxContainer
-	var button_row := HBoxContainer.new()
-	button_row.add_theme_constant_override("separation", 8)
-	contents.add_child(button_row)
-	contents.move_child(button_row, equip_item_button.get_index())
-	equip_item_button.reparent(button_row)
-	equip_item_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	equip_best_button = Button.new()
-	equip_best_button.text = "Equip Best"
-	equip_best_button.tooltip_text = "Upgrade each slot using damage bonus and damage reduction."
-	equip_best_button.custom_minimum_size.y = 42.0
-	equip_best_button.add_theme_font_size_override("font_size", 18)
-	equip_best_button.pressed.connect(_on_equip_best_pressed)
-	button_row.add_child(equip_best_button)
-
-
-func _on_inventory_changed(items: Array[ItemData]) -> void:
-	if selected_inventory_index >= items.size():
-		selected_inventory_index = -1
-	for index in range(inventory_slots.size()):
-		if index < items.size():
-			inventory_slots[index].text = items[index].display_name
-			inventory_slots[index].tooltip_text = "%s (%s)" % [
-				items[index].display_name,
-				items[index].equipment_slot
-			]
-			inventory_slots[index].add_theme_color_override(
-				"font_color",
-				items[index].icon_color
-			)
-		else:
-			inventory_slots[index].text = "-"
-			inventory_slots[index].tooltip_text = "Empty"
-			inventory_slots[index].add_theme_color_override(
-				"font_color",
-				Color(0.52, 0.53, 0.49, 1)
-			)
-	_update_selected_item(items)
-	equip_best_button.disabled = items.is_empty()
-
-
-func _on_inventory_slot_pressed(slot_index: int) -> void:
-	var player: Player = get_node("../Player")
-	selected_inventory_index = slot_index if slot_index < player.inventory.size() else -1
-	_update_selected_item(player.inventory)
-
-
-func _update_selected_item(items: Array[ItemData]) -> void:
-	if selected_inventory_index < 0 or selected_inventory_index >= items.size():
-		selected_inventory_index = -1
-		selected_item_label.text = "Select an item to inspect it."
-		equip_item_button.disabled = true
-		return
-
-	var item := items[selected_inventory_index]
-	selected_item_label.text = "%s  |  %s\n%s" % [
-		item.display_name,
-		item.equipment_slot,
-		_get_item_stat_text(item)
-	]
-	equip_item_button.disabled = false
-
-
-func _get_item_stat_text(item: ItemData) -> String:
-	var stat_text: Array[String] = []
-	if item.damage_bonus > 0:
-		stat_text.append("+%d damage" % item.damage_bonus)
-	if item.damage_reduction > 0:
-		stat_text.append("-%d damage taken" % item.damage_reduction)
-	if stat_text.is_empty():
-		return "No combat bonus"
-	return ", ".join(stat_text)
-
-
-func _on_equip_item_pressed() -> void:
-	if selected_inventory_index < 0:
-		return
-	var player: Player = get_node("../Player")
-	if player.equip_inventory_item(selected_inventory_index):
-		selected_inventory_index = -1
-		_update_selected_item(player.inventory)
-
-
-func _on_equip_best_pressed() -> void:
-	var player: Player = get_node("../Player")
-	selected_inventory_index = -1
-	var equipped_slots := player.equip_best_inventory_items()
-	if equipped_slots < 0:
-		selected_item_label.text = "Could not equip best gear. See the error log."
-	elif equipped_slots == 0:
-		selected_item_label.text = "You're already wearing your best gear."
-	else:
-		selected_item_label.text = "Equipped best gear in %d slot(s)." % equipped_slots
-
-
-func _on_equipment_changed(equipment: Dictionary) -> void:
-	var player: Player = get_node("../Player")
-	var attack_name := "Spell damage" if player.selected_character == "Witch" \
-		else "Bow damage" if player.selected_character == "Ranger" \
-		else "Sword damage"
-	var base_dmg := (1 + player.get_weapon_damage_bonus())
-	var dmg_str := str(base_dmg)
-	if player.selected_character == "Witch":
-		var mult := player.get_spell_damage_multiplier()
-		dmg_str = "%.1f (x%.2f)" % [float(base_dmg) * mult, mult]
-	var evasion_info := ""
-	if player.selected_character in ["Witch", "Ranger"]:
-		evasion_info = "  |  Evasion: %d%%" % roundi(player.get_evasion() * 100.0)
-	equipment_stats_label.text = "%s: %s  |  Damage reduced: %d%s" % [
-		attack_name,
-		dmg_str,
-		player.get_damage_reduction(),
-		evasion_info
-	]
-	for slot_name in equipment_slot_labels:
-		var label: Label = equipment_slot_labels[slot_name]
-		if equipment.has(slot_name):
-			var item: ItemData = equipment[slot_name]
-			label.text = "%s  -  %s" % [slot_name, item.display_name]
-			label.tooltip_text = _get_item_stat_text(item)
-			label.add_theme_color_override("font_color", item.icon_color)
-		else:
-			label.text = "%s  -  Empty" % slot_name
-			label.tooltip_text = ""
-			label.add_theme_color_override("font_color", Color(0.88, 0.83, 0.72, 1))
-
-
 func _on_health_changed(current_health: int, maximum_health: int) -> void:
 	health_orb.maximum = maximum_health
 	health_orb.value = current_health
@@ -756,8 +569,80 @@ func _update_potion_counts(
 
 
 func _on_player_died() -> void:
-	defeated_label.show()
-	return_to_town_button.show()
+	_show_outcome(
+		"FALLEN",
+		"You were defeated",
+		"The frontier claims another exile, for now. Regroup in Oblath.",
+		[["Return to Town", _on_return_to_town_pressed]]
+	)
+
+
+## Centred end-of-run panel (death or area cleared). Each action is
+## [label, callable]; the "Return to Town" one is kept so it can be disabled
+## while the level saves.
+func _show_outcome(eyebrow: String, title: String, subtitle: String, actions: Array) -> void:
+	outcome_eyebrow.text = eyebrow
+	outcome_title.text = title
+	outcome_subtitle.text = subtitle
+	for child in outcome_actions.get_children():
+		child.queue_free()
+	for action in actions:
+		var button := Button.new()
+		button.text = action[0]
+		button.custom_minimum_size.y = 50.0
+		button.pressed.connect(action[1])
+		outcome_actions.add_child(button)
+		if action[1] == _on_return_to_town_pressed:
+			return_to_town_button = button
+	outcome_overlay.show()
+
+
+func _hide_outcome() -> void:
+	outcome_overlay.hide()
+	_set_player_menu_paused(false)
+
+
+func _build_outcome_overlay() -> void:
+	outcome_overlay = Control.new()
+	outcome_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outcome_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	outcome_overlay.hide()
+	add_child(outcome_overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.color = Color(0.015, 0.02, 0.018, 0.55)
+	outcome_overlay.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outcome_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"MenuPanel"
+	panel.custom_minimum_size = Vector2(460.0, 0.0)
+	center.add_child(panel)
+
+	var contents := VBoxContainer.new()
+	contents.add_theme_constant_override("separation", 12)
+	panel.add_child(contents)
+	outcome_eyebrow = Label.new()
+	outcome_eyebrow.theme_type_variation = &"EyebrowLabel"
+	outcome_eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	contents.add_child(outcome_eyebrow)
+	outcome_title = Label.new()
+	outcome_title.theme_type_variation = &"TitleLabel"
+	outcome_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	contents.add_child(outcome_title)
+	outcome_subtitle = Label.new()
+	outcome_subtitle.theme_type_variation = &"SubtitleLabel"
+	outcome_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	outcome_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	outcome_subtitle.custom_minimum_size.x = 392.0
+	contents.add_child(outcome_subtitle)
+	contents.add_child(HSeparator.new())
+	outcome_actions = VBoxContainer.new()
+	outcome_actions.add_theme_constant_override("separation", 10)
+	contents.add_child(outcome_actions)
 
 
 func _on_enemy_progress_changed(defeated: int, total: int) -> void:
@@ -887,7 +772,6 @@ func _on_progression_changed(
 	_passive_points: int,
 	_skill_points: int
 ) -> void:
-	character_progression_label.text = GameState.get_progression_summary()
 	experience_level_label.text = "Lv. %d" % GameState.player_level
 	if GameState.player_level >= GameState.MAX_PLAYER_LEVEL:
 		experience_bar.max_value = 1.0
@@ -921,7 +805,6 @@ func _on_player_leveled_up(_level: int) -> void:
 
 func _on_gold_changed(total_gold: int) -> void:
 	gold_label.text = "Gold: %d" % total_gold
-	inventory_gold_label.text = "Gold: %d" % total_gold
 
 
 func _on_town_portal_opened() -> void:
@@ -1008,14 +891,26 @@ func _on_level_completed() -> void:
 	var level_id := GameState.get_level_id(get_tree().current_scene.scene_file_path)
 	if not GameState.complete_level(level_id):
 		push_error("Could not persist completion for level %d." % level_id)
-	level_complete_label.text = "Area secured."
-	level_complete_label.show()
-	return_to_levels_button.show()
+	var next_level_name := str(GameState.LEVEL_NAMES.get(level_id + 1, ""))
+	_set_player_menu_paused(true)
+	_show_outcome(
+		"AREA SECURED",
+		str(GameState.LEVEL_NAMES.get(level_id, "Area Cleared")),
+		"Every foe has fallen. %s" % (
+			"%s now awaits at the Waystone." % next_level_name if not next_level_name.is_empty()
+			else "You have conquered the frontier."
+		),
+		[
+			["Keep Exploring", _hide_outcome],
+			["Return to Town", _on_return_to_town_pressed],
+			["Choose Another Level", _on_return_to_levels_pressed],
+		]
+	)
 
 
 func _on_return_to_levels_pressed() -> void:
 	get_tree().set_meta("return_to_level_select", true)
-	var error := get_tree().change_scene_to_file("res://Menu.tscn")
+	var error := GameState.change_scene("res://Menu.tscn")
 	if error != OK:
 		get_tree().remove_meta("return_to_level_select")
 		push_error("Could not return to level select: %s" % error_string(error))
@@ -1042,7 +937,7 @@ func _on_return_to_town_pressed() -> void:
 		"health": Player.MAX_HEALTH,
 		"mana": player.mana
 	})
-	var error := get_tree().change_scene_to_file("res://town.tscn")
+	var error := GameState.change_scene("res://town.tscn")
 	if error != OK:
 		get_tree().remove_meta(Player.TOWN_RETURN_SCENE_META)
 		get_tree().remove_meta(Player.TOWN_RETURN_POSITION_META)
@@ -1050,7 +945,3 @@ func _on_return_to_town_pressed() -> void:
 		get_tree().remove_meta("portal_player_vitals")
 		return_to_town_button.disabled = false
 		push_error("Could not return to town: %s" % error_string(error))
-
-
-func _on_character_menu_close_pressed() -> void:
-	character_menu.hide()

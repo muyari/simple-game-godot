@@ -115,14 +115,14 @@ func _is_choice_page() -> bool:
 func _show_page() -> void:
 	text_label.text = pages[page_index]
 	if _is_choice_page():
-		primary_button.text = "Accept  (E)"
-		secondary_button.text = "Decline  (Esc)"
+		primary_button.text = "Accept" + MenuStyle.key_hint("E")
+		secondary_button.text = "Decline" + MenuStyle.key_hint("Esc")
 	elif page_index < pages.size() - 1:
-		primary_button.text = "Continue  (E)"
-		secondary_button.text = "Leave  (Esc)"
+		primary_button.text = "Continue" + MenuStyle.key_hint("E")
+		secondary_button.text = "Leave" + MenuStyle.key_hint("Esc")
 	else:
-		primary_button.text = "Farewell  (E)"
-		secondary_button.text = "Close  (Esc)"
+		primary_button.text = "Farewell" + MenuStyle.key_hint("E")
+		secondary_button.text = "Close" + MenuStyle.key_hint("Esc")
 	secondary_button.visible = _is_choice_page() or page_index < pages.size() - 1
 
 

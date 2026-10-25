@@ -87,7 +87,7 @@ func _ready() -> void:
 	take_button.pressed.connect(func(): take_requested.emit(selected_index))
 	take_all_button = _make_button("Take All", button_row)
 	take_all_button.pressed.connect(func(): take_all_requested.emit())
-	var close_button := _make_button("Close  (Esc)", contents)
+	var close_button := _make_button("Close" + MenuStyle.key_hint("Esc"), contents)
 	close_button.pressed.connect(func(): close_requested.emit())
 	hide()
 

@@ -21,6 +21,8 @@ const REMAINS_FADE := 0.8
 ## Walk frames from this index on are drawn side-on and used when moving mostly sideways; the earlier
 ## ones face the camera. -1 plays every walk frame in every direction.
 @export var side_walk_start := -1
+## Ground shadow colour; cold blue on snow by default.
+@export var shadow_color := SHADOW_COLOR
 ## Width of the ground shadow, in local pixels.
 @export var shadow_width := 60.0
 
@@ -33,7 +35,7 @@ var action_column := 0
 
 func _ready() -> void:
 	super._ready()
-	SunShadow.attach(self, get_feet_position(), shadow_width, false, SHADOW_COLOR)
+	SunShadow.attach(self, get_feet_position(), shadow_width, false, shadow_color)
 	died.connect(_leave_remains)
 
 
