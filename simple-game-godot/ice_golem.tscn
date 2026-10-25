@@ -9,6 +9,7 @@ height = 46.0
 
 [node name="IceGolem" type="CharacterBody2D"]
 script = ExtResource("1_golem")
+monster_name = "Ice Golem"
 frame_size = Vector2i(164, 102)
 animations = {
 "death": Vector2i(5, 6),

@@ -50,6 +50,7 @@ func _ready() -> void:
 	_build_pause_menu()
 	var player: Player = get_node("../Player")
 	_build_touch_controls(player)
+	add_child(TargetHealthBar.create(player))
 	_connect_skill_slot_clicks(player)
 	_build_character_sheet(player)
 	_build_outcome_overlay()

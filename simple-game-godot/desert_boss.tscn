@@ -9,6 +9,7 @@ height = 28.0
 
 [node name="DesertBossScorpion" type="CharacterBody2D"]
 script = ExtResource("1_boss")
+monster_name = "Scorpion Matriarch"
 frame_size = Vector2i(80, 82)
 idle_frames = PackedInt32Array(0, 4)
 move_frames = PackedInt32Array(0, 1, 2, 3, 4, 5, 6, 7)

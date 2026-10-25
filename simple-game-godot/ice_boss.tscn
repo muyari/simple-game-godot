@@ -9,6 +9,7 @@ height = 80.0
 
 [node name="Cryohydra" type="CharacterBody2D"]
 script = ExtResource("1_boss")
+monster_name = "Cryohydra"
 frame_size = Vector2i(266, 98)
 animations = {
 "bite": Vector2i(4, 2),

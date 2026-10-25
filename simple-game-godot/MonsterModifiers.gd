@@ -5,6 +5,7 @@ class_name MonsterModifiers
 ##
 ## To add a modifier, add an entry to DEFINITIONS. Each entry has:
 ##   "name"   - label shown above the monster.
+##   "description" - one line explaining it, shown on the HUD target bar.
 ##   "weight" - relative chance of being picked when rolling.
 ##   "stats"  - stat keys below mapped to values. When a monster has several
 ##              modifiers, their stats are added together.
@@ -46,61 +47,73 @@ const MAX_DODGE_CHANCE := 0.6
 const DEFINITIONS := {
 	"extra_health": {
 		"name": "Extra Health",
+		"description": "60% more health",
 		"weight": 10,
 		"stats": {STAT_MAX_HEALTH: 0.6}
 	},
 	"extra_damage": {
 		"name": "Extra Damage",
+		"description": "Hits 35% harder",
 		"weight": 10,
 		"stats": {STAT_DAMAGE: 0.35}
 	},
 	"extra_speed": {
 		"name": "Extra Speed",
+		"description": "Moves and attacks 30% faster",
 		"weight": 10,
 		"stats": {STAT_SPEED: 0.3}
 	},
 	"regenerating": {
 		"name": "Regenerating",
+		"description": "Heals 4% of its health per second",
 		"weight": 8,
 		"stats": {STAT_REGEN: 0.04}
 	},
 	"commander": {
 		"name": "Commander",
+		"description": "Nearby monsters deal 15% more damage and take 15% less",
 		"weight": 5,
 		"stats": {STAT_AURA_RADIUS: 280.0, STAT_AURA_DAMAGE: 0.15, STAT_AURA_DAMAGE_REDUCTION: 0.15}
 	},
 	"pack_leader": {
 		"name": "Pack Leader",
+		"description": "Nearby monsters move 20% faster and deal 20% more damage",
 		"weight": 5,
 		"stats": {STAT_AURA_RADIUS: 280.0, STAT_AURA_SPEED: 0.2, STAT_AURA_DAMAGE: 0.2}
 	},
 	"treasure_bound": {
 		"name": "Treasure Bound",
+		"description": "Drops triple gold",
 		"weight": 6,
 		"stats": {STAT_GOLD: 2.0}
 	},
 	"hoarder": {
 		"name": "Hoarder",
+		"description": "Drops an extra item",
 		"weight": 6,
 		"stats": {STAT_EXTRA_ITEMS: 1}
 	},
 	"reflective": {
 		"name": "Reflective",
+		"description": "Sends some of the damage it takes back at you",
 		"weight": 7,
 		"stats": {STAT_REFLECT: 0.15}
 	},
 	"evasive": {
 		"name": "Evasive",
+		"description": "25% chance to dodge your hits",
 		"weight": 8,
 		"stats": {STAT_DODGE: 0.25}
 	},
 	"armored": {
 		"name": "Armored",
+		"description": "Takes 30% less damage",
 		"weight": 8,
 		"stats": {STAT_DAMAGE_REDUCTION: 0.3}
 	},
 	"vampiric": {
 		"name": "Vampiric",
+		"description": "Heals 12% of its health whenever it hits you",
 		"weight": 7,
 		"stats": {STAT_LIFESTEAL: 0.12}
 	},
@@ -154,6 +167,12 @@ static func get_display_name(modifier_id: String) -> String:
 	if not DEFINITIONS.has(modifier_id):
 		return modifier_id
 	return str(DEFINITIONS[modifier_id]["name"])
+
+
+static func get_description(modifier_id: String) -> String:
+	if not DEFINITIONS.has(modifier_id):
+		return ""
+	return str(DEFINITIONS[modifier_id].get("description", ""))
 
 
 ## Returns only the ids that exist in DEFINITIONS, for loading saved data safely.

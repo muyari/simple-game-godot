@@ -1782,6 +1782,7 @@ func _spawn_boss_wolf(world_position: Vector2, is_alpha: bool, saved_health := -
 	wolf.always_alert = true
 	if is_alpha:
 		wolf.name = "AlphaWolf"
+		wolf.monster_name = "Alpha Wolf"
 		wolf.scale = Vector2.ONE * ALPHA_WOLF_SCALE
 		wolf.max_health = Wolf.MAX_HEALTH * ALPHA_WOLF_HEALTH_MULTIPLIER
 		wolf.attack_damage = roundi(Wolf.ATTACK_DAMAGE * ALPHA_WOLF_DAMAGE_MULTIPLIER)

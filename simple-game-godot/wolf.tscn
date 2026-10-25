@@ -9,6 +9,7 @@ height = 28.0
 
 [node name="Wolf" type="CharacterBody2D"]
 script = ExtResource("1_wolf")
+monster_name = "Wolf"
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_texture")
