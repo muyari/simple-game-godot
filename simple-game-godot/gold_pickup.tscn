@@ -13,19 +13,14 @@ script = ExtResource("1_gold")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_gold")
 
-[node name="Coin" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, -16, 12, -12, 16, 0, 12, 12, 0, 16, -12, 12, -16, 0, -12, -12)
-color = Color(0.96, 0.74, 0.2, 1)
-
-[node name="InnerCoin" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, -9, 7, -7, 9, 0, 7, 7, 0, 9, -7, 7, -9, 0, -7, -7)
-color = Color(1, 0.88, 0.42, 1)
+[node name="ScreenNotifier" type="VisibleOnScreenNotifier2D" parent="."]
+rect = Rect2(-30, -40, 60, 80)
 
 [node name="Amount" type="Label" parent="."]
 offset_left = -24.0
-offset_top = 17.0
+offset_top = 8.0
 offset_right = 24.0
-offset_bottom = 35.0
+offset_bottom = 26.0
 theme_override_colors/font_color = Color(1, 0.9, 0.58, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 3

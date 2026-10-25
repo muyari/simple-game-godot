@@ -301,8 +301,8 @@ func _on_equipment_changed(equipment: Dictionary) -> void:
 		if equipment.has(slot_name):
 			var item: ItemData = equipment[slot_name]
 			label.text = "%s:  %s" % [slot_name, item.display_name]
-			label.tooltip_text = "%s\n%s" % [item.display_name, item_stat_text(item)]
-			label.add_theme_color_override("font_color", item.icon_color)
+			label.tooltip_text = "%s\n%s  |  %s" % [item.display_name, item.get_rarity_name(), item_stat_text(item)]
+			label.add_theme_color_override("font_color", item.get_rarity_color())
 		else:
 			label.text = "%s:  Empty" % slot_name
 			label.tooltip_text = ""
@@ -316,9 +316,9 @@ func _on_inventory_changed(items: Array[ItemData]) -> void:
 		var slot := _inventory_slots[index]
 		if index < items.size():
 			slot.text = items[index].display_name
-			slot.tooltip_text = "%s (%s)" % [items[index].display_name, items[index].equipment_slot]
-			slot.add_theme_color_override("font_color", items[index].icon_color)
-			slot.add_theme_color_override("font_hover_color", items[index].icon_color.lightened(0.2))
+			slot.tooltip_text = "%s (%s %s)" % [items[index].display_name, items[index].get_rarity_name(), items[index].equipment_slot]
+			slot.add_theme_color_override("font_color", items[index].get_rarity_color())
+			slot.add_theme_color_override("font_hover_color", items[index].get_rarity_color().lightened(0.2))
 		else:
 			slot.text = ""
 			slot.tooltip_text = "Empty"
@@ -342,8 +342,9 @@ func _update_selected_item(items: Array[ItemData]) -> void:
 		_equip_button.disabled = true
 		return
 	var item := items[_selected_index]
-	_selected_item_label.text = "%s\n%s\n%s" % [
+	_selected_item_label.text = "%s\n%s %s\n%s" % [
 		item.display_name,
+		item.get_rarity_name(),
 		item.equipment_slot,
 		item_stat_text(item)
 	]

@@ -1034,7 +1034,7 @@ func _refresh_shop_items() -> void:
 			item.equipment_slot,
 			CharacterSheet.item_stat_text(item)
 		]
-		description.add_theme_color_override("font_color", item.icon_color)
+		description.add_theme_color_override("font_color", item.get_rarity_color())
 		row.add_child(description)
 
 		var buy_button := Button.new()
@@ -1067,7 +1067,7 @@ func _refresh_shop_items() -> void:
 			owned_item.equipment_slot,
 			CharacterSheet.item_stat_text(owned_item)
 		]
-		description.add_theme_color_override("font_color", owned_item.icon_color)
+		description.add_theme_color_override("font_color", owned_item.get_rarity_color())
 		row.add_child(description)
 
 		var sell_price := GameState.get_item_sell_price(owned_item)

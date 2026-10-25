@@ -107,8 +107,8 @@ func refresh(loot: Array[ItemData]) -> void:
 		var slot := slots[index]
 		if index < items.size():
 			slot.text = items[index].display_name
-			slot.tooltip_text = "%s (%s)" % [items[index].display_name, items[index].equipment_slot]
-			slot.add_theme_color_override("font_color", items[index].icon_color)
+			slot.tooltip_text = "%s (%s %s)" % [items[index].display_name, items[index].get_rarity_name(), items[index].equipment_slot]
+			slot.add_theme_color_override("font_color", items[index].get_rarity_color())
 			slot.disabled = false
 		else:
 			slot.text = "-"
@@ -149,8 +149,9 @@ func _update_selected_item() -> void:
 		stats.append("+%d damage" % item.damage_bonus)
 	if item.damage_reduction > 0:
 		stats.append("-%d damage taken" % item.damage_reduction)
-	selected_item_label.text = "%s  |  %s\n%s" % [
+	selected_item_label.text = "%s  |  %s %s\n%s" % [
 		item.display_name,
+		item.get_rarity_name(),
 		item.equipment_slot,
 		", ".join(stats) if not stats.is_empty() else "No combat bonus"
 	]

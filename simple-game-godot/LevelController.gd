@@ -401,6 +401,8 @@ const SCENERY_PRELOAD_RADIUS = 1
 const ITEM_DROP_CHANCE = 0.1
 ## Extra drops (e.g. from Hoarder monsters) scatter up to this far so they don't stack.
 const EXTRA_DROP_SCATTER = 28.0
+## Fresh drops hop this far (min, max) out of the monster, each its own way, so gold and gear don't stack.
+const DROP_HOP_DISTANCE = Vector2(20.0, 38.0)
 const SCENERY_CLEARANCE = 24.0
 const FOREST_BOSS_PACK_SIZE = 3
 const BOSS_PACK_SPREAD = 90.0
@@ -731,7 +733,7 @@ func _restore_level_drops(raw_drops: Variant) -> void:
 			"gold":
 				var amount: Variant = drop_record.get("amount", null)
 				if typeof(amount) not in [TYPE_INT, TYPE_FLOAT] \
-						or int(amount) < 1 or int(amount) > 3:
+						or int(amount) < 1 or int(amount) > GoldPickup.MAX_AMOUNT:
 					push_error("Ignoring saved gold pickup with invalid amount.")
 					continue
 				_spawn_gold_pickup(drop_position, int(amount))
@@ -885,25 +887,28 @@ func _create_item_pool() -> void:
 	item_pool = GameState.get_vendor_items()
 
 
-func _spawn_item_pickup(item: ItemData, world_position: Vector2) -> void:
+## drop_offset is where the drop hops out of (the monster) relative to world_position; zero places it without a hop.
+func _spawn_item_pickup(item: ItemData, world_position: Vector2, drop_offset := Vector2.ZERO) -> void:
 	var pickup := ITEM_PICKUP_SCENE.instantiate() as ItemPickup
 	if pickup == null:
 		push_error("The item pickup scene root must use the ItemPickup script.")
 		return
 
 	pickup.item = item
+	pickup.drop_offset = drop_offset
 	pickup.collected.connect(_save_level_state)
 	get_parent().add_child(pickup)
 	pickup.global_position = world_position
 
 
-func _spawn_gold_pickup(world_position: Vector2, amount := 0) -> void:
+func _spawn_gold_pickup(world_position: Vector2, amount := 0, drop_offset := Vector2.ZERO) -> void:
 	var pickup := GOLD_PICKUP_SCENE.instantiate() as GoldPickup
 	if pickup == null:
 		push_error("The gold pickup scene root must use the GoldPickup script.")
 		return
 
 	pickup.amount = amount if amount > 0 else loot_random.randi_range(1, 3)
+	pickup.drop_offset = drop_offset
 	pickup.collected.connect(_save_level_state)
 	get_parent().add_child(pickup)
 	pickup.global_position = world_position
@@ -1844,34 +1849,50 @@ func _get_scaled_experience_reward(enemy: Wolf) -> int:
 
 
 func _drop_enemy_loot(enemy: Wolf, is_level_boss := false) -> void:
-	var gold_amount := roundi(loot_random.randi_range(1, 3) * enemy.get_gold_multiplier())
-	_spawn_gold_pickup(enemy.global_position, gold_amount)
+	var origin := enemy.global_position
+	var gold_amount := mini(
+		roundi(loot_random.randi_range(1, 3) * enemy.get_gold_multiplier()),
+		GoldPickup.MAX_AMOUNT
+	)
+	var gold_hop := _drop_hop()
+	_spawn_gold_pickup(origin + gold_hop, gold_amount, -gold_hop)
 	if is_level_boss:
 		var boss_gear := _create_desert_gear(true)
 		if biome == 2:
 			boss_gear = _create_ice_gear(true)
 		elif biome == 3:
 			boss_gear = _create_underworld_gear(true)
-		_spawn_item_pickup(boss_gear, enemy.global_position)
+		var boss_hop := _drop_hop()
+		_spawn_item_pickup(boss_gear, origin + boss_hop, -boss_hop)
 	elif loot_random.randf() < ITEM_DROP_CHANCE:
-		_drop_random_enemy_item(enemy.global_position)
+		_drop_random_enemy_item(origin, _drop_hop())
 	for _extra_drop in enemy.get_extra_item_drops():
 		var scatter := Vector2(
 			loot_random.randf_range(-EXTRA_DROP_SCATTER, EXTRA_DROP_SCATTER),
 			loot_random.randf_range(-EXTRA_DROP_SCATTER, EXTRA_DROP_SCATTER)
 		)
-		_drop_random_enemy_item(enemy.global_position + scatter)
+		_drop_random_enemy_item(origin, _drop_hop() + scatter)
 
 
-func _drop_random_enemy_item(world_position: Vector2) -> void:
+## A random hop for a fresh drop: where it lands relative to the monster.
+func _drop_hop() -> Vector2:
+	var distance := loot_random.randf_range(DROP_HOP_DISTANCE.x, DROP_HOP_DISTANCE.y)
+	return Vector2.RIGHT.rotated(loot_random.randf() * TAU) * distance
+
+
+## Drops a random piece of the area's gear, hopping from origin out to origin + hop.
+func _drop_random_enemy_item(origin: Vector2, hop: Vector2) -> void:
+	var item: ItemData = null
 	if biome == 1:
-		_spawn_item_pickup(_create_desert_gear(false), world_position)
+		item = _create_desert_gear(false)
 	elif biome == 2:
-		_spawn_item_pickup(_create_ice_gear(false), world_position)
+		item = _create_ice_gear(false)
 	elif biome == 3:
-		_spawn_item_pickup(_create_underworld_gear(false), world_position)
+		item = _create_underworld_gear(false)
 	elif not item_pool.is_empty():
-		_spawn_item_pickup(item_pool[loot_random.randi_range(0, item_pool.size() - 1)], world_position)
+		item = item_pool[loot_random.randi_range(0, item_pool.size() - 1)]
+	if item != null:
+		_spawn_item_pickup(item, origin + hop, -hop)
 
 
 func _create_desert_gear(is_boss_drop: bool) -> ItemData:
