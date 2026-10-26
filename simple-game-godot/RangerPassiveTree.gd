@@ -3,7 +3,9 @@ class_name RangerPassiveTree
 
 signal skill_tree_requested
 
-const RANGER_PASSIVE_BRANCHES: Array[String] = ["All", "Precision", "Skirmisher", "Trapper"]
+const RANGER_PASSIVE_BRANCHES: Array[String] = [
+	"All", "Precision", "Skirmisher", "Trapper", "Fletcher", "Survivalist"
+]
 
 
 func _ready() -> void:
@@ -55,11 +57,21 @@ func _get_points_text() -> String:
 
 func _refresh_passive_summary() -> void:
 	var totals := _get_passive_stat_totals()
-	stats_summary_label.text = "Allocated:  Accuracy +%d%%  |  Crit Chance +%d%%  |  Crit Damage +%d%%  |  Evasion +%d%%  |  Projectile Speed +%d%%  |  Trap Effect +%d%%" % [
+	stats_summary_label.text = "Allocated:  Accuracy +%d%%  |  Crit Chance +%d%%  |  Crit Damage +%d%%  |  Arrow Damage +%d%%  |  Pierce +%d  |  Evasion +%d%%  |  Projectile Speed +%d%%  |  Trap Effect +%d%%  |  Health +%d  |  Mana +%d  |  Regen %.1f HP / %.1f MP per sec  |  Damage Reduction -%d%%  |  Cooldowns -%d%%  |  Mana Costs -%d%%  |  Speed +%d%%" % [
 		roundi(float(totals.get("accuracy", 0.0)) * 100.0),
 		roundi(float(totals.get("critical_chance", 0.0)) * 100.0),
 		roundi(float(totals.get("critical_damage", 0.0)) * 100.0),
+		roundi(float(totals.get("skill_damage_percent", 0.0)) * 100.0),
+		int(totals.get("pierce", 0)),
 		roundi(float(totals.get("evasion", 0.0)) * 100.0),
 		roundi(float(totals.get("projectile_speed", 0.0)) * 100.0),
-		roundi(float(totals.get("trap_efficiency", 0.0)) * 100.0)
+		roundi(float(totals.get("trap_efficiency", 0.0)) * 100.0),
+		int(totals.get("max_health", 0)),
+		int(totals.get("max_mana", 0)),
+		float(totals.get("health_regen", 0.0)),
+		float(totals.get("mana_regen", 0.0)),
+		roundi(float(totals.get("damage_reduction_percent", 0.0)) * 100.0),
+		roundi(float(totals.get("cooldown_reduction", 0.0)) * 100.0),
+		roundi(float(totals.get("mana_cost_reduction", 0.0)) * 100.0),
+		roundi(float(totals.get("movement_speed", 0.0)) * 100.0)
 	]
