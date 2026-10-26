@@ -54,6 +54,8 @@ const TOWN_RETURN_POSITION_META = "town_return_position"
 ## Click-to-attack (mouse controls): how close the player walks before swinging, or before shooting.
 const MELEE_ENGAGE_RANGE := 54.0
 const RANGED_ENGAGE_RANGE := 340.0
+## How far the mouse must travel after keyboard movement before attacks aim at the cursor again.
+const MOUSE_AIM_REACQUIRE := 24.0
 
 @export_enum("None", "Fireball", "Iceball", "Town Portal") var e_skill := "None"
 
@@ -122,6 +124,10 @@ var attack_target: Wolf
 var attack_target_held := false
 var stand_attack_held := false
 var hovered_enemy: Wolf
+## Attacks and skills aim at the cursor only while the mouse is what you're steering with; walking with
+## the keys hands aim back to the way you face until the mouse moves a little or clicks.
+var mouse_aim := false
+var mouse_aim_travel := 0.0
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var sword: Node2D = $Sword
@@ -252,11 +258,14 @@ func _physics_process(delta: float) -> void:
 	var attack_now := false
 	if keyboard_direction != Vector2.ZERO:
 		attack_target = null
+		mouse_aim = false
+		mouse_aim_travel = 0.0
 	if attack_target != null and (not is_instance_valid(attack_target) or attack_target.health <= 0.0):
 		attack_target = null
 	if attack_target != null:
 		var to_target := attack_target.global_position - global_position
-		if to_target.length() > _engage_range():
+		# Big monsters' bodies stop you short of the engage range; bumping into one counts as reaching it.
+		if to_target.length() > _engage_range() and not _is_touching(attack_target):
 			direction = to_target.normalized()
 		else:
 			direction = Vector2.ZERO
@@ -305,7 +314,7 @@ func _physics_process(delta: float) -> void:
 		animation_time = 0.0
 
 	var space_attack := Input.is_action_just_pressed("ui_accept")
-	if space_attack and mouse_controls and not aim_held and attack_target == null:
+	if space_attack and mouse_controls and mouse_aim and not aim_held and attack_target == null:
 		_aim_at(get_global_mouse_position())
 	if space_attack or aim_held or attack_now:
 		# One click is one attack; holding the button keeps attacking the same monster.
@@ -331,6 +340,11 @@ func _physics_process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if health <= 0:
 		return
+	if event is InputEventMouseMotion and not mouse_aim:
+		mouse_aim_travel += event.relative.length()
+		mouse_aim = mouse_aim_travel >= MOUSE_AIM_REACQUIRE
+	elif event is InputEventMouseButton and event.pressed:
+		mouse_aim = true
 	if event is InputEventMouseButton \
 			and event.button_index == MOUSE_BUTTON_LEFT \
 			and not event.pressed:
@@ -422,7 +436,7 @@ func activate_skill_slot(slot: String) -> void:
 	if health <= 0 or is_casting_town_portal:
 		return
 	# With a mouse, skills go where you point, like the basic attack.
-	if not free_aim and not aim_held:
+	if not free_aim and not aim_held and mouse_aim:
 		_aim_at(get_global_mouse_position())
 	if selected_character == "Witch":
 		if slot == "E":
@@ -508,6 +522,14 @@ func _use_primary_attack() -> bool:
 ## How close the player gets to a clicked monster before attacking it.
 func _engage_range() -> float:
 	return MELEE_ENGAGE_RANGE if selected_character == "Warrior" else RANGED_ENGAGE_RANGE
+
+
+## Whether the last move_and_slide pushed against `body`.
+func _is_touching(body: Node) -> bool:
+	for index in get_slide_collision_count():
+		if get_slide_collision(index).get_collider() == body:
+			return true
+	return false
 
 
 ## Turns attacks (and the sprite) toward a world point, in any direction.
