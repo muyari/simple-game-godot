@@ -47,8 +47,6 @@ const WITCH_SHEET = preload("res://textures/witch_sprite_atlas.png")
 const RANGER_SHEET = preload("res://textures/ranger_sprite_atlas.png")
 const RANGER_ARROW_SCRIPT = preload("res://RangerArrow.gd")
 const PORTAL_SCENE = preload("res://portal.tscn")
-const TOWN_SCENE_PATH = "res://town.tscn"
-const TOWN_ARRIVAL_POSITION = Vector2(576, 300)
 const TOWN_RETURN_SCENE_META = "town_return_scene"
 const TOWN_RETURN_POSITION_META = "town_return_position"
 ## Click-to-attack (mouse controls): how close the player walks before swinging, or before shooting.
@@ -1204,8 +1202,11 @@ func _spawn_town_portal() -> void:
 		push_error("The portal scene root must use the Portal script.")
 		return
 
-	portal.destination_scene = TOWN_SCENE_PATH
-	portal.destination_position = TOWN_ARRIVAL_POSITION
+	# Home is the hub of the region you're in.
+	var level_id := GameState.get_level_id(current_scene_path)
+	portal.destination_scene = GameState.get_hub_scene(level_id)
+	portal.destination_position = GameState.get_hub_arrival(level_id)
+	portal.destination_name = GameState.get_hub_name(level_id)
 	get_tree().set_meta(TOWN_RETURN_SCENE_META, current_scene_path)
 	get_tree().set_meta(TOWN_RETURN_POSITION_META, global_position)
 	current_scene.add_child(portal)

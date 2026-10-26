@@ -573,8 +573,8 @@ func _on_player_died() -> void:
 	_show_outcome(
 		"FALLEN",
 		"You were defeated",
-		"The frontier claims another exile, for now. Regroup in Oblath.",
-		[["Return to Town", _on_return_to_town_pressed]]
+		"The frontier claims another exile, for now. Regroup in %s." % _hub_name(),
+		[["Return to %s" % _hub_name(), _on_return_to_town_pressed]]
 	)
 
 
@@ -804,7 +804,7 @@ func _on_gold_changed(total_gold: int) -> void:
 
 
 func _on_town_portal_opened() -> void:
-	portal_hint_label.text = "Town portal open - walk into it to travel"
+	portal_hint_label.text = "Portal to %s open - walk into it to travel" % _hub_name()
 
 
 func _on_town_portal_cast_started() -> void:
@@ -894,10 +894,15 @@ func _on_level_completed() -> void:
 	_show_corner_return_button()
 
 
+## The hub of the region this level belongs to.
+func _hub_name() -> String:
+	return GameState.get_hub_name(GameState.get_level_id(get_tree().current_scene.scene_file_path))
+
+
 ## A small "Return to Town" button tucked under the top-left HUD once the level is cleared.
 func _show_corner_return_button() -> void:
 	var button := Button.new()
-	button.text = "Return to Town"
+	button.text = "Return to %s" % _hub_name()
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_font_size_override("font_size", 15)
 	button.position = Vector2(20.0, 96.0)
@@ -923,12 +928,13 @@ func _on_return_to_town_pressed() -> void:
 		return
 	get_tree().set_meta(Player.TOWN_RETURN_SCENE_META, scene_path)
 	get_tree().set_meta(Player.TOWN_RETURN_POSITION_META, player.global_position)
-	get_tree().set_meta("portal_spawn_position", Vector2(576, 300))
+	var level_id := GameState.get_level_id(scene_path)
+	get_tree().set_meta("portal_spawn_position", GameState.get_hub_arrival(level_id))
 	get_tree().set_meta("portal_player_vitals", {
 		"health": Player.MAX_HEALTH,
 		"mana": player.mana
 	})
-	var error := GameState.change_scene("res://town.tscn")
+	var error := GameState.change_scene(GameState.get_hub_scene(level_id))
 	if error != OK:
 		get_tree().remove_meta(Player.TOWN_RETURN_SCENE_META)
 		get_tree().remove_meta(Player.TOWN_RETURN_POSITION_META)

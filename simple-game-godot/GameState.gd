@@ -23,6 +23,35 @@ const LEVEL_SCENES = {
 	"res://ice_caves.tscn": 3,
 	"res://underworld.tscn": 4
 }
+## Each region's staging hub, keyed by level id. Town portals and "Return to Town" lead to the hub of the
+## level they're used in, and the waystones travel between hubs.
+## arrival: where the player appears; entrance: where the way into the level stands.
+const HUBS = {
+	1: {
+		"name": "Oblath", "scene": "res://town.tscn",
+		"arrival": Vector2(576, 300),
+	},
+	2: {
+		"name": "Saltwind Camp", "scene": "res://desert_camp.tscn",
+		"arrival": Vector2(600, 420),
+	},
+	3: {
+		"name": "Rimehollow", "scene": "res://ice_settlement.tscn",
+		"arrival": Vector2(600, 440),
+	},
+	4: {
+		"name": "Ashgate Outpost", "scene": "res://besieged_outpost.tscn",
+		"arrival": Vector2(560, 560),
+	},
+}
+## Where a level starts when entered from its hub.
+const LEVEL_START_POSITION := Vector2(84, 574)
+const LEVEL_SCENE_PATHS = {
+	1: "res://main.tscn",
+	2: "res://desert.tscn",
+	3: "res://ice_caves.tscn",
+	4: "res://underworld.tscn",
+}
 const WITCH_SKILL_ORDER = [
 	"firebolt",
 	"frost_nova",
@@ -1057,6 +1086,25 @@ func is_level_unlocked(level_id: int) -> bool:
 func get_level_id(scene_path: String) -> int:
 	return int(LEVEL_SCENES.get(scene_path, 0))
 
+
+## The level whose hub `scene_path` is, or 0 if it isn't a hub.
+func get_hub_level_id(scene_path: String) -> int:
+	for level_id in HUBS:
+		if HUBS[level_id]["scene"] == scene_path:
+			return level_id
+	return 0
+
+
+func get_hub_scene(level_id: int) -> String:
+	return str(HUBS.get(level_id, HUBS[1])["scene"])
+
+
+func get_hub_name(level_id: int) -> String:
+	return str(HUBS.get(level_id, HUBS[1])["name"])
+
+
+func get_hub_arrival(level_id: int) -> Vector2:
+	return HUBS.get(level_id, HUBS[1])["arrival"]
 
 func get_witch_skill_definitions() -> Array[Dictionary]:
 	var definitions: Array[Dictionary] = []
