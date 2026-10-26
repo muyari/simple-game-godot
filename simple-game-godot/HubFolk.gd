@@ -5,7 +5,7 @@ class_name HubFolk
 ## the ice caves, mail and bandages at the besieged outpost. Stands, sits or strolls about an area, turns
 ## to face the player, and says one of its lines in a speech bubble when the player comes close.
 
-enum Headwear { HAIR, HOOD, TURBAN, FUR_HOOD, HELMET, BANDANA, BALD }
+enum Headwear { HAIR, HOOD, TURBAN, FUR_HOOD, HELMET, BANDANA, BALD, FELT_HAT }
 enum Held { NONE, SPEAR, STAFF, ROD, HAMMER, TORCH, BOWL, SWORD, LANTERN, SCROLL }
 enum Pose { STAND, SIT }
 
@@ -29,6 +29,8 @@ var armored := false
 var beard := false
 var bandaged := false
 var headwear := Headwear.HAIR
+## The FELT_HAT's colour.
+var hat := Color("#6b5a44")
 var held := Held.NONE
 var pose := Pose.STAND
 ## Where they wander, in world pixels. Empty keeps them where they stand.
@@ -37,6 +39,9 @@ var speed := 30.0
 var body_scale := 1.15
 ## Which way they face when no one is about: 1 right, -1 left.
 var rest_facing := 1.0
+## Whether they stop and turn to the player when the player comes near. Off for someone being led
+## somewhere, whose walking is steered from outside (Perry, in the StartingZone).
+var stops_for_player := true
 
 var player: Node2D
 var time := 0.0
@@ -48,6 +53,8 @@ var stuck_time := 0.0
 var line_index := -1
 var line_time := 0.0
 var talking := false
+## How much longer a line given to say() stays up.
+var said_time := 0.0
 var bubble: PanelContainer
 var bubble_name: Label
 var bubble_line: Label
@@ -89,7 +96,7 @@ func _physics_process(delta: float) -> void:
 		_speaker = self
 	elif not near and _speaker == self:
 		_speaker = null
-	if near:
+	if near and stops_for_player:
 		walking = false
 		velocity = Vector2.ZERO
 		if absf(player.global_position.x - global_position.x) > 4.0:
@@ -169,10 +176,19 @@ func _build_bubble() -> void:
 	add_child(bubble)
 
 
+## Says a line in the speech bubble for `duration` seconds, wherever the player is.
+func say(line: String, duration := 4.0) -> void:
+	bubble_line.text = line
+	said_time = duration
+	talking = false
+
+
 func _update_bubble(near: bool, delta: float) -> void:
-	if lines.is_empty():
-		return
-	if near and not talking:
+	if said_time > 0.0:
+		said_time -= delta
+	elif lines.is_empty():
+		talking = false
+	elif near and not talking:
 		talking = true
 		_next_line()
 	elif not near:
@@ -181,7 +197,7 @@ func _update_bubble(near: bool, delta: float) -> void:
 		line_time += delta
 		if line_time > LINE_TIME and lines.size() > 1:
 			_next_line()
-	bubble.modulate.a = move_toward(bubble.modulate.a, 1.0 if talking else 0.0, delta * 5.0)
+	bubble.modulate.a = move_toward(bubble.modulate.a, 1.0 if talking or said_time > 0.0 else 0.0, delta * 5.0)
 	bubble.visible = bubble.modulate.a > 0.01
 	if bubble.visible:
 		bubble.reset_size()
@@ -301,6 +317,21 @@ func _draw_head(center: Vector2) -> void:
 			SmoothDraw.box(self, Rect2(center.x - 7.5, center.y - 9.5, 15.0, 7.5), trim, 3.5)
 			draw_line(center + Vector2(-6.5, -6.0), center + Vector2(6.0, -8.5), Color(trim.darkened(0.25), 0.8), 1.0, true)
 			draw_line(center + Vector2(-6.5, -4.0), center + Vector2(6.5, -6.0), Color(trim.darkened(0.25), 0.8), 1.0, true)
+		Headwear.FELT_HAT:
+			# A drooping brim and a dented crown, patched once and holed by moths, hair poking through.
+			_draw_cap(center, r + 0.6, hair, 0.35)
+			SmoothDraw.polygon(self, PackedVector2Array([
+				center + Vector2(-6.5, -3.0), center + Vector2(-5.5, -10.5), center + Vector2(-1.0, -9.0),
+				center + Vector2(1.5, -11.5), center + Vector2(6.0, -10.0), center + Vector2(6.5, -3.0),
+			]), hat, OUTLINE, 1.0)
+			draw_line(center + Vector2(-6.4, -4.6), center + Vector2(6.4, -4.6), hat.darkened(0.35), 1.6, true)
+			SmoothDraw.polygon(self, PackedVector2Array([
+				center + Vector2(-11.5, -1.0), center + Vector2(-6.0, -4.0), center + Vector2(7.0, -4.5),
+				center + Vector2(12.5, -1.5), center + Vector2(11.0, 0.5), center + Vector2(-10.5, 1.0),
+			]), hat.darkened(0.12), OUTLINE, 1.0)
+			SmoothDraw.flat(self, Rect2(center.x - 4.8, center.y - 8.6, 3.4, 3.0), trim, 0.8)
+			draw_circle(center + Vector2(3.0, -9.6), 1.5, OUTLINE, true, -1.0, true)
+			draw_line(center + Vector2(3.0, -9.8), center + Vector2(4.2, -12.6), hair, 1.2, true)
 		Headwear.HELMET:
 			_draw_cap(center, r + 1.0, STEEL, 0.2)
 			draw_line(center + Vector2(0.8, -2.0), center + Vector2(0.8, 2.0), STEEL.darkened(0.3), 1.6, true)

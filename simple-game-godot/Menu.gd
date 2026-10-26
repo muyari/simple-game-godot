@@ -191,7 +191,23 @@ func _on_roster_continue_pressed() -> void:
 	var character := GameState.get_character(selected_character_id)
 	selected_character_name = str(character.get("name", "Adventurer"))
 	selected_character_class = str(character.get("class", "Warrior"))
+	if GameState.is_in_starting_zone():
+		_enter_starting_zone(roster_status)
+		return
 	_show_level_screen()
+
+
+## New characters begin on the forest trail outside Oblath (see StartingZone), and go back there until
+## they've walked it.
+func _enter_starting_zone(status_label: Label) -> void:
+	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
+		status_label.text = "Could not save your character before setting out."
+		return
+	get_tree().set_meta("selected_character", selected_character_class)
+	get_tree().set_meta("selected_character_id", selected_character_id)
+	var error := GameState.change_scene(GameState.LEVEL_SCENE_PATHS[1])
+	if error != OK:
+		push_error("Could not load the starting zone: %s" % error_string(error))
 
 
 func _show_level_screen() -> void:
@@ -298,9 +314,7 @@ func _on_character_continue() -> void:
 	var character := GameState.get_character(character_id)
 	selected_character_name = str(character.get("name", "Adventurer"))
 	selected_character_class = str(character.get("class", "Warrior"))
-	_refresh_character_roster()
-	roster_status.text = "%s joined your roster." % selected_character_name
-	_show_screen(roster_screen)
+	_enter_starting_zone(character_status)
 
 
 func _on_level_1_selected() -> void:
@@ -322,6 +336,9 @@ func _on_level_4_selected() -> void:
 func _load_level(scene_path: String, level_name: String) -> void:
 	if selected_character_id.is_empty():
 		level_status.text = "Select a character before entering a level."
+		return
+	if GameState.is_in_starting_zone():
+		_enter_starting_zone(level_status)
 		return
 	var level_id := GameState.get_level_id(scene_path)
 	if not GameState.is_level_unlocked(level_id):
@@ -345,6 +362,9 @@ func _load_level(scene_path: String, level_name: String) -> void:
 func _on_start_in_town_pressed() -> void:
 	if selected_character_id.is_empty():
 		level_status.text = "Select a character before entering town."
+		return
+	if GameState.is_in_starting_zone():
+		_enter_starting_zone(level_status)
 		return
 	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
 		level_status.text = "Could not save your character before entering town."

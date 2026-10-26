@@ -1600,6 +1600,28 @@ func get_active_character() -> Dictionary:
 	return get_character(_active_character_id)
 
 
+## Whether the active character has yet to walk the starting zone (see StartingZone). Only characters
+## created since it existed start there; it's walked once, ending at Oblath's gate.
+func is_in_starting_zone() -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	return character_index >= 0 and bool(_characters[character_index].get("in_starting_zone", false))
+
+
+## Marks the starting zone walked for the active character, for good.
+func finish_starting_zone() -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0:
+		return false
+	var previous_character: Dictionary = _characters[character_index]
+	var updated_character := previous_character.duplicate(true)
+	updated_character["in_starting_zone"] = false
+	_characters[character_index] = updated_character
+	if not _save_roster():
+		_characters[character_index] = previous_character
+		return false
+	return true
+
+
 func get_completed_levels() -> Array[int]:
 	var character_index := _find_character_index(_active_character_id)
 	if character_index < 0:
@@ -2375,6 +2397,7 @@ func create_character(display_name: String, character_class: String, character_i
 		"save_path": save_path,
 		"completed_levels": [],
 		"level_states": {},
+		"in_starting_zone": true,
 	})
 	_active_character_id = character_id
 	_active_save_path = save_path
@@ -2850,7 +2873,9 @@ func _load_roster() -> void:
 			"quest_states": _validated_quest_states(character.get("quest_states", {})),
 			"quest_counters": _validated_quest_counters(character.get("quest_counters", {})),
 			"endgame_run": _validated_endgame_run(character.get("endgame_run", {})),
-			"endgame_clears": _validated_endgame_clears(character.get("endgame_clears", {}))
+			"endgame_clears": _validated_endgame_clears(character.get("endgame_clears", {})),
+			# Characters from before the starting zone existed never go back to it.
+			"in_starting_zone": character.get("in_starting_zone", false) == true
 		})
 
 

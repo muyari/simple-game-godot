@@ -26,6 +26,8 @@ const RENDELS_AXE := "rendels_axe"
 const LOST_PIP := "lost_pip"
 const SCAR_EAR_BOUNTY := "scar_ear_bounty"
 const WAYFIRES := "wayfires"
+## The starting zone's quest (see StartingZone): walk Perry to Oblath for a new hat. He doesn't make it.
+const PERRYS_HAT := "perrys_hat"
 
 ## Areas shown as tabs in the quest menu, keyed by GameState level id.
 const AREAS := [
@@ -48,6 +50,7 @@ const NPCS := {
 	"corwin": {"name": "Corwin the Hunter", "idle": ["Keep your eyes on the treeline. Wolves don't announce themselves."]},
 	"pip": {"name": "Pip", "idle": ["I'm not scared. I'm just... sitting very still."]},
 	"forest_shrine": {"name": "Mossy Shrine", "idle": ["The shrine is quiet. Warmth lingers in the old stone."]},
+	"perry": {"name": "Perry", "idle": ["Green, with a feather. Did I mention the feather?"]},
 }
 
 const DEFINITIONS := {
@@ -704,6 +707,57 @@ const DEFINITIONS := {
 			],
 		},
 	},
+	PERRYS_HAT: {
+		"title": "Perry's New Hat",
+		"type": "Escort",
+		"giver": "Perry",
+		"giver_id": "perry",
+		"giver_location": "the forest trail",
+		"area": 1,
+		"summary": "Perry, a cheerful old wanderer, has been lost on the forest trail all morning. He's on his way to Oblath to spend a year's savings on a new hat - green, with a feather - and asked you to show him the way.",
+		"objectives": [
+			"Walk the forest trail with Perry",
+			"Take Perry's hat",
+			"Enter Oblath through the town gate",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Lead Perry down the trail to the gate of Oblath."},
+			"perry_fell": {"objectives_done": 1, "status": "Perry fell into a hidden spike pit and did not survive. His hat lies at the edge."},
+			"hat_taken": {"objectives_done": 2, "status": "Carry Perry's hat on to the gate of Oblath."},
+			STATE_COMPLETED: {"objectives_done": 3, "status": "Completed. You reached Oblath. Perry never got his new hat."},
+		},
+		"events": [
+			{"type": "fall", "target": "perry", "requires_state": STATE_ACCEPTED, "sets_state": "perry_fell"},
+			{"type": "collect", "target": "perrys_hat", "requires_state": "perry_fell", "sets_state": "hat_taken"},
+			{"type": "enter", "target": "oblath", "requires_state": "hat_taken", "sets_state": STATE_COMPLETED},
+		],
+		"reward": {
+			"name": "Perry's Old Hat",
+			"description": "A moth-eaten felt hat with a hole in the crown, taken from the edge of a hunter's spike pit on the trail to Oblath. Perry wore it for forty years and was on his way to replace it.",
+		},
+		"gold": 15,
+		"experience": 60,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Oh! Oh, thank goodness, a person. A real one. I've been talking to that tree for an hour, and it's terrible company.",
+				"Name's Perry. I'm trying to get to Oblath, but this trail keeps going round in circles. Or I do. One of us does.",
+				"See this hat? *He lifts a felt hat riddled with moth holes. A tuft of grey hair pokes through the crown.* Forty years I've worn it. Today, I buy a new one.",
+				"The hatter in Oblath has a green one with a feather in the window. I've saved all year. Would you take me there? I'll stay right behind you. You won't even know I'm there.",
+			],
+			"accepted_reply": [
+				"Splendid! Lead the way, friend. Green, with a feather. Did I mention the feather?",
+			],
+			"declined_reply": [
+				"Oh. Well. I'll just... wait here, then. With the tree. Maybe it knows the way.",
+			],
+			STATE_ACCEPTED: [
+				"Right behind you! Lead on. I can practically feel that feather already.",
+			],
+			STATE_COMPLETED: [
+				"...",
+			],
+		},
+	},
 }
 
 
@@ -899,8 +953,8 @@ static func _pay_out(quest_id: String) -> String:
 
 ## Something happened in the world: a monster slain ("kill", "wolf"), an object used ("collect", "apple",
 ## "forest_apple_3"), a place found ("find" / "enter"), someone saved ("rescue"). Advances every active
-## quest waiting on it; collectables count once per object_id. Returns one {quest_id, text} per quest that
-## moved, where text is the new tally or status line.
+## quest waiting on it; collectables count once per object_id, and an event that finishes a quest pays it
+## out. Returns one {quest_id, text} per quest that moved, where text is the new tally, status line or payout.
 static func record_event(event_type: String, target: String, object_id := "") -> Array[Dictionary]:
 	var updates: Array[Dictionary] = []
 	for quest_id in DEFINITIONS:
@@ -917,7 +971,11 @@ static func record_event(event_type: String, target: String, object_id := "") ->
 			if not GameState.set_quest_state(quest_id, event["sets_state"]):
 				push_error("Could not save progress for quest '%s'." % quest_id)
 				continue
-			updates.append({"quest_id": quest_id, "text": get_stage(quest_id).get("status", ""), "advanced": true})
+			var text: String = get_stage(quest_id).get("status", "")
+			if event["sets_state"] == STATE_COMPLETED:
+				var payout := _pay_out(quest_id)
+				text = text if payout.is_empty() else payout
+			updates.append({"quest_id": quest_id, "text": text, "advanced": true})
 		else:
 			updates.append({"quest_id": quest_id, "text": "%s %d/%d" % [get_stage(quest_id)["counter"]["label"], count, needed], "advanced": false})
 	return updates

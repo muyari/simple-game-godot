@@ -1542,6 +1542,9 @@ func _open_town_portal() -> void:
 		return
 	if is_casting_town_portal:
 		return
+	# A new character hasn't reached Oblath yet; the trail's gate is the only way in.
+	if GameState.is_in_starting_zone():
+		return
 
 	is_casting_town_portal = true
 	town_portal_cast_time_remaining = TOWN_PORTAL_CAST_DURATION

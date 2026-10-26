@@ -57,6 +57,7 @@ func setup(controller: Node, level_root: Node2D, level_player: Player) -> void:
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	add_to_group(QuestTracker.GUIDES_GROUP)
 	GameState.quest_changed.connect(_on_quest_changed)
 	var layer := CanvasLayer.new()
 	layer.layer = 90

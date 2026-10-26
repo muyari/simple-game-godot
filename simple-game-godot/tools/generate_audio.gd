@@ -572,6 +572,22 @@ func _sounds() -> Dictionary:
 			+ _tones([[79, 0.36, 0.2], [84, 0.42, 0.2], [88, 0.48, 0.2], [91, 0.54, 0.3]], SINE, 0.35),
 			0.55,
 		],
+		# Branches snapping under Perry, a rush of falling earth and a dull thud at the bottom of the pit.
+		"pit_collapse": [[
+			L(NOISE, 0, 0.05, 9000, 9000, 0.7, {"hp": 1500.0}),
+			L(NOISE, 0.07, 0.04, 9000, 9000, 0.6, {"hp": 1800.0}),
+			L(NOISE, 0.12, 0.06, 8000, 8000, 0.8, {"hp": 1200.0}),
+			L(NOISE, 0.15, 0.55, RATE, RATE, 0.6, {"shape": "swell", "lp": 2500.0, "lp1": 300.0}),
+			L(SINE, 0.62, 0.3, 110, 40, 1.0),
+			L(NOISE, 0.62, 0.2, 6000, 6000, 0.5, {"lp": 600.0}),
+		], 0.6],
+		# Heavy wooden doors groaning on iron hinges.
+		"gate_open": [[
+			L(SAW, 0, 0.9, 70, 95, 0.5, {"shape": "swell", "vib": 0.12, "vib_rate": 23.0, "lp": 700.0}),
+			L(SAW, 0.3, 0.7, 120, 85, 0.3, {"shape": "swell", "vib": 0.1, "vib_rate": 31.0, "lp": 900.0}),
+			L(NOISE, 0.95, 0.15, 5000, 5000, 0.6, {"lp": 500.0}),
+			L(SINE, 0.95, 0.2, 90, 50, 0.6),
+		], 0.5],
 		# Rises over the town portal's 3 second channel.
 		"portal_cast": [[
 			L(SINE, 0, 3.0, 180, 720, 0.6, {"a": 1.5, "shape": "flat", "vib": 0.03, "vib_rate": 7.0}),
