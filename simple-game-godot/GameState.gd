@@ -13,6 +13,8 @@ const ROSTER_PATH = "user://character_roster.json"
 const ROSTER_VERSION = 1
 const SCENE_FADE_OUT_TIME = 0.22
 const SCENE_FADE_IN_TIME = 0.35
+## The loading card stays up at least this long, so its music and the destination's name register.
+const LOADING_MIN_TIME := 0.9
 const LEVEL_NAMES = {
 	1: "Forest Outskirts",
 	2: "Sunscorch Sands",
@@ -1394,6 +1396,11 @@ var _characters: Array[Dictionary] = []
 var _active_character_id := ""
 var _active_save_path := SAVE_PATH
 var _scene_fade: ColorRect
+var _loading_card: VBoxContainer
+var _loading_title: Label
+var _loading_status: Label
+var _loading_path := ""
+var _loading_time := 0.0
 var _roster_loaded := false
 var gold := 0
 var player_level := 1
@@ -1418,12 +1425,14 @@ func _ready() -> void:
 	# which stop theme inheritance from the root window.
 	ThemeDB.get_default_theme().merge_with(MenuStyle.get_theme())
 	_build_scene_fade()
+	set_process(false)
 	_load_roster()
 	_load_character()
 
 
-## Fades to black, swaps scenes, then fades back in. Returns an error straight
-## away if the scene is missing, like change_scene_to_file().
+## Fades to black, shows a loading card (with the calm loading music) while the
+## scene loads on a thread, swaps scenes, then fades back in. Returns an error
+## straight away if the scene is missing, like change_scene_to_file().
 func change_scene(scene_path: String) -> Error:
 	if not ResourceLoader.exists(scene_path):
 		return ERR_FILE_NOT_FOUND
@@ -1431,19 +1440,68 @@ func change_scene(scene_path: String) -> Error:
 		return ERR_BUSY
 	_scene_fade.mouse_filter = Control.MOUSE_FILTER_STOP
 	get_tree().paused = true
+	Audio.play_music(Audio.LOADING_MUSIC, 0.8)
 	var fade_out := _fade_scene_to(1.0, SCENE_FADE_OUT_TIME)
-	fade_out.finished.connect(_finish_scene_change.bind(scene_path))
+	fade_out.finished.connect(_start_loading.bind(scene_path))
 	return OK
 
 
-func _finish_scene_change(scene_path: String) -> void:
-	var error := get_tree().change_scene_to_file(scene_path)
+func _start_loading(scene_path: String) -> void:
+	_loading_title.text = _get_place_name(scene_path)
+	_loading_status.text = "Loading"
+	_loading_card.modulate.a = 0.0
+	_loading_card.show()
+	create_tween().tween_property(_loading_card, "modulate:a", 1.0, 0.2)
+	_loading_path = scene_path
+	_loading_time = 0.0
+	# If the threaded request fails, _process finds it failed and loads the scene directly instead.
+	ResourceLoader.load_threaded_request(scene_path)
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	_loading_time += delta
+	_loading_status.text = "Loading" + ".".repeat(int(_loading_time * 3.0) % 4)
+	var status := ResourceLoader.load_threaded_get_status(_loading_path)
+	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS or _loading_time < LOADING_MIN_TIME:
+		return
+	set_process(false)
+	var scene_path := _loading_path
+	_loading_path = ""
+	var packed_scene: PackedScene = null
+	if status == ResourceLoader.THREAD_LOAD_LOADED:
+		packed_scene = ResourceLoader.load_threaded_get(scene_path) as PackedScene
+	_finish_scene_change(scene_path, packed_scene)
+
+
+func _finish_scene_change(scene_path: String, packed_scene: PackedScene) -> void:
+	var error: Error
+	if packed_scene != null:
+		error = get_tree().change_scene_to_packed(packed_scene)
+	else:
+		error = get_tree().change_scene_to_file(scene_path)
 	get_tree().paused = false
 	if error != OK:
 		push_error("Could not change scene to %s: %s" % [scene_path, error_string(error)])
+	# Levels choose their own track once they know their region.
+	Audio.play_scene_music(scene_path)
+	create_tween().tween_property(_loading_card, "modulate:a", 0.0, SCENE_FADE_IN_TIME * 0.6)
 	_fade_scene_to(0.0, SCENE_FADE_IN_TIME).finished.connect(
-		func() -> void: _scene_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		func() -> void:
+			_scene_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_loading_card.hide()
 	)
+
+
+## What the loading card calls a destination.
+func _get_place_name(scene_path: String) -> String:
+	var hub_id := get_hub_level_id(scene_path)
+	if hub_id > 0:
+		return get_hub_name(hub_id)
+	var level_id := get_level_id(scene_path)
+	if level_id > 0:
+		return str(LEVEL_NAMES[level_id])
+	return "Exiles Reach"
 
 
 func _fade_scene_to(alpha: float, duration: float) -> Tween:
@@ -1461,6 +1519,30 @@ func _build_scene_fade() -> void:
 	_scene_fade.color = Color(0.0, 0.0, 0.0, 0.0)
 	_scene_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_scene_fade)
+
+	_loading_card = VBoxContainer.new()
+	_loading_card.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_loading_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_loading_card.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_loading_card.alignment = BoxContainer.ALIGNMENT_CENTER
+	_loading_card.add_theme_constant_override("separation", 8)
+	_loading_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_loading_card.hide()
+	layer.add_child(_loading_card)
+	var eyebrow := Label.new()
+	eyebrow.text = "THE ROAD GOES ON"
+	eyebrow.theme_type_variation = &"EyebrowLabel"
+	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_loading_card.add_child(eyebrow)
+	_loading_title = Label.new()
+	_loading_title.theme_type_variation = &"TitleLabel"
+	_loading_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_loading_card.add_child(_loading_title)
+	_loading_status = Label.new()
+	_loading_status.theme_type_variation = &"HintLabel"
+	_loading_status.custom_minimum_size.x = 120.0
+	_loading_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_loading_card.add_child(_loading_status)
 
 
 func _notification(what: int) -> void:
@@ -2194,6 +2276,8 @@ func set_quest_state(quest_id: String, quest_state: String) -> bool:
 		_characters[character_index] = previous_character
 		return false
 	quest_changed.emit(quest_id)
+	if not quest_state.is_empty():
+		Audio.play_sfx("quest_complete" if quest_state == Quests.STATE_COMPLETED else "quest_accept")
 	return true
 
 

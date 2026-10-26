@@ -46,6 +46,7 @@ func interact(_player: Player) -> void:
 	if not can_interact(_player):
 		return
 	is_open = true
+	Audio.play_sfx("chest_open")
 	opened.emit()
 	update_prompt()
 

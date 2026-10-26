@@ -125,6 +125,7 @@ func interact(_player: Player) -> void:
 		var updates := Quests.record_event(use["event"], use["target"], object_id)
 		QuestToast.show_updates(get_tree(), updates)
 		if not updates.is_empty():
+			Audio.play_sfx("item_pickup")
 			PickupBurst.spawn(get_parent(), global_position + Vector2(0, -minf(_height(), 60.0)), _burst_color(), USES[kind].get("item", ""))
 	used.emit(self)
 	_refresh()

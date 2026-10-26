@@ -19,6 +19,7 @@ func _process(delta: float) -> void:
 	var step_end := global_position + direction * step_distance
 	var hit_target := _find_hit_target(step_distance)
 	if hit_target != null:
+		Audio.play_sfx_at("ice_impact" if is_ice else "fire_impact", global_position)
 		if direct_damage > 0.0:
 			hit_target.call("take_damage", direct_damage)
 		elif is_ice:

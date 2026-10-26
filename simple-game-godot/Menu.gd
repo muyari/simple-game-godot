@@ -25,6 +25,8 @@ const LEVEL_NUMERALS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 @onready var level4_button: Button = %Level4Button
 @onready var delete_confirmation: ConfirmationDialog = %DeleteConfirmation
 
+var settings_screen: VBoxContainer
+
 var selected_character_id := ""
 var selected_character_name := ""
 var selected_character_class := ""
@@ -38,6 +40,7 @@ func _ready() -> void:
 	_fit_campfire()
 	delete_confirmation.confirmed.connect(_on_delete_confirmed)
 	_setup_class_buttons()
+	_build_settings_screen()
 
 	if get_tree().has_meta("return_to_character_select"):
 		get_tree().remove_meta("return_to_character_select")
@@ -70,6 +73,43 @@ func _fit_campfire() -> void:
 	campfire.fit_to_backdrop(backdrop.size)
 
 
+## A Settings button on the title screen (above Quit) and the screen it opens, with the volume sliders.
+func _build_settings_screen() -> void:
+	var settings_button := Button.new()
+	settings_button.text = "Settings"
+	settings_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	settings_button.custom_minimum_size.y = 54.0
+	title_screen.add_child(settings_button)
+	title_screen.move_child(settings_button, title_screen.get_node("QuitButton").get_index())
+
+	settings_screen = VBoxContainer.new()
+	settings_screen.add_theme_constant_override("separation", 12)
+	settings_screen.hide()
+	title_screen.get_parent().add_child(settings_screen)
+
+	var eyebrow := Label.new()
+	eyebrow.text = "BY THE FIRE"
+	eyebrow.theme_type_variation = &"EyebrowLabel"
+	settings_screen.add_child(eyebrow)
+	var title := Label.new()
+	title.text = "Settings"
+	title.theme_type_variation = &"TitleLabel"
+	settings_screen.add_child(title)
+	settings_screen.add_child(HSeparator.new())
+	settings_screen.add_child(AudioSettings.new())
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	settings_screen.add_child(spacer)
+	var back_button := Button.new()
+	back_button.text = "Back"
+	back_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	back_button.custom_minimum_size.y = 54.0
+	settings_screen.add_child(back_button)
+
+	settings_button.pressed.connect(_show_screen.bind(settings_screen))
+	back_button.pressed.connect(_show_screen.bind(title_screen))
+
+
 func _setup_class_buttons() -> void:
 	var class_group := ButtonGroup.new()
 	for entry in [[warrior_button, "Warrior"], [witch_button, "Witch"], [ranger_button, "Ranger"]]:
@@ -84,6 +124,7 @@ func _show_screen(screen_to_show: Control) -> void:
 	roster_screen.hide()
 	character_screen.hide()
 	level_screen.hide()
+	settings_screen.hide()
 	screen_to_show.show()
 	screen_to_show.modulate.a = 0.0
 	create_tween().tween_property(screen_to_show, "modulate:a", 1.0, 0.18)
@@ -224,6 +265,8 @@ func go_back() -> void:
 		_on_back_to_characters()
 	elif roster_screen.visible:
 		_on_roster_back_pressed()
+	elif settings_screen.visible:
+		_show_screen(title_screen)
 	else:
 		_on_quit_pressed()
 

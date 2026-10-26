@@ -14,6 +14,11 @@ var distance_travelled := 0.0
 var animation_time := 0.0
 
 
+func _ready() -> void:
+	# Deferred: the monster that fired it places it after adding it.
+	(func() -> void: Audio.play_sfx_at("enemy_spell", global_position)).call_deferred()
+
+
 func _process(delta: float) -> void:
 	animation_time += delta
 	var step_distance := SPEED * delta

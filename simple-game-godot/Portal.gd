@@ -43,6 +43,7 @@ func interact(player: Player) -> void:
 		return
 
 	is_transitioning = true
+	Audio.play_sfx("portal_enter")
 	call_deferred("_change_scene", player)
 
 

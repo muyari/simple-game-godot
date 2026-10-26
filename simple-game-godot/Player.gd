@@ -531,10 +531,12 @@ func _use_primary_attack() -> bool:
 			)
 			ranger_attack_cooldown_remaining = 0.42
 			ranger_attack_animation_time_remaining = RANGER_ATTACK_DURATION
+			Audio.play_sfx("arrow_shot")
 			return true
 	elif attack_time_remaining <= 0.0:
 		attack_time_remaining = ATTACK_DURATION
 		attack_hit_applied = false
+		Audio.play_sfx("sword_swing")
 		return true
 	return false
 
@@ -838,6 +840,7 @@ func _cast_assigned_ranger_skill(slot: String) -> bool:
 			mana_changed.emit(mana, get_max_mana())
 			return false
 	ranger_attack_animation_time_remaining = RANGER_ATTACK_DURATION
+	Audio.play_sfx("skill_" + skill_id)
 	return true
 
 
@@ -914,6 +917,7 @@ func _fire_barrage_arrow(damage: float) -> void:
 		return
 	_spawn_ranger_arrow(aim_direction.rotated(randf_range(-0.05, 0.05)), _get_ranger_hit_damage(damage))
 	ranger_attack_animation_time_remaining = RANGER_ATTACK_DURATION
+	Audio.play_sfx("arrow_shot")
 
 
 ## Arrow damage after passive skill damage and a critical strike roll (always a crit if `force_crit`).
@@ -978,6 +982,7 @@ func _cast_assigned_warrior_skill(slot: String) -> bool:
 			mana_changed.emit(mana, get_max_mana())
 			return false
 	_start_warrior_skill_animation(skill_id)
+	Audio.play_sfx("skill_" + skill_id)
 	return true
 
 
@@ -1352,6 +1357,7 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 			mana += mana_cost
 			mana_changed.emit(mana, get_max_mana())
 			return false
+	Audio.play_sfx("skill_" + skill_id)
 	return true
 
 
@@ -1475,6 +1481,7 @@ func _witch_meteor_impact(impact: Vector2, radius: float, damage: float) -> void
 	_stun_enemies_in_radius(impact, radius, 0.4)
 	_add_ring_effect(impact, radius, Color(1.0, 0.45, 0.15, 1.0), 0.5)
 	HitFeedback.hit_stop(get_tree(), HitFeedback.HEAVY_HIT_STOP)
+	Audio.play_sfx_at("explosion", impact)
 
 
 func _cast_witch_soul_siphon(rank: int) -> void:
@@ -1547,6 +1554,7 @@ func _open_town_portal() -> void:
 	sword.hide()
 	wand.hide()
 	portal_cast_effect.play()
+	Audio.play_sfx("portal_cast")
 	town_portal_cast_started.emit()
 
 
@@ -1582,6 +1590,7 @@ func _spawn_town_portal() -> void:
 	current_scene.add_child(portal)
 	portal.global_position = global_position + facing * 64.0
 	town_portal = portal
+	Audio.play_sfx("portal_open")
 	town_portal_opened.emit()
 
 
@@ -1592,6 +1601,7 @@ func _cancel_town_portal_cast() -> void:
 	is_casting_town_portal = false
 	town_portal_cast_time_remaining = 0.0
 	portal_cast_effect.stop()
+	Audio.stop_sfx("portal_cast")
 	town_portal_cast_cancelled.emit()
 
 
@@ -1610,6 +1620,7 @@ func _cast_projectile(is_ice: bool, mana_cost: int) -> void:
 	if mana_cost > 0:
 		mana -= mana_cost
 		mana_changed.emit(mana, get_max_mana())
+	Audio.play_sfx("iceball" if is_ice else "fireball")
 	var fireball: Fireball = FIREBALL_SCENE.instantiate()
 	fireball.direction = aim_direction
 	fireball.is_ice = is_ice
@@ -1648,6 +1659,7 @@ func gain_experience(amount: int) -> bool:
 func purchase_item(item: ItemData) -> bool:
 	if not GameState.purchase_item(item, inventory, equipment, MAX_INVENTORY_SIZE):
 		return false
+	Audio.play_sfx("coin")
 
 	inventory.append(item)
 	inventory_changed.emit(inventory)
@@ -1661,6 +1673,7 @@ func sell_inventory_item(inventory_index: int) -> bool:
 
 	if not GameState.sell_inventory_item(inventory, equipment, inventory_index):
 		return false
+	Audio.play_sfx("coin")
 
 	inventory.remove_at(inventory_index)
 	inventory_changed.emit(inventory)
@@ -1692,6 +1705,7 @@ func equip_inventory_item(inventory_index: int) -> bool:
 
 	equipment[slot] = item
 	GameState.save_character(inventory, equipment)
+	Audio.play_sfx("equip")
 	inventory_changed.emit(inventory)
 	equipment_changed.emit(equipment)
 	return true
@@ -1880,6 +1894,7 @@ func _use_health_potion() -> void:
 		return
 
 	health_potions -= 1
+	Audio.play_sfx("potion")
 	health_refill_timers.append(POTION_REFILL_TIME)
 	health_potion_remaining = float(get_max_health() - health)
 	_emit_potion_counts()
@@ -1890,6 +1905,7 @@ func _use_mana_potion() -> void:
 		return
 
 	mana_potions -= 1
+	Audio.play_sfx("potion")
 	mana_refill_timers.append(POTION_REFILL_TIME)
 	mana_potion_remaining = float(get_max_mana() - mana)
 	_emit_potion_counts()
@@ -2295,6 +2311,7 @@ func take_damage(amount: int) -> int:
 
 	var evasion_chance := get_evasion()
 	if evasion_chance > 0.0 and randf() < evasion_chance:
+		Audio.play_sfx("dodge")
 		return 0
 
 	var flat_reduced := maxi(amount - get_damage_reduction(), 0)
@@ -2309,12 +2326,15 @@ func take_damage(amount: int) -> int:
 		reduced_damage = roundi(float(reduced_damage) * (1.0 - warrior_reduction))
 	if reduced_damage > 0:
 		_cancel_town_portal_cast()
+		Audio.play_sfx("player_hurt")
 	var damage_taken := mini(reduced_damage, health)
 	health -= damage_taken
 	health_changed.emit(health, get_max_health())
 	if health == 0:
 		velocity = Vector2.ZERO
 		set_physics_process(false)
+		Audio.play_sfx("death")
+		Audio.stop_music(1.5)
 		died.emit()
 	return damage_taken
 

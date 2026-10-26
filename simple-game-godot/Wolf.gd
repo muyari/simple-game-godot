@@ -245,6 +245,7 @@ func take_damage(amount: float) -> void:
 
 	if randf() < minf(get_stat(MonsterModifiers.STAT_DODGE), MonsterModifiers.MAX_DODGE_CHANCE):
 		HitFeedback.number(get_parent(), _body_point(), 0.0)
+		Audio.play_sfx_at("dodge", global_position)
 		return
 
 	var reduction := minf(
@@ -259,6 +260,7 @@ func take_damage(amount: float) -> void:
 	_react_to_hit(damage_taken)
 	_reflect_damage(damage_taken)
 	if health == 0:
+		Audio.play_sfx_at("enemy_death", global_position)
 		died.emit()
 		queue_free()
 
@@ -286,6 +288,7 @@ func take_percentage_damage(fraction: float) -> void:
 func deal_damage(base_amount: int) -> int:
 	if target == null or not is_instance_valid(target):
 		return 0
+	Audio.play_sfx_at("enemy_attack", global_position)
 	var damage_dealt := target.take_damage(get_outgoing_damage(base_amount))
 	register_hit(damage_dealt)
 	return damage_dealt
@@ -445,6 +448,7 @@ func _react_to_hit(damage_taken: float) -> void:
 	hit_flash = 1.0
 	HitFeedback.number(get_parent(), _body_point() + Vector2(0.0, -14.0), damage_taken, heavy)
 	HitFeedback.sparks(get_parent(), _body_point() - away * 8.0, away, heavy)
+	Audio.play_sfx_at("heavy_hit" if heavy else "enemy_hit", global_position)
 	if health <= 0.0:
 		return
 	# Small hits only nudge; a blow worth a fifth of its health or more sends it flying.

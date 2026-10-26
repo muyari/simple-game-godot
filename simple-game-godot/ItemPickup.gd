@@ -92,6 +92,7 @@ func _on_body_entered(body: Node2D) -> void:
 	var player := body as Player
 	if player.try_add_item(item):
 		remove_from_group("level_drops")
+		Audio.play_sfx("item_pickup")
 		PickupBurst.spawn(get_parent(), global_position, rarity_color, item.display_name, 6 + rarity * 2)
 		collected.emit()
 		queue_free()
