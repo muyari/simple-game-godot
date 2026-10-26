@@ -131,3 +131,9 @@ func _throw_chunk(direction: Vector2) -> void:
 	get_tree().current_scene.add_child(chunk)
 	# Leaves the golem's hand, about chest height.
 	chunk.global_position = global_position + Vector2(0.0, -30.0) + direction * 34.0
+
+
+## A heavy blow breaks off a slam or throw that hasn't landed yet.
+func _interrupt_attack() -> void:
+	if golem_mode != GolemMode.WALKING and not action_done:
+		_finish()

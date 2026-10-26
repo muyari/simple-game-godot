@@ -82,3 +82,9 @@ func _start(mode: ImpMode) -> void:
 func _finish() -> void:
 	imp_mode = ImpMode.CHASING
 	clear_action()
+
+
+## A heavy blow knocks the trident jab or dart off.
+func _interrupt_attack() -> void:
+	if imp_mode != ImpMode.CHASING:
+		_finish()

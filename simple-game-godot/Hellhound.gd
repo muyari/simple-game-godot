@@ -106,3 +106,9 @@ func _start(mode: HoundMode) -> void:
 func _finish() -> void:
 	hound_mode = HoundMode.RUNNING
 	clear_action()
+
+
+## A heavy blow makes it abandon a bite or a pounce it was crouching for.
+func _interrupt_attack() -> void:
+	if hound_mode in [HoundMode.BITING, HoundMode.CROUCHING]:
+		_finish()

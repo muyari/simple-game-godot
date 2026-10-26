@@ -61,6 +61,7 @@ var hover_time := 0.0
 
 
 func _ready() -> void:
+	stagger_immune = true
 	max_health = 240.0
 	attack_damage = CLAW_DAMAGE
 	experience_reward = 320
