@@ -4,6 +4,8 @@ signal gold_changed(total_gold: int)
 signal progression_changed(level: int, experience: int, xp_into_level: int, xp_for_level: int, passive_points: int, skill_points: int)
 signal experience_gained(amount: int)
 signal player_leveled_up(level: int)
+## A quest's state or one of its counters changed for the active character.
+signal quest_changed(quest_id: String)
 
 const SAVE_PATH = "user://character_save.json"
 const SAVE_VERSION = 8
@@ -1791,6 +1793,38 @@ func set_quest_state(quest_id: String, quest_state: String) -> bool:
 	if not _save_roster():
 		_characters[character_index] = previous_character
 		return false
+	quest_changed.emit(quest_id)
+	return true
+
+
+## A quest counter for the active character (0 if never set). Keys are "<quest id>" for a tally such as
+## wolves slain, or "<quest id>/<object id>" for one-off flags such as a tree already picked.
+func get_quest_counter(key: String) -> int:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0:
+		return 0
+	var counters: Variant = _characters[character_index].get("quest_counters", {})
+	if typeof(counters) != TYPE_DICTIONARY:
+		return 0
+	return int(counters.get(key, 0))
+
+
+func set_quest_counter(key: String, value: int) -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0 or key.is_empty():
+		push_error("Cannot save a quest counter for an invalid key or inactive character.")
+		return false
+	var previous_character: Dictionary = _characters[character_index]
+	var updated_character := previous_character.duplicate(true)
+	var counters: Variant = updated_character.get("quest_counters", {})
+	var updated_counters: Dictionary = counters if typeof(counters) == TYPE_DICTIONARY else {}
+	updated_counters[key] = value
+	updated_character["quest_counters"] = updated_counters
+	_characters[character_index] = updated_character
+	if not _save_roster():
+		_characters[character_index] = previous_character
+		return false
+	quest_changed.emit(key.get_slice("/", 0))
 	return true
 
 
@@ -2322,6 +2356,7 @@ func _load_roster() -> void:
 			"completed_levels": _validated_completed_levels(character.get("completed_levels", [])),
 			"level_states": _validated_level_states(character.get("level_states", {})),
 			"quest_states": _validated_quest_states(character.get("quest_states", {})),
+			"quest_counters": _validated_quest_counters(character.get("quest_counters", {})),
 			"endgame_run": _validated_endgame_run(character.get("endgame_run", {})),
 			"endgame_clears": _validated_endgame_clears(character.get("endgame_clears", {}))
 		})
@@ -2337,6 +2372,18 @@ func _validated_quest_states(raw_states: Variant) -> Dictionary:
 		if typeof(quest_id) == TYPE_STRING and typeof(quest_state) == TYPE_STRING:
 			quest_states[quest_id] = quest_state
 	return quest_states
+
+
+func _validated_quest_counters(raw_counters: Variant) -> Dictionary:
+	var counters := {}
+	if typeof(raw_counters) != TYPE_DICTIONARY:
+		push_error("Ignoring saved quest counters that are not a Dictionary.")
+		return counters
+	for key in raw_counters:
+		var value: Variant = raw_counters[key]
+		if typeof(key) == TYPE_STRING and typeof(value) in [TYPE_INT, TYPE_FLOAT]:
+			counters[key] = int(value)
+	return counters
 
 
 func _save_roster() -> bool:

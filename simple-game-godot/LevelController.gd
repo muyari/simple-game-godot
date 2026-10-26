@@ -393,6 +393,14 @@ const MAX_DESERT_ENEMIES = 15
 const MAX_ICE_ENEMIES = 12
 const MAX_UNDERWORLD_ENEMIES = 16
 const SPAWN_EDGE_MARGIN = 128.0
+## The map spans this many regions either side of the start. The regions beyond are packed with the
+## biome's biggest scenery (a treeline, rock spires, obsidian), with an invisible wall along the edge.
+const MAP_HALF_REGIONS := Vector2i(6, 5)
+## Monsters are never put closer to the wall than this.
+const MAP_EDGE_MARGIN := 60.0
+const MAP_WALL_THICKNESS := 400.0
+## How closely the border scenery is packed, per biome (forest, desert, ice, underworld).
+const BORDER_SPACING: Array[Vector2] = [Vector2(62, 40), Vector2(96, 60), Vector2(62, 40), Vector2(88, 56)]
 ## Restored monsters start at least this far from the player, outside Wolf.AGGRO_RANGE.
 const ARRIVAL_CLEARANCE = 700.0
 ## Once every monster has spawned, survivors waiting out of range are brought to the player one at a
@@ -467,6 +475,8 @@ var endgame_tier := 0
 ## Mixed into the scenery seed so random maps don't repeat the campaign's layout. 0 on campaign levels.
 var map_seed := 0
 var treasure_chests: Array[TreasureChest] = []
+## The campaign forest's quest sites and encounters; null everywhere else.
+var forest_quests: ForestQuests
 
 
 func _ready() -> void:
@@ -527,6 +537,13 @@ func _ready() -> void:
 	last_player_position = player.global_position
 	_create_item_pool()
 	loot_random.randomize()
+	_build_map_wall()
+	# Saves from before the map had an edge may have left the player out beyond it.
+	player.global_position = _clamp_to_map(player.global_position)
+	if biome == 0 and level_id == 1:
+		forest_quests = ForestQuests.new()
+		forest_quests.setup(self, get_parent(), player)
+		get_parent().add_child.call_deferred(forest_quests)
 	_generate_nearby_scenery(current_region)
 	if not level_state.is_empty():
 		call_deferred("_restore_active_enemies", level_state.get("enemies", []))
@@ -643,9 +660,10 @@ func save_current_level_state() -> bool:
 	var enemy_records: Array[Dictionary] = []
 	for enemy_node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := enemy_node as Wolf
-		# Imps an Archdemon summons are part of its fight, not the level's tally.
+		# Imps an Archdemon summons are part of its fight, not the level's tally, and quest monsters come
+		# back by themselves while their quest needs them.
 		if enemy == null or enemy.health <= 0.0 or enemy.scene_file_path.is_empty() \
-				or enemy.has_meta(Archdemon.SUMMONED_META):
+				or enemy.has_meta(Archdemon.SUMMONED_META) or enemy.has_meta(ForestQuests.QUEST_MONSTER_META):
 			continue
 		enemy_records.append({
 			"scene_path": enemy.scene_file_path,
@@ -688,7 +706,7 @@ func save_current_level_state() -> bool:
 		"enemies_defeated": enemies_defeated,
 		"boss_spawned": boss_spawned,
 		"boss_wolves_defeated": boss_wolves_defeated,
-		"player_position": [player.global_position.x, player.global_position.y],
+		"player_position": [get_player_save_position().x, get_player_save_position().y],
 		"region_origin": [region_origin.x, region_origin.y],
 		"current_region": [current_region.x, current_region.y],
 		"spawned_enemy_regions": cleared_regions,
@@ -700,6 +718,11 @@ func save_current_level_state() -> bool:
 		push_error("Could not persist progress for level %d." % level_id)
 		return false
 	return true
+
+
+## Where the player is remembered: outside the Gloomhollow while they're down in it.
+func get_player_save_position() -> Vector2:
+	return forest_quests.get_save_position() if forest_quests != null else player.global_position
 
 
 func _save_level_state() -> void:
@@ -904,25 +927,27 @@ func _get_level_id() -> int:
 
 
 func _physics_process(delta: float) -> void:
-	if level_is_complete:
+	# Underground in the Gloomhollow there are no regions to explore and no stragglers to call in.
+	if forest_quests != null and forest_quests.in_cave:
 		return
-	if enemies_spawned >= _get_max_enemies():
-		_call_in_straggler(delta)
-		return
-
+	# Scenery keeps growing round the player even once every monster is out or the level is cleared, so
+	# the rest of the map (and the quest sites in it) is still there to explore.
 	var camera_center := _get_camera_center()
 	var entered_region := _get_region_for_position(camera_center)
 	if entered_region != current_region:
 		var movement := player.global_position - last_player_position
 		_generate_nearby_scenery(entered_region)
 		var region_key := _region_key(entered_region)
-		if movement.length_squared() > 0.0 and not spawned_enemy_regions.has(region_key):
+		if not level_is_complete and enemies_spawned < _get_max_enemies() \
+				and movement.length_squared() > 0.0 and not spawned_enemy_regions.has(region_key):
 			if _spawn_enemy(movement.normalized()):
 				spawned_enemy_regions[region_key] = true
 				_save_level_state()
 		current_region = entered_region
 
 	last_player_position = player.global_position
+	if not level_is_complete and enemies_spawned >= _get_max_enemies():
+		_call_in_straggler(delta)
 
 
 ## With nothing left to spawn, moves one survivor that is waiting out of range to just off-screen and sets
@@ -934,10 +959,10 @@ func _call_in_straggler(delta: float) -> void:
 	straggler_timer = STRAGGLER_INTERVAL
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := node as Wolf
-		if enemy == null or enemy.health <= 0.0 or enemy.is_alert:
+		if enemy == null or enemy.health <= 0.0 or enemy.is_alert or enemy.has_meta(ForestQuests.QUEST_MONSTER_META):
 			continue
 		var direction := Vector2.RIGHT.rotated(randf() * TAU)
-		enemy.global_position = player.global_position + direction * _get_spawn_distance(direction)
+		enemy.global_position = _clamp_to_map(player.global_position + direction * _get_spawn_distance(direction))
 		enemy.alert()
 		return
 
@@ -989,6 +1014,9 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 	random.seed = int(region.x) * 73856093 ^ int(region.y) * 19349663 ^ map_seed
 	var region_center := region_origin + Vector2(region) * region_size
 
+	if not _is_region_in_map(region):
+		_generate_border_scenery(random, region_center)
+		return
 	if biome == 1:
 		_generate_desert_scenery(random, region_center)
 		return
@@ -1001,6 +1029,80 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 	_generate_forest_scenery(random, region, region_center)
 
 
+## The playable area, in world pixels.
+func get_map_bounds() -> Rect2:
+	var top_left := region_origin + (-Vector2(MAP_HALF_REGIONS) - Vector2(0.5, 0.5)) * region_size
+	return Rect2(top_left, (Vector2(MAP_HALF_REGIONS) * 2.0 + Vector2.ONE) * region_size)
+
+
+func _is_region_in_map(region: Vector2i) -> bool:
+	return absi(region.x) <= MAP_HALF_REGIONS.x and absi(region.y) <= MAP_HALF_REGIONS.y
+
+
+## world_position pulled inside the map, at least margin in from its edge.
+func _clamp_to_map(world_position: Vector2, margin := MAP_EDGE_MARGIN) -> Vector2:
+	var bounds := get_map_bounds().grow(-margin)
+	return world_position.clamp(bounds.position, bounds.end)
+
+
+## Invisible walls just outside the map's edge.
+func _build_map_wall() -> void:
+	var bounds := get_map_bounds()
+	var walls := StaticBody2D.new()
+	walls.collision_mask = 0
+	for side in [
+		Rect2(bounds.position.x - MAP_WALL_THICKNESS, bounds.position.y - MAP_WALL_THICKNESS, bounds.size.x + MAP_WALL_THICKNESS * 2.0, MAP_WALL_THICKNESS),
+		Rect2(bounds.position.x - MAP_WALL_THICKNESS, bounds.end.y, bounds.size.x + MAP_WALL_THICKNESS * 2.0, MAP_WALL_THICKNESS),
+		Rect2(bounds.position.x - MAP_WALL_THICKNESS, bounds.position.y, MAP_WALL_THICKNESS, bounds.size.y),
+		Rect2(bounds.end.x, bounds.position.y, MAP_WALL_THICKNESS, bounds.size.y),
+	]:
+		var shape := CollisionShape2D.new()
+		var rectangle := RectangleShape2D.new()
+		rectangle.size = side.size
+		shape.shape = rectangle
+		shape.position = side.get_center()
+		walls.add_child(shape)
+	get_parent().add_child.call_deferred(walls)
+
+
+## Beyond the map's edge: the biome's biggest scenery packed shoulder to shoulder, so the edge reads as an
+## impassable treeline, ridge or crag rather than open ground.
+func _generate_border_scenery(random: RandomNumberGenerator, region_center: Vector2) -> void:
+	var props: Array[Dictionary] = []
+	match biome:
+		1:
+			props.append_array(DESERT_ROCKS)
+			props.append_array(DESERT_OUTCROP_SPIRES)
+		2:
+			props.append_array(ICE_ROCKS)
+			props.append_array(ICE_STALAGMITES)
+		3:
+			props.append_array(OBSIDIAN_CRAGS)
+			props.append_array(OBSIDIAN_SPIRES)
+			props.append_array(OBSIDIAN_ROCKS)
+		_:
+			props.append_array(FOREST_TREES)
+			var floor_detail := ForestFloor.new()
+			floor_detail.seed_value = random.randi()
+			floor_detail.half_extents = region_size * 0.5
+			floor_detail.position = region_center
+			floor_detail.z_index = -8
+			get_parent().call_deferred("add_child", floor_detail)
+	var spacing: Vector2 = BORDER_SPACING[clampi(biome, 0, BORDER_SPACING.size() - 1)]
+	var columns := ceili(region_size.x / spacing.x)
+	var rows := ceili(region_size.y / spacing.y)
+	var corner := region_center - region_size * 0.5
+	for row in rows:
+		for column in columns:
+			var spot := corner + Vector2((column + 0.5 + (0.5 if row % 2 == 1 else 0.0)) * spacing.x, (row + 0.5) * spacing.y)
+			spot += Vector2(random.randf_range(-0.35, 0.35) * spacing.x, random.randf_range(-0.3, 0.3) * spacing.y)
+			var prop: Dictionary = props[random.randi() % props.size()]
+			var sprite := _make_standing_sprite(prop["texture"], _random_scale(random, prop))
+			sprite.flip_h = random.randf() < 0.5
+			sprite.position = spot
+			get_parent().call_deferred("add_child", sprite)
+
+
 func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, region_center: Vector2) -> void:
 	# Regions tile edge to edge, so forest props may use the whole region.
 	var spread := region_size * 0.48
@@ -1011,6 +1113,9 @@ func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, r
 	floor_detail.z_index = -8
 	get_parent().call_deferred("add_child", floor_detail)
 
+	# Quest sites first, so the region's trees grow round them.
+	if forest_quests != null:
+		forest_quests.populate_region(region, region_center)
 	# The apple trees belong to the forest's quests, so random maps leave them out.
 	var apple_index := FOREST_APPLE_TREE_REGIONS.find(region)
 	if apple_index >= 0 and not is_endgame():
@@ -1055,6 +1160,8 @@ func _add_forest_apple_tree(random: RandomNumberGenerator, apple_index: int, reg
 		apple_tree.tree_index = apple_index
 		apple_tree.position = base_position
 		apple_tree.get_node("Sprite2D").scale = Vector2.ONE * FOREST_APPLE_TREE_SCALE
+		if forest_quests != null:
+			forest_quests.decorate_apple_tree(apple_tree)
 		get_parent().call_deferred("add_child", apple_tree)
 		return
 	push_warning("No room for forest apple tree %d." % apple_index)
@@ -1760,7 +1867,7 @@ func _spawn_enemy(direction: Vector2) -> bool:
 	_apply_endgame_scaling(enemy, enemy_scene.resource_path)
 	enemy.died.connect(_on_enemy_died.bind(enemy))
 	get_parent().add_child(enemy)
-	enemy.global_position = player.global_position + direction * _get_spawn_distance(direction)
+	enemy.global_position = _clamp_to_map(player.global_position + direction * _get_spawn_distance(direction))
 	# Fresh spawns are encounters ahead of the player, so they come straight at them.
 	enemy.alert()
 	enemies_spawned += 1
@@ -1792,7 +1899,7 @@ func _spawn_level_boss() -> void:
 	var spawn_direction := player.facing
 	if spawn_direction.is_zero_approx():
 		spawn_direction = Vector2.RIGHT
-	boss.global_position = player.global_position + spawn_direction * _get_spawn_distance(spawn_direction)
+	boss.global_position = _clamp_to_map(player.global_position + spawn_direction * _get_spawn_distance(spawn_direction))
 	boss_spawned = true
 	boss_incoming.emit()
 	boss_progress_changed.emit(0, 1)
@@ -1819,6 +1926,7 @@ func _on_enemy_died(enemy: Wolf) -> void:
 			enemy.name
 		])
 	_drop_enemy_loot(enemy)
+	_record_wolf_kill()
 
 	var max_enemies := _get_max_enemies()
 	if boss_kind == 0 and enemies_defeated == max_enemies and not boss_spawned:
@@ -1878,7 +1986,7 @@ func _spawn_boss_wolf(world_position: Vector2, is_alpha: bool, saved_health := -
 	_apply_endgame_scaling(wolf, "wolf_pack")
 	wolf.died.connect(_on_boss_wolf_died.bind(wolf))
 	get_parent().add_child(wolf)
-	wolf.global_position = world_position
+	wolf.global_position = _clamp_to_map(world_position)
 	if saved_health >= 0.0:
 		wolf.health = clampf(saved_health, 0.0, wolf.max_health)
 		wolf.health_bar.value = wolf.health
@@ -1889,6 +1997,7 @@ func _on_boss_wolf_died(wolf: Wolf) -> void:
 	if not player.gain_experience(experience_reward):
 		push_error("Could not award %d XP for defeating %s." % [experience_reward, wolf.name])
 	_drop_enemy_loot(wolf)
+	_record_wolf_kill()
 	boss_wolves_defeated = mini(boss_wolves_defeated + 1, FOREST_BOSS_PACK_SIZE)
 	boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
 	if boss_wolves_defeated < FOREST_BOSS_PACK_SIZE:
@@ -1897,6 +2006,20 @@ func _on_boss_wolf_died(wolf: Wolf) -> void:
 
 	_spawn_treasure_chest(wolf.global_position)
 	_complete_current_level()
+
+
+## Counts a forest wolf toward any hunting quest (Corwin's cull).
+func _record_wolf_kill() -> void:
+	if forest_quests != null:
+		QuestToast.show_updates(get_tree(), Quests.record_event("kill", "wolf"))
+
+
+## Experience and loot for a monster that belongs to a quest rather than the level's tally.
+func reward_quest_monster(enemy: Wolf) -> void:
+	var experience_reward := _get_scaled_experience_reward(enemy)
+	if not player.gain_experience(experience_reward):
+		push_error("Could not award %d XP for defeating %s." % [experience_reward, enemy.monster_name])
+	_drop_enemy_loot(enemy)
 
 
 func _spawn_treasure_chest(world_position: Vector2) -> TreasureChest:

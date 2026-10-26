@@ -49,6 +49,8 @@ var fog_material: ShaderMaterial
 var motes: CPUParticles2D
 var leaves: CPUParticles2D
 var critters: Array[ForestCritter] = []
+var canvas_tint: CanvasModulate
+var fog_layer: CanvasLayer
 
 
 func _ready() -> void:
@@ -59,7 +61,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 
-	var canvas_tint := CanvasModulate.new()
+	canvas_tint = CanvasModulate.new()
 	canvas_tint.color = TINT
 	add_child(canvas_tint)
 	_build_fog_layer()
@@ -76,6 +78,19 @@ func _process(_delta: float) -> void:
 	leaves.global_position = view_center + Vector2(0, -view_size.y * 0.25)
 	fog_material.set_shader_parameter("world_offset", (view_center - view_size * 0.5) / view_size)
 	_keep_critters_near(view_center, view_size)
+
+
+## Underground (in the Gloomhollow) there's no sky: a cold dim tint, and no fog, sunlight, motes,
+## leaves or critters.
+func set_underground(underground: bool, tint := TINT) -> void:
+	canvas_tint.color = tint if underground else TINT
+	fog_layer.visible = not underground
+	motes.visible = not underground
+	leaves.visible = not underground
+	for critter in critters:
+		critter.visible = not underground
+		critter.process_mode = Node.PROCESS_MODE_DISABLED if underground else Node.PROCESS_MODE_INHERIT
+	set_process(not underground)
 
 
 func _build_fog_layer() -> void:
@@ -98,7 +113,7 @@ func _build_fog_layer() -> void:
 	fog_material.set_shader_parameter("aspect", Vector2(view_size.x / view_size.y, 1.0))
 
 	# Sits between the world and the HUD, so the HUD moves up a layer.
-	var fog_layer := CanvasLayer.new()
+	fog_layer = CanvasLayer.new()
 	fog_layer.layer = 1
 	var ui := get_parent().get_node_or_null("UI") as CanvasLayer
 	if ui != null and ui.layer <= fog_layer.layer:

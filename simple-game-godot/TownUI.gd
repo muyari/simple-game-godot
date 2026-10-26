@@ -37,7 +37,6 @@ var status_label: Label
 var dialogue_overlay: Control
 var dialogue_panel: PanelContainer
 var quest_dialogue: QuestDialogue
-var active_quest_giver: QuestGiver
 var quest_menu: QuestMenu
 var waystone_overlay: Control
 var shop_overlay: Control
@@ -137,14 +136,6 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if quest_dialogue != null and quest_dialogue.visible \
-			and event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_E:
-			quest_dialogue.press_primary()
-		elif event.keycode == KEY_ESCAPE:
-			quest_dialogue.press_secondary()
-		get_viewport().set_input_as_handled()
-		return
 	if not event is InputEventKey or not event.pressed or event.echo or event.keycode != KEY_E:
 		return
 	if dialogue_overlay != null and dialogue_overlay.visible:
@@ -483,57 +474,9 @@ func _build_dialogue() -> void:
 
 func _build_quest_dialogue() -> void:
 	quest_dialogue = QuestDialogue.new()
-	quest_dialogue.accepted.connect(_on_quest_accepted)
-	quest_dialogue.declined.connect(_on_quest_declined)
-	quest_dialogue.closed.connect(_on_quest_dialogue_closed)
+	quest_dialogue.opened.connect(_set_quest_dialogue_open.bind(true))
+	quest_dialogue.closed.connect(_set_quest_dialogue_open.bind(false))
 	add_child(quest_dialogue)
-	for node in get_parent().get_children():
-		if node is QuestGiver:
-			node.talk_requested.connect(_on_quest_talk_requested)
-
-
-func _on_quest_talk_requested(quest_giver: QuestGiver) -> void:
-	var quest := Quests.get_definition(quest_giver.quest_id)
-	if quest.is_empty():
-		push_error("%s offers unknown quest '%s'." % [quest_giver.npc_name, quest_giver.quest_id])
-		return
-	active_quest_giver = quest_giver
-	var quest_state := GameState.get_quest_state(quest_giver.quest_id)
-	var dialogue: Dictionary = quest["dialogue"]
-	var pages: Array[String] = []
-	pages.assign(dialogue.get(quest_state, dialogue[Quests.STATE_COMPLETED]))
-	# Handing over the quest item completes the quest; the dialogue pages tell the story of it.
-	var turn_in_state: String = quest.get("quest_item", {}).get("sets_state", "")
-	if not turn_in_state.is_empty() and quest_state == turn_in_state:
-		if not GameState.set_quest_state(quest_giver.quest_id, Quests.STATE_COMPLETED):
-			push_error("Could not save completion of quest '%s'." % quest_giver.quest_id)
-		quest_giver.refresh_marker()
-	var offer_choice := quest_state == Quests.STATE_AVAILABLE
-	quest_dialogue.start(quest_giver.npc_name, quest["title"], pages, offer_choice)
-	_set_quest_dialogue_open(true)
-
-
-func _on_quest_accepted() -> void:
-	var quest := Quests.get_definition(active_quest_giver.quest_id)
-	if not GameState.set_quest_state(active_quest_giver.quest_id, Quests.STATE_ACCEPTED):
-		push_error("Could not save acceptance of quest '%s'." % active_quest_giver.quest_id)
-	active_quest_giver.refresh_marker()
-	_show_quest_reply(quest, "accepted_reply")
-
-
-func _on_quest_declined() -> void:
-	_show_quest_reply(Quests.get_definition(active_quest_giver.quest_id), "declined_reply")
-
-
-func _show_quest_reply(quest: Dictionary, reply_key: String) -> void:
-	var reply: Array[String] = []
-	reply.assign(quest["dialogue"][reply_key])
-	quest_dialogue.start(active_quest_giver.npc_name, quest["title"], reply, false)
-
-
-func _on_quest_dialogue_closed() -> void:
-	active_quest_giver = null
-	_set_quest_dialogue_open(false)
 
 
 func _build_quest_menu() -> void:

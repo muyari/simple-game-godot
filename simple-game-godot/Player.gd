@@ -274,6 +274,9 @@ func _physics_process(delta: float) -> void:
 		_aim_at(get_global_mouse_position())
 		attack_now = true
 
+	# Moving (keys, the touch stick, or a click to walk or attack) breaks the channel.
+	if is_casting_town_portal and direction != Vector2.ZERO:
+		_cancel_town_portal_cast()
 	if is_casting_town_portal:
 		velocity = Vector2.ZERO
 		animation_time = 0.0
@@ -1178,6 +1181,10 @@ func _open_town_portal() -> void:
 	is_casting_town_portal = true
 	town_portal_cast_time_remaining = TOWN_PORTAL_CAST_DURATION
 	velocity = Vector2.ZERO
+	# Stop any walk already under way, so only a fresh move cancels the channel.
+	click_move_active = false
+	mouse_move_held = false
+	attack_target = null
 	attack_time_remaining = 0.0
 	sword.hide()
 	wand.hide()
@@ -1208,7 +1215,12 @@ func _spawn_town_portal() -> void:
 	portal.destination_position = GameState.get_hub_arrival(level_id)
 	portal.destination_name = GameState.get_hub_name(level_id)
 	get_tree().set_meta(TOWN_RETURN_SCENE_META, current_scene_path)
-	get_tree().set_meta(TOWN_RETURN_POSITION_META, global_position)
+	# The level knows where to bring the player back to (outside the Gloomhollow, if they're in it).
+	var level_controller := current_scene.get_node_or_null("LevelController")
+	var return_position := global_position
+	if level_controller != null and level_controller.has_method("get_player_save_position"):
+		return_position = level_controller.call("get_player_save_position")
+	get_tree().set_meta(TOWN_RETURN_POSITION_META, return_position)
 	current_scene.add_child(portal)
 	portal.global_position = global_position + facing * 64.0
 	town_portal = portal

@@ -25,6 +25,7 @@ var detail_summary: Label
 var detail_objectives: VBoxContainer
 var objectives_header: Label
 var detail_status: Label
+var detail_reward: Label
 var detail_panel: PanelContainer
 
 
@@ -153,6 +154,8 @@ func _build_ui() -> void:
 	detail_objectives.add_theme_constant_override("separation", 4)
 	details.add_child(detail_objectives)
 	detail_status = _label(details, 14, ACCENT)
+	detail_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail_reward = _label(details, 14, GOLD)
 
 	empty_label = _label(details, 16, MUTED)
 	empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -198,14 +201,20 @@ func _refresh() -> void:
 		_refresh_reward_details(rewards)
 		return
 
+	# Quests under way first, finished ones after.
 	var quest_ids := Quests.get_logged_quests_in_area(selected_area)
+	var active_ids := quest_ids.filter(Quests.is_quest_active)
+	var finished_ids := quest_ids.filter(Quests.is_completed)
+	quest_ids.assign(active_ids + finished_ids)
 	if not selected_quest_id in quest_ids:
 		selected_quest_id = quest_ids[0] if not quest_ids.is_empty() else ""
 	for quest_id in quest_ids:
 		var quest := Quests.get_definition(quest_id)
 		var is_completed := GameState.get_quest_state(quest_id) == Quests.STATE_COMPLETED
+		var progress := Quests.get_progress_text(quest_id)
+		var state_text := "Completed" if is_completed else (progress if not progress.is_empty() else "In progress")
 		quest_list.add_child(_make_card(
-			"%s\n%s  -  %s" % [quest["title"], quest["giver"], "Completed" if is_completed else "In progress"],
+			"%s\n%s  -  %s" % [quest["title"], Quests.get_npc_name(quest["giver_id"]), state_text],
 			quest_id,
 			quest_id == selected_quest_id,
 			is_completed
@@ -244,6 +253,7 @@ func _make_card(text: String, key: String, is_selected: bool, is_completed: bool
 
 
 func _show_details(has_entry: bool, show_objectives: bool) -> void:
+	detail_reward.hide()
 	for node in [detail_title, detail_giver, detail_summary, detail_status]:
 		node.visible = has_entry
 	objectives_header.visible = has_entry and show_objectives
@@ -265,16 +275,28 @@ func _refresh_details() -> void:
 		return
 
 	var quest := Quests.get_definition(selected_quest_id)
-	var stage: Dictionary = quest["stages"].get(GameState.get_quest_state(selected_quest_id), {})
+	var stage := Quests.get_stage(selected_quest_id)
 	var objectives_done: int = stage.get("objectives_done", 0)
 	detail_title.text = quest["title"]
-	detail_giver.text = "Given by %s in %s" % [quest["giver"], quest["giver_location"]]
+	detail_giver.text = "%s  -  Given by %s in %s" % [quest.get("type", "Quest"), quest["giver"], quest["giver_location"]]
 	detail_summary.text = quest["summary"]
+	var counter: Dictionary = stage.get("counter", {})
 	for index in quest["objectives"].size():
 		var is_done: bool = index < objectives_done
 		var line := _label(detail_objectives, 15, MUTED if is_done else TEXT)
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		line.text = "%s  %s" % ["[x]" if is_done else "[  ]", quest["objectives"][index]]
+		if index == objectives_done and not counter.is_empty():
+			line.text += "  (%d/%d)" % [mini(GameState.get_quest_counter(selected_quest_id), counter["count"]), counter["count"]]
 	detail_status.text = "Status: %s" % stage.get("status", "In progress")
+	var rewards: Array[String] = []
+	var payout := Quests.get_payout_text(selected_quest_id)
+	if not payout.is_empty():
+		rewards.append(payout)
+	if quest.has("reward"):
+		rewards.append("a keepsake")
+	detail_reward.text = "Reward: %s" % ", ".join(rewards) if not rewards.is_empty() else ""
+	detail_reward.visible = not rewards.is_empty()
 
 
 func _refresh_reward_details(rewards: Array[Dictionary]) -> void:
