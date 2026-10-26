@@ -4,10 +4,10 @@ const MINIMUM_ITEM_PRICE = 25
 const EXPERIENCE_BAR_WIDTH = 440.0
 # World-space camera bounds for the town. Top and bottom leave room for the HUD so the
 # fence is never hidden behind it; the sides stay wide so the outside scenery is visible.
-const CAMERA_LIMIT_LEFT = -600
-const CAMERA_LIMIT_RIGHT = 1752
-const CAMERA_LIMIT_TOP = -100
-const CAMERA_LIMIT_BOTTOM = 900
+const CAMERA_LIMIT_LEFT = -1000
+const CAMERA_LIMIT_RIGHT = 2150
+const CAMERA_LIMIT_TOP = -820
+const CAMERA_LIMIT_BOTTOM = 1560
 
 @onready var gold_label: Label = $GoldLabel
 @onready var player: Player = get_node("../Player")

@@ -48,7 +48,7 @@ const RANGER_SHEET = preload("res://textures/ranger_sprite_atlas.png")
 const RANGER_ARROW_SCRIPT = preload("res://RangerArrow.gd")
 const PORTAL_SCENE = preload("res://portal.tscn")
 const TOWN_SCENE_PATH = "res://town.tscn"
-const TOWN_ARRIVAL_POSITION = Vector2(576, 350)
+const TOWN_ARRIVAL_POSITION = Vector2(576, 300)
 const TOWN_RETURN_SCENE_META = "town_return_scene"
 const TOWN_RETURN_POSITION_META = "town_return_position"
 

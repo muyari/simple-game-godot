@@ -933,7 +933,7 @@ func _on_return_to_town_pressed() -> void:
 		return
 	get_tree().set_meta(Player.TOWN_RETURN_SCENE_META, scene_path)
 	get_tree().set_meta(Player.TOWN_RETURN_POSITION_META, player.global_position)
-	get_tree().set_meta("portal_spawn_position", Vector2(576, 350))
+	get_tree().set_meta("portal_spawn_position", Vector2(576, 300))
 	get_tree().set_meta("portal_player_vitals", {
 		"health": Player.MAX_HEALTH,
 		"mana": player.mana

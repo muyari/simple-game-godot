@@ -1,981 +1,230 @@
-[gd_scene format=3 uid="uid://caujgk40kgg0w"]
+[gd_scene format=3]
 
-[ext_resource type="PackedScene" uid="uid://dp3jfuvuykpb7" path="res://player.tscn" id="1_player"]
-[ext_resource type="Texture2D" uid="uid://dnfcqw82h1ya" path="res://textures/town_grass.png" id="2_ground"]
+[ext_resource type="PackedScene" path="res://player.tscn" id="1_player"]
+[ext_resource type="Texture2D" path="res://textures/town_grass.png" id="2_ground"]
 [ext_resource type="PackedScene" path="res://portal.tscn" id="4_portal"]
-[ext_resource type="Script" uid="uid://8bwyjet1d7oj" path="res://TownUI.gd" id="5_town_ui"]
-[ext_resource type="Script" uid="uid://cjjc5mad4rxxi" path="res://Vendor.gd" id="6_vendor"]
-[ext_resource type="Texture2D" uid="uid://cjhg5xwaekavq" path="res://textures/town_shopkeeper.png" id="7_vendor_sprite"]
+[ext_resource type="Script" path="res://TownUI.gd" id="5_town_ui"]
+[ext_resource type="Script" path="res://Vendor.gd" id="6_vendor"]
+[ext_resource type="Texture2D" path="res://textures/town_shopkeeper.png" id="7_vendor_sprite"]
 [ext_resource type="PackedScene" path="res://health_globe.tscn" id="8_globe_health"]
 [ext_resource type="PackedScene" path="res://mana_globe.tscn" id="8_globe_mana"]
 [ext_resource type="PackedScene" path="res://health_potion.tscn" id="8_health_potion"]
 [ext_resource type="PackedScene" path="res://mana_potion.tscn" id="8_mana_potion"]
-[ext_resource type="Script" uid="uid://dr0xwo3tteeun" path="res://SkillSlot.gd" id="9_skill"]
-[ext_resource type="Script" uid="uid://ewngat6gtsej" path="res://TownFence.gd" id="10_fence"]
-[ext_resource type="Script" uid="uid://dy3jjhohl50ah" path="res://Waystone.gd" id="11_waystone"]
-[ext_resource type="Script" uid="uid://dkggr4kponqjx" path="res://House.gd" id="12_house"]
-[ext_resource type="Texture2D" uid="uid://d0h1mag5my1o5" path="res://textures/town_road_brick.png" id="13_brick"]
-[ext_resource type="Texture2D" uid="uid://bb0o5u4fqiw3t" path="res://textures/town_plaza_cobble.png" id="14_cobble"]
-[ext_resource type="Texture2D" uid="uid://pa0e3vwngoa2" path="res://textures/town_house_1.png" id="18_h1"]
-[ext_resource type="Texture2D" uid="uid://bdw0curhnedxq" path="res://textures/town_house_2.png" id="19_h2"]
-[ext_resource type="Texture2D" uid="uid://wn20c33d5sht" path="res://textures/town_house_back_1.png" id="21_b1"]
-[ext_resource type="Texture2D" uid="uid://d4bq2l86lyy0o" path="res://textures/town_house_back_2.png" id="22_b2"]
-[ext_resource type="Texture2D" uid="uid://yhc5rvndsvar" path="res://textures/town_tree_pine.png" id="23_pine"]
-[ext_resource type="Texture2D" uid="uid://cxlt6yr357f5c" path="res://textures/town_tree_spruce.png" id="24_spruce"]
-[ext_resource type="Texture2D" uid="uid://cwphpy57p0ns5" path="res://textures/town_apple_tree.png" id="30_apple"]
-[ext_resource type="Texture2D" uid="uid://df7gjpm0wwmyu" path="res://textures/town_stump.png" id="31_stump"]
-[ext_resource type="Texture2D" uid="uid://b23142xn02cl" path="res://textures/town_log_pile.png" id="32_logpile"]
-[ext_resource type="Texture2D" uid="uid://cafhrgjf6mai7" path="res://textures/town_logs.png" id="33_logs"]
-[ext_resource type="Texture2D" uid="uid://c2ftkbxcxqnup" path="res://textures/town_sapling_seedling.png" id="34_seedling"]
-[ext_resource type="Texture2D" uid="uid://b2fy4j8vy8s3s" path="res://textures/town_shrub_green.png" id="36_shrubg"]
-[ext_resource type="Texture2D" uid="uid://blp0xkr1dopwc" path="res://textures/town_shrub_autumn.png" id="37_shruba"]
-[ext_resource type="Texture2D" uid="uid://duesxih7n6fa8" path="res://textures/town_shrub_round.png" id="38_shrubr"]
-[ext_resource type="Texture2D" uid="uid://denujv21dlvei" path="res://textures/town_fountain.png" id="40_fountain"]
-[ext_resource type="Texture2D" uid="uid://1gyn1n16q03c" path="res://textures/town_shrub_conifer.png" id="40_shrubc"]
-[ext_resource type="Texture2D" uid="uid://d4jssosqd233p" path="res://textures/town_waystone.png" id="41_waystone"]
-[ext_resource type="Texture2D" uid="uid://dkcbl3206gn6u" path="res://textures/town_shop.png" id="42_shop"]
-[ext_resource type="Script" uid="uid://cetax3te2m6gx" path="res://AnimalWander.gd" id="50_script"]
-[ext_resource type="Texture2D" uid="uid://dkrgc6y371wsy" path="res://textures/town_chicken_walk_1.png" id="51_cw1"]
-[ext_resource type="Texture2D" uid="uid://0l4t2nnc7gc8" path="res://textures/town_chicken_walk_2.png" id="52_cw2"]
-[ext_resource type="Texture2D" uid="uid://cpoyno1b8dgt6" path="res://textures/town_chicken_walk_3.png" id="53_cw3"]
-[ext_resource type="Texture2D" uid="uid://dposs1qmeb4jq" path="res://textures/town_chicken_walk_4.png" id="54_cw4"]
-[ext_resource type="Texture2D" uid="uid://kel7v3p68cfu" path="res://textures/town_chicken_peck_1.png" id="55_cp1"]
-[ext_resource type="Texture2D" uid="uid://crytsuvhxe63q" path="res://textures/town_chicken_peck_2.png" id="56_cp2"]
-[ext_resource type="Texture2D" uid="uid://bs0ktatoc05bi" path="res://textures/town_chicken_peck_3.png" id="57_cp3"]
-[ext_resource type="Texture2D" uid="uid://dk6h1uc3yb2gc" path="res://textures/town_cow_graze.png" id="58_cowg"]
-[ext_resource type="Texture2D" uid="uid://buh6h25hx3ukf" path="res://textures/town_cow_walk_1.png" id="59_cow1"]
-[ext_resource type="Texture2D" uid="uid://dlciwcmq5ecp1" path="res://textures/town_cow_walk_2.png" id="60_cow2"]
-[ext_resource type="Script" uid="uid://ct3h33fmhqm0d" path="res://TownRoad.gd" id="61_town_road"]
-[ext_resource type="Script" uid="uid://u5ackwk0cj1q" path="res://GroundShadows.gd" id="62_shadows"]
-[ext_resource type="Texture2D" uid="uid://664cdu7j6axc" path="res://textures/town_path_dirt.png" id="63_path"]
-[ext_resource type="Texture2D" uid="uid://ckywgynl15ry2" path="res://textures/town_flowers.png" id="64_flowers"]
-[ext_resource type="Texture2D" uid="uid://d4b8cndoo6k5q" path="res://textures/town_fern.png" id="65_fern"]
-[ext_resource type="Texture2D" uid="uid://6y5mpi2ycuvs" path="res://textures/town_grass_clump.png" id="66_grass_clump"]
-[ext_resource type="Texture2D" uid="uid://shhhbgyoguvm" path="res://textures/town_rocks_small.png" id="67_rocks_small"]
-[ext_resource type="Texture2D" uid="uid://daoc7gu3ycwwd" path="res://textures/town_rock_mossy.png" id="68_rock_mossy"]
+[ext_resource type="Script" path="res://SkillSlot.gd" id="9_skill"]
+[ext_resource type="Script" path="res://TownFence.gd" id="10_fence"]
+[ext_resource type="Script" path="res://Waystone.gd" id="11_waystone"]
+[ext_resource type="Texture2D" path="res://textures/town_road_brick.png" id="13_brick"]
+[ext_resource type="Texture2D" path="res://textures/town_plaza_cobble.png" id="14_cobble"]
+[ext_resource type="Texture2D" path="res://textures/town_fountain.png" id="40_fountain"]
+[ext_resource type="Texture2D" path="res://textures/town_waystone.png" id="41_waystone"]
+[ext_resource type="Texture2D" path="res://textures/town_shop.png" id="42_shop"]
 [ext_resource type="PackedScene" path="res://quest_giver.tscn" id="69_quest_giver"]
+[ext_resource type="Script" path="res://TownStreets.gd" id="70_streets"]
+[ext_resource type="Script" path="res://TownDecor.gd" id="71_decor"]
+[ext_resource type="Script" path="res://TownAmbience.gd" id="72_ambience"]
+[ext_resource type="Texture2D" path="res://textures/town_beth.png" id="73_beth"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_town_vertical"]
-size = Vector2(20, 728)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_vertical"]
+size = Vector2(20, 1640)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_town_horizontal"]
-size = Vector2(1112, 20)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_horizontal"]
+size = Vector2(2312, 20)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_waystone"]
-radius = 35.35534
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_town_house"]
-size = Vector2(130, 80)
+radius = 36.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_vendor"]
-radius = 21.095022
+radius = 40.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_vendor_body"]
 size = Vector2(28, 14)
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_town_trunk"]
-radius = 12.0
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_town_log"]
-size = Vector2(42, 16)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_stall"]
+size = Vector2(104, 22)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_town_fountain"]
-size = Vector2(103, 84)
+size = Vector2(104, 52)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_cow"]
-size = Vector2(56, 18)
+[sub_resource type="CircleShape2D" id="CircleShape2D_waystone_body"]
+radius = 13.0
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_chicken"]
-radius = 7.0
-
-[node name="Town" type="Node2D" unique_id=831735069]
+[node name="Town" type="Node2D"]
 y_sort_enabled = true
 
-[node name="TownBoundary" type="StaticBody2D" parent="." unique_id=1203374716]
+[node name="TownBoundary" type="StaticBody2D" parent="."]
 collision_mask = 0
 
-[node name="LeftWall" type="CollisionShape2D" parent="TownBoundary" unique_id=1049721294]
-position = Vector2(20, 384)
-shape = SubResource("RectangleShape2D_town_vertical")
+[node name="LeftWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(-552, 380)
+shape = SubResource("RectangleShape2D_wall_vertical")
 
-[node name="RightWall" type="CollisionShape2D" parent="TownBoundary" unique_id=1296314617]
-position = Vector2(1132, 384)
-shape = SubResource("RectangleShape2D_town_vertical")
+[node name="RightWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(1704, 380)
+shape = SubResource("RectangleShape2D_wall_vertical")
 
-[node name="TopWall" type="CollisionShape2D" parent="TownBoundary" unique_id=536214974]
-position = Vector2(576, 20)
-shape = SubResource("RectangleShape2D_town_horizontal")
+[node name="TopWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(576, -406)
+shape = SubResource("RectangleShape2D_wall_horizontal")
 
-[node name="BottomWall" type="CollisionShape2D" parent="TownBoundary" unique_id=189605982]
-position = Vector2(576, 748)
-shape = SubResource("RectangleShape2D_town_horizontal")
+[node name="BottomWall" type="CollisionShape2D" parent="TownBoundary"]
+position = Vector2(576, 1176)
+shape = SubResource("RectangleShape2D_wall_horizontal")
 
-[node name="TownFence" type="Node2D" parent="." unique_id=1346656344]
-z_index = 5
-script = ExtResource("10_fence")
-
-[node name="MapObjectCollisions" type="StaticBody2D" parent="." unique_id=916539763]
-collision_mask = 0
-
-[node name="Ground" type="Polygon2D" parent="." unique_id=1834027885]
+[node name="Ground" type="Polygon2D" parent="."]
 z_index = -10
 texture_filter = 1
 texture_repeat = 2
-position = Vector2(-75, -68)
+color = Color(0.97, 1, 0.94, 1)
 texture = ExtResource("2_ground")
-polygon = PackedVector2Array(-900, -600, 2050, -600, 2050, 1370, -900, 1370)
+polygon = PackedVector2Array(-1600, -1400, 2800, -1400, 2800, 2200, -1600, 2200)
 
-[node name="TownRoad" type="Node2D" parent="." unique_id=1845383368]
+[node name="TownDecor" type="Node2D" parent="."]
+z_index = -9
+script = ExtResource("71_decor")
+
+[node name="TownStreets" type="Node2D" parent="."]
 z_index = -5
 texture_filter = 1
 texture_repeat = 2
-script = ExtResource("61_town_road")
+script = ExtResource("70_streets")
+paved_rects = Array[Rect2]([Rect2(-560, 352, 2272, 96), Rect2(528, -420, 96, 646)])
+dirt_rects = Array[Rect2]([Rect2(-540, 70, 1068, 52), Rect2(624, 70, 1068, 52), Rect2(550, 448, 52, 732), Rect2(-443, 330, 26, 24), Rect2(-183, 330, 26, 24), Rect2(97, 330, 26, 24), Rect2(1032, 330, 26, 24), Rect2(1282, 330, 26, 24), Rect2(1532, 330, 26, 24), Rect2(-413, 50, 26, 22), Rect2(107, 50, 26, 22), Rect2(1007, 50, 26, 22), Rect2(1487, 50, 26, 22), Rect2(866, 330, 28, 24)])
+plaza_center = Vector2(576, 400)
+plaza_radius = 175.0
 road_texture = ExtResource("13_brick")
 plaza_texture = ExtResource("14_cobble")
 
-[node name="DirtPaths" type="Node2D" parent="." unique_id=501380682]
-z_index = -6
+[node name="FenceBack" type="Node2D" parent="."]
+position = Vector2(0, -420)
+script = ExtResource("10_fence")
+fence_rect = Rect2(-560, -420, 2272, 1600)
+draw_bottom = false
+top_gates = Array[float]([576.0])
+left_gates = Array[float]([400.0])
+right_gates = Array[float]([400.0])
 
-[node name="NorthwestHousePath" type="Sprite2D" parent="DirtPaths" unique_id=2010020403]
+[node name="FenceFront" type="Node2D" parent="."]
+position = Vector2(0, 1180)
+script = ExtResource("10_fence")
+fence_rect = Rect2(-560, -420, 2272, 1600)
+draw_top = false
+draw_sides = false
+bottom_gates = Array[float]([576.0])
+
+[node name="Fountain" type="StaticBody2D" parent="."]
+position = Vector2(576, 446)
+collision_mask = 0
+
+[node name="Sprite2D" type="Sprite2D" parent="Fountain"]
 texture_filter = 1
-texture_repeat = 2
-position = Vector2(345.5, 190)
-scale = Vector2(0.7, 0.7)
-texture = ExtResource("63_path")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 50, 146)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("40_fountain")
+offset = Vector2(0, -196)
 
-[node name="NortheastHousePath" type="Sprite2D" parent="DirtPaths" unique_id=1688592753]
-texture_filter = 1
-texture_repeat = 2
-position = Vector2(882.5, 236)
-scale = Vector2(0.7, 0.7)
-texture = ExtResource("63_path")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 50, 80)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fountain"]
+position = Vector2(0, -28)
+shape = SubResource("RectangleShape2D_town_fountain")
 
-[node name="ShopPath" type="Sprite2D" parent="DirtPaths" unique_id=2115596249]
-texture_filter = 1
-texture_repeat = 2
-position = Vector2(178.5, 250)
-scale = Vector2(0.7, 0.7)
-texture = ExtResource("63_path")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 50, 60)
-
-[node name="PortalPath" type="Sprite2D" parent="DirtPaths" unique_id=866221827]
-texture_filter = 1
-texture_repeat = 2
-position = Vector2(654.5, 238)
-scale = Vector2(0.7, 0.7)
-texture = ExtResource("63_path")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 0, 50, 77)
-
-[node name="GroundShadows" type="Node2D" parent="." unique_id=944966453]
-z_index = -1
-script = ExtResource("62_shadows")
-shadows = Array[Rect2]([Rect2(112, 259, 112, 16), Rect2(204, 252, 30, 8), Rect2(897, 487, 54, 12), Rect2(916, 713, 56, 12), Rect2(815, 130, 46, 10), Rect2(468, 704, 38, 9), Rect2(1060, 608, 60, 10), Rect2(480, 98, 56, 12), Rect2(640, 723, 60, 10)])
-
-[node name="SaplingSeedling" type="Sprite2D" parent="." unique_id=282961727]
-texture_filter = 1
-position = Vector2(522, 179)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("34_seedling")
-offset = Vector2(0, -44)
-
-[node name="SaplingSeedling2" type="Sprite2D" parent="." unique_id=1133864843]
-texture_filter = 1
-position = Vector2(583, 655)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("34_seedling")
-offset = Vector2(0, -44)
-
-[node name="TownProps" type="Node2D" parent="." unique_id=35840909]
-
-[node name="Flowers1" type="Sprite2D" parent="TownProps" unique_id=2088557684]
-texture_filter = 1
-position = Vector2(400, 309.00003)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("64_flowers")
-offset = Vector2(0, -40)
-
-[node name="Flowers2" type="Sprite2D" parent="TownProps" unique_id=581612136]
-texture_filter = 1
-position = Vector2(610, 281)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("64_flowers")
-offset = Vector2(0, -40)
-
-[node name="Flowers3" type="Sprite2D" parent="TownProps" unique_id=580074962]
-texture_filter = 1
-position = Vector2(1000, 281)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("64_flowers")
-offset = Vector2(0, -40)
-
-[node name="Flowers4" type="Sprite2D" parent="TownProps" unique_id=1947266097]
-texture_filter = 1
-position = Vector2(330, 538)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("64_flowers")
-offset = Vector2(0, -40)
-
-[node name="Flowers5" type="Sprite2D" parent="TownProps" unique_id=1952984428]
-texture_filter = 1
-position = Vector2(520, 540)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("64_flowers")
-offset = Vector2(0, -40)
-
-[node name="Flowers6" type="Sprite2D" parent="TownProps" unique_id=1839566718]
-texture_filter = 1
-position = Vector2(1050, 540)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("64_flowers")
-offset = Vector2(0, -40)
-
-[node name="GrassClump1" type="Sprite2D" parent="TownProps" unique_id=599740748]
-texture_filter = 1
-position = Vector2(740, 282)
-scale = Vector2(0.4, 0.4)
-texture = ExtResource("66_grass_clump")
-offset = Vector2(0, -35)
-
-[node name="GrassClump2" type="Sprite2D" parent="TownProps" unique_id=408422467]
-texture_filter = 1
-position = Vector2(130, 556)
-scale = Vector2(0.4, 0.4)
-texture = ExtResource("66_grass_clump")
-offset = Vector2(0, -35)
-
-[node name="GrassClump3" type="Sprite2D" parent="TownProps" unique_id=1664444010]
-texture_filter = 1
-position = Vector2(640, 540)
-scale = Vector2(0.4, 0.4)
-texture = ExtResource("66_grass_clump")
-offset = Vector2(0, -35)
-
-[node name="GrassClump4" type="Sprite2D" parent="TownProps" unique_id=1168190809]
-texture_filter = 1
-position = Vector2(840, 542)
-scale = Vector2(0.4, 0.4)
-texture = ExtResource("66_grass_clump")
-offset = Vector2(0, -35)
-
-[node name="GrassClump5" type="Sprite2D" parent="TownProps" unique_id=110654380]
-texture_filter = 1
-position = Vector2(443, 222)
-scale = Vector2(0.4, 0.4)
-texture = ExtResource("66_grass_clump")
-offset = Vector2(0, -35)
-
-[node name="Fern1" type="Sprite2D" parent="TownProps" unique_id=1350785864]
-texture_filter = 1
-position = Vector2(72, 578)
-scale = Vector2(0.45, 0.45)
-texture = ExtResource("65_fern")
-offset = Vector2(0, -44.5)
-
-[node name="Fern2" type="Sprite2D" parent="TownProps" unique_id=1380466649]
-texture_filter = 1
-position = Vector2(300, 604)
-scale = Vector2(0.45, 0.45)
-texture = ExtResource("65_fern")
-offset = Vector2(0, -44.5)
-
-[node name="Fern3" type="Sprite2D" parent="TownProps" unique_id=394818418]
-texture_filter = 1
-position = Vector2(1098, 702)
-scale = Vector2(0.45, 0.45)
-texture = ExtResource("65_fern")
-offset = Vector2(0, -44.5)
-
-[node name="RocksSmall1" type="Sprite2D" parent="TownProps" unique_id=57371957]
-texture_filter = 1
-position = Vector2(1060, 610)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("67_rocks_small")
-offset = Vector2(0, -44)
-
-[node name="RocksSmall2" type="Sprite2D" parent="TownProps" unique_id=1784039169]
-texture_filter = 1
-position = Vector2(640, 725)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("67_rocks_small")
-offset = Vector2(0, -44)
-
-[node name="RockMossy1" type="Sprite2D" parent="TownProps" unique_id=467822636]
-texture_filter = 1
-position = Vector2(480, 100)
-scale = Vector2(0.45, 0.45)
-texture = ExtResource("68_rock_mossy")
-offset = Vector2(0, -48.5)
-
-[node name="Waystone" type="Area2D" parent="." unique_id=204624905]
-position = Vector2(379, 396)
+[node name="Waystone" type="Area2D" parent="."]
+position = Vector2(688, 304)
 collision_layer = 0
 script = ExtResource("11_waystone")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Waystone" unique_id=1924645175]
-position = Vector2(518, 72)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Waystone"]
+position = Vector2(0, -16)
 shape = SubResource("CircleShape2D_waystone")
 
-[node name="Sprite2D" type="Sprite2D" parent="Waystone" unique_id=2142831443]
+[node name="Body" type="StaticBody2D" parent="Waystone"]
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Waystone/Body"]
+position = Vector2(0, -8)
+shape = SubResource("CircleShape2D_waystone_body")
+
+[node name="Sprite2D" type="Sprite2D" parent="Waystone"]
 texture_filter = 1
-position = Vector2(517.99994, 93)
 scale = Vector2(0.8, 0.8)
 texture = ExtResource("41_waystone")
 offset = Vector2(0, -47)
 
-[node name="Prompt" type="Label" parent="Waystone" unique_id=1844308193]
-offset_left = 399.0
-offset_top = 93.0
-offset_right = 639.0
-offset_bottom = 117.0
+[node name="Prompt" type="Label" parent="Waystone"]
+offset_left = -120.0
+offset_top = -104.0
+offset_right = 120.0
+offset_bottom = -80.0
 theme_override_colors/font_color = Color(0.79, 0.94, 1, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 4
 text = "E  Choose a level"
 horizontal_alignment = 1
 
-[node name="NorthwestHouse" type="StaticBody2D" parent="." unique_id=1482155720]
-position = Vector2(250, 245)
-collision_mask = 0
-script = ExtResource("12_house")
-
-[node name="Sprite2D" type="Sprite2D" parent="NorthwestHouse" unique_id=828021203]
-texture_filter = 1
-position = Vector2(113, -46)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("18_h1")
-offset = Vector2(0, -116)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="NorthwestHouse" unique_id=736944033]
-position = Vector2(110, -86)
-shape = SubResource("RectangleShape2D_town_house")
-
-[node name="NortheastHouse" type="StaticBody2D" parent="." unique_id=833660910]
-position = Vector2(900, 245)
-collision_mask = 0
-script = ExtResource("12_house")
-
-[node name="Sprite2D" type="Sprite2D" parent="NortheastHouse" unique_id=1104392307]
-texture_filter = 1
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("19_h2")
-offset = Vector2(0, -107)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="NortheastHouse" unique_id=264728880]
-position = Vector2(-2, -40)
-shape = SubResource("RectangleShape2D_town_house")
-
-[node name="SouthwestHouse" type="StaticBody2D" parent="." unique_id=8015161]
-position = Vector2(250, 735)
-collision_mask = 0
-script = ExtResource("12_house")
-use_back_view = true
-
-[node name="Sprite2D" type="Sprite2D" parent="SouthwestHouse" unique_id=972713671]
-texture_filter = 1
-position = Vector2(-30, -24)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("21_b1")
-offset = Vector2(0, -106)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SouthwestHouse" unique_id=2075243]
-position = Vector2(-30, -68)
-shape = SubResource("RectangleShape2D_town_house")
-
-[node name="SoutheastHouse" type="StaticBody2D" parent="." unique_id=282821422]
-position = Vector2(900, 735)
-collision_mask = 0
-script = ExtResource("12_house")
-use_back_view = true
-
-[node name="Sprite2D" type="Sprite2D" parent="SoutheastHouse" unique_id=495410799]
-texture_filter = 1
-position = Vector2(-100, -45)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("22_b2")
-offset = Vector2(0, -106)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SoutheastHouse" unique_id=582969392]
-position = Vector2(-103, -90)
-shape = SubResource("RectangleShape2D_town_house")
-
-[node name="Vendor" type="Area2D" parent="." unique_id=1812903790]
-position = Vector2(797, 390)
+[node name="Vendor" type="Area2D" parent="."]
+position = Vector2(880, 336)
 collision_layer = 0
 script = ExtResource("6_vendor")
 
-[node name="CollisionShape2D2" type="CollisionShape2D" parent="Vendor" unique_id=2098456896]
-position = Vector2(-593, -158)
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="Vendor"]
+position = Vector2(0, -6)
 shape = SubResource("CircleShape2D_vendor")
 
-[node name="Body" type="StaticBody2D" parent="Vendor" unique_id=1033181612]
+[node name="Body" type="StaticBody2D" parent="Vendor"]
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Vendor/Body" unique_id=41834009]
-position = Vector2(-593, -144)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Vendor/Body"]
+position = Vector2(0, -4)
 shape = SubResource("RectangleShape2D_vendor_body")
 
-[node name="VendorSprite" type="Sprite2D" parent="Vendor" unique_id=135512393]
+[node name="Stall" type="CollisionShape2D" parent="Vendor/Body"]
+position = Vector2(0, -26)
+shape = SubResource("RectangleShape2D_stall")
+
+[node name="Shop" type="Sprite2D" parent="Vendor"]
 texture_filter = 1
-position = Vector2(-593, -137)
+position = Vector2(0, -14)
+scale = Vector2(0.72, 0.72)
+texture = ExtResource("42_shop")
+offset = Vector2(0, -60.5)
+
+[node name="VendorSprite" type="Sprite2D" parent="Vendor"]
+texture_filter = 1
 scale = Vector2(0.64, 0.64)
 texture = ExtResource("7_vendor_sprite")
 offset = Vector2(0, -41)
 
-[node name="Shop" type="Sprite2D" parent="Vendor" unique_id=221550320]
-texture_filter = 1
-position = Vector2(-685, -128)
-scale = Vector2(0.6937883, 0.7595038)
-texture = ExtResource("42_shop")
-offset = Vector2(0, -60.5)
-
-[node name="Prompt" type="Label" parent="Vendor" unique_id=1822896393]
-offset_left = -636.0
-offset_top = -220.0
-offset_right = -547.0
-offset_bottom = -197.0
+[node name="Prompt" type="Label" parent="Vendor"]
+offset_left = -44.0
+offset_top = -128.0
+offset_right = 45.0
+offset_bottom = -105.0
 theme_override_colors/font_color = Color(1, 0.91, 0.68, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 4
 text = "E  Talk"
 horizontal_alignment = 1
 
-[node name="Pine1" type="StaticBody2D" parent="." unique_id=1229579847]
-position = Vector2(175, 250)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="Pine1" unique_id=1337032132]
-texture_filter = 1
-position = Vector2(-94, -117)
-scale = Vector2(0.40256408, 0.35000002)
-texture = ExtResource("23_pine")
-offset = Vector2(0, -116)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Pine1" unique_id=368409577]
-position = Vector2(-96, -121)
-shape = SubResource("CircleShape2D_town_trunk")
-
-[node name="Pine2" type="StaticBody2D" parent="." unique_id=1575583731]
-position = Vector2(330, 735)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="Pine2" unique_id=1819861225]
-texture_filter = 1
-position = Vector2(-220, -163)
-scale = Vector2(0.46666685, 0.43189657)
-texture = ExtResource("23_pine")
-offset = Vector2(0, -116)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Pine2" unique_id=788347544]
-position = Vector2(-221, -170)
-shape = SubResource("CircleShape2D_town_trunk")
-
-[node name="Spruce1" type="StaticBody2D" parent="." unique_id=1348458684]
-position = Vector2(1040, 260)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="Spruce1" unique_id=907663135]
-texture_filter = 1
-scale = Vector2(0.65, 0.65)
-texture = ExtResource("24_spruce")
-offset = Vector2(0, -92)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Spruce1" unique_id=1765760292]
-position = Vector2(0, -8)
-shape = SubResource("CircleShape2D_town_trunk")
-
-[node name="Spruce2" type="StaticBody2D" parent="." unique_id=1189833233]
-position = Vector2(950, 740)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="Spruce2" unique_id=1564777861]
-texture_filter = 1
-position = Vector2(37, -74)
-scale = Vector2(0.65, 0.65)
-texture = ExtResource("24_spruce")
-offset = Vector2(0, -92)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Spruce2" unique_id=1068069929]
-position = Vector2(35, -83)
-shape = SubResource("CircleShape2D_town_trunk")
-
-[node name="AppleTree" type="StaticBody2D" parent="." unique_id=797299754]
-position = Vector2(600, 255)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="AppleTree" unique_id=1654699252]
-texture_filter = 1
-position = Vector2(-17, -96)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("30_apple")
-offset = Vector2(0, -96)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AppleTree" unique_id=47151208]
-position = Vector2(-15, -102)
-shape = SubResource("CircleShape2D_town_trunk")
-
-[node name="Stump" type="StaticBody2D" parent="." unique_id=1377956546]
-position = Vector2(480, 240)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="Stump" unique_id=664759364]
-texture_filter = 1
-position = Vector2(-11.999985, 466)
-scale = Vector2(0.34999967, 0.38651687)
-texture = ExtResource("31_stump")
-offset = Vector2(0, -44.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Stump" unique_id=180721273]
-position = Vector2(-13, 452)
-shape = SubResource("CircleShape2D_town_trunk")
-
-[node name="LogPile" type="StaticBody2D" parent="." unique_id=236359720]
-position = Vector2(730, 245)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="LogPile" unique_id=83431834]
-texture_filter = 1
-position = Vector2(186.00002, 470.00003)
-scale = Vector2(0.50000024, 0.48764074)
-texture = ExtResource("32_logpile")
-offset = Vector2(0, -44.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LogPile" unique_id=2037735211]
-position = Vector2(182, 461)
-shape = SubResource("RectangleShape2D_town_log")
-
-[node name="Logs" type="StaticBody2D" parent="." unique_id=383436933]
-position = Vector2(730, 150)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="Logs" unique_id=1323419675]
-texture_filter = 1
-position = Vector2(85.19999, -17.000015)
-scale = Vector2(0.45217377, 0.4764043)
-texture = ExtResource("33_logs")
-offset = Vector2(0, -44.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Logs" unique_id=686593352]
-position = Vector2(84, -23)
-shape = SubResource("RectangleShape2D_town_log")
-
-[node name="ShrubGreen" type="Sprite2D" parent="." unique_id=1083708811]
-texture_filter = 1
-position = Vector2(284, 253)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("36_shrubg")
-offset = Vector2(0, -44)
-
-[node name="ShrubGreen" type="Sprite2D" parent="ShrubGreen" unique_id=2105961732]
-texture_filter = 1
-position = Vector2(142.09996, 603.33325)
-scale = Vector2(0.80387646, 0.9030288)
-texture = ExtResource("36_shrubg")
-offset = Vector2(0, -44)
-
-[node name="ShrubAutumn" type="Sprite2D" parent="." unique_id=1356437358]
-texture_filter = 1
-position = Vector2(804, 255)
-scale = Vector2(0.3652174, 0.37272742)
-texture = ExtResource("37_shruba")
-offset = Vector2(0, -44)
-
-[node name="ShrubRound" type="Sprite2D" parent="." unique_id=1463207375]
-texture_filter = 1
-position = Vector2(1060, 125)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("38_shrubr")
-offset = Vector2(0, -44)
-
-[node name="ShrubConifer" type="Sprite2D" parent="." unique_id=1610464768]
-texture_filter = 1
-position = Vector2(699, 603)
-scale = Vector2(0.6, 0.6)
-texture = ExtResource("40_shrubc")
-offset = Vector2(0, -44)
-
-[node name="Fountain" type="StaticBody2D" parent="." unique_id=64105280]
-position = Vector2(576, 468)
-collision_mask = 0
-
-[node name="Sprite2D" type="Sprite2D" parent="Fountain" unique_id=1377809379]
-texture_filter = 1
-position = Vector2(1.9073486e-05, -29.999994)
-scale = Vector2(0.24021453, 0.26816338)
-texture = ExtResource("40_fountain")
-offset = Vector2(0, -196)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fountain" unique_id=1890466282]
-position = Vector2(-0.5, -78)
-shape = SubResource("RectangleShape2D_town_fountain")
-
-[node name="OutsideScenery" type="Node2D" parent="." unique_id=462171856]
-y_sort_enabled = true
-
-[node name="Cow1" type="CharacterBody2D" parent="OutsideScenery" unique_id=1216140796]
-position = Vector2(-250, 330)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
-idle_frames = Array[Texture2D]([ExtResource("58_cowg")])
-idle_faces_right = false
-speed = 18.0
-wander_radius = 130.0
-
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow1" unique_id=102522389]
-texture_filter = 1
-scale = Vector2(0.33, 0.33)
-texture = ExtResource("59_cow1")
-offset = Vector2(0, -79.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow1" unique_id=1341349375]
-position = Vector2(0, -9)
-shape = SubResource("RectangleShape2D_cow")
-
-[node name="Cow2" type="CharacterBody2D" parent="OutsideScenery" unique_id=1160708004]
-position = Vector2(-380, 640)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
-idle_frames = Array[Texture2D]([ExtResource("58_cowg")])
-idle_faces_right = false
-speed = 18.0
-wander_radius = 130.0
-
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow2" unique_id=2068961231]
-texture_filter = 1
-scale = Vector2(0.33, 0.33)
-texture = ExtResource("59_cow1")
-offset = Vector2(0, -79.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow2" unique_id=1469492664]
-position = Vector2(0, -9)
-shape = SubResource("RectangleShape2D_cow")
-
-[node name="Cow3" type="CharacterBody2D" parent="OutsideScenery" unique_id=524282117]
-position = Vector2(1400, 260)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
-idle_frames = Array[Texture2D]([ExtResource("58_cowg")])
-idle_faces_right = false
-speed = 18.0
-wander_radius = 130.0
-
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow3" unique_id=1892674338]
-texture_filter = 1
-scale = Vector2(0.33, 0.33)
-texture = ExtResource("59_cow1")
-offset = Vector2(0, -79.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow3" unique_id=420697878]
-position = Vector2(0, -9)
-shape = SubResource("RectangleShape2D_cow")
-
-[node name="Cow4" type="CharacterBody2D" parent="OutsideScenery" unique_id=1646541221]
-position = Vector2(1330, 640)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
-idle_frames = Array[Texture2D]([ExtResource("58_cowg")])
-idle_faces_right = false
-speed = 18.0
-wander_radius = 130.0
-
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow4" unique_id=1271622326]
-texture_filter = 1
-scale = Vector2(0.33, 0.33)
-texture = ExtResource("59_cow1")
-offset = Vector2(0, -79.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow4" unique_id=1881401759]
-position = Vector2(0, -9)
-shape = SubResource("RectangleShape2D_cow")
-
-[node name="Cow5" type="CharacterBody2D" parent="OutsideScenery" unique_id=1788196679]
-position = Vector2(560, 960)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("59_cow1"), ExtResource("60_cow2")])
-idle_frames = Array[Texture2D]([ExtResource("58_cowg")])
-idle_faces_right = false
-speed = 18.0
-wander_radius = 130.0
-
-[node name="Sprite2D" type="Sprite2D" parent="OutsideScenery/Cow5" unique_id=301484837]
-texture_filter = 1
-scale = Vector2(0.33, 0.33)
-texture = ExtResource("59_cow1")
-offset = Vector2(0, -79.5)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideScenery/Cow5" unique_id=2101151169]
-position = Vector2(0, -9)
-shape = SubResource("RectangleShape2D_cow")
-
-[node name="PineOut1" type="Sprite2D" parent="OutsideScenery" unique_id=1100850354]
-texture_filter = 1
-position = Vector2(-512, 310)
-scale = Vector2(0.66, 0.66)
-texture = ExtResource("23_pine")
-offset = Vector2(0, -116)
-
-[node name="PineOut6" type="Sprite2D" parent="OutsideScenery" unique_id=2142442886]
-texture_filter = 1
-position = Vector2(1422, 942)
-scale = Vector2(0.7, 0.7)
-texture = ExtResource("23_pine")
-offset = Vector2(0, -116)
-
-[node name="PineOut16" type="Sprite2D" parent="OutsideScenery" unique_id=1335513957]
-texture_filter = 1
-position = Vector2(-298, 122)
-scale = Vector2(0.68, 0.68)
-texture = ExtResource("23_pine")
-offset = Vector2(0, -116)
-
-[node name="PineOut21" type="Sprite2D" parent="OutsideScenery" unique_id=403623507]
-texture_filter = 1
-position = Vector2(-576, -305)
-scale = Vector2(0.47, 0.47)
-texture = ExtResource("23_pine")
-offset = Vector2(0, -116)
-
-[node name="PineOut26" type="Sprite2D" parent="OutsideScenery" unique_id=1840793699]
-texture_filter = 1
-position = Vector2(1227, 198)
-scale = Vector2(0.49, 0.49)
-texture = ExtResource("23_pine")
-offset = Vector2(0, -116)
-
-[node name="SpruceOut31" type="Sprite2D" parent="OutsideScenery" unique_id=1918473015]
-texture_filter = 1
-position = Vector2(68, -272)
-scale = Vector2(0.61, 0.61)
-texture = ExtResource("24_spruce")
-offset = Vector2(0, -92)
-
-[node name="SpruceOut36" type="Sprite2D" parent="OutsideScenery" unique_id=1593066977]
-texture_filter = 1
-position = Vector2(1056, -359)
-scale = Vector2(0.46, 0.46)
-texture = ExtResource("24_spruce")
-offset = Vector2(0, -92)
-
-[node name="SpruceOut41" type="Sprite2D" parent="OutsideScenery" unique_id=474467940]
-texture_filter = 1
-position = Vector2(316, 960)
-scale = Vector2(0.71, 0.71)
-texture = ExtResource("24_spruce")
-offset = Vector2(0, -92)
-
-[node name="SpruceOut46" type="Sprite2D" parent="OutsideScenery" unique_id=425408713]
-texture_filter = 1
-position = Vector2(-489, -10)
-scale = Vector2(0.71, 0.71)
-texture = ExtResource("24_spruce")
-offset = Vector2(0, -92)
-
-[node name="SpruceOut56" type="Sprite2D" parent="OutsideScenery" unique_id=499706602]
-texture_filter = 1
-position = Vector2(1332, -77)
-scale = Vector2(0.55, 0.55)
-texture = ExtResource("24_spruce")
-offset = Vector2(0, -92)
-
-[node name="AppleTreeOut61" type="Sprite2D" parent="OutsideScenery" unique_id=703769151]
-texture_filter = 1
-position = Vector2(-77.99999, -81.99999)
-scale = Vector2(0.48, 0.48)
-texture = ExtResource("30_apple")
-offset = Vector2(0, -96)
-
-[node name="AppleTreeOut66" type="Sprite2D" parent="OutsideScenery" unique_id=2117097577]
-texture_filter = 1
-position = Vector2(1720, 282)
-scale = Vector2(0.58, 0.58)
-texture = ExtResource("30_apple")
-offset = Vector2(0, -96)
-
-[node name="AppleTreeOut71" type="Sprite2D" parent="OutsideScenery" unique_id=208318132]
-texture_filter = 1
-position = Vector2(861, -111.00003)
-scale = Vector2(0.65, 0.65)
-texture = ExtResource("30_apple")
-offset = Vector2(0, -96)
-
-[node name="AppleTreeOut76" type="Sprite2D" parent="OutsideScenery" unique_id=2092188051]
-texture_filter = 1
-position = Vector2(-196, 857)
-scale = Vector2(0.67, 0.67)
-texture = ExtResource("30_apple")
-offset = Vector2(0, -96)
-
-[node name="ShrubGreenOut81" type="Sprite2D" parent="OutsideScenery" unique_id=878406543]
-texture_filter = 1
-position = Vector2(982, 1071)
-scale = Vector2(0.49, 0.49)
-texture = ExtResource("36_shrubg")
-offset = Vector2(0, -44)
-
-[node name="ShrubGreenOut86" type="Sprite2D" parent="OutsideScenery" unique_id=1387361497]
-texture_filter = 1
-position = Vector2(1193, 1046)
-scale = Vector2(0.42, 0.42)
-texture = ExtResource("36_shrubg")
-offset = Vector2(0, -44)
-
-[node name="ShrubGreenOut91" type="Sprite2D" parent="OutsideScenery" unique_id=596231318]
-texture_filter = 1
-position = Vector2(-31, 883)
-scale = Vector2(0.55, 0.55)
-texture = ExtResource("36_shrubg")
-offset = Vector2(0, -44)
-
-[node name="ShrubAutumnOut96" type="Sprite2D" parent="OutsideScenery" unique_id=565375466]
-texture_filter = 1
-position = Vector2(695.0001, -195)
-scale = Vector2(0.66, 0.66)
-texture = ExtResource("37_shruba")
-offset = Vector2(0, -44)
-
-[node name="ShrubAutumnOut101" type="Sprite2D" parent="OutsideScenery" unique_id=1268587175]
-texture_filter = 1
-position = Vector2(1368, -337)
-scale = Vector2(0.56, 0.56)
-texture = ExtResource("37_shruba")
-offset = Vector2(0, -44)
-
-[node name="ShrubRoundOut106" type="Sprite2D" parent="OutsideScenery" unique_id=1020697787]
-texture_filter = 1
-position = Vector2(1377, 1042)
-scale = Vector2(0.75, 0.75)
-texture = ExtResource("38_shrubr")
-offset = Vector2(0, -44)
-
-[node name="ShrubConiferOut116" type="Sprite2D" parent="OutsideScenery" unique_id=251547497]
-texture_filter = 1
-position = Vector2(1148, 889)
-scale = Vector2(0.65, 0.65)
-texture = ExtResource("40_shrubc")
-offset = Vector2(0, -44)
-
-[node name="ShrubConiferOut121" type="Sprite2D" parent="OutsideScenery" unique_id=856511073]
-texture_filter = 1
-position = Vector2(133, -165)
-scale = Vector2(0.41, 0.41)
-texture = ExtResource("40_shrubc")
-offset = Vector2(0, -44)
-
-[node name="StumpOut126" type="Sprite2D" parent="OutsideScenery" unique_id=343284692]
-texture_filter = 1
-position = Vector2(-88, 638)
-scale = Vector2(0.62, 0.62)
-texture = ExtResource("31_stump")
-offset = Vector2(0, -44.5)
-
-[node name="LogPileOut136" type="Sprite2D" parent="OutsideScenery" unique_id=1324453421]
-texture_filter = 1
-position = Vector2(-79, 153)
-scale = Vector2(0.56, 0.56)
-texture = ExtResource("32_logpile")
-offset = Vector2(0, -44.5)
-
-[node name="LogsOut141" type="Sprite2D" parent="OutsideScenery" unique_id=653791564]
-texture_filter = 1
-position = Vector2(-571, 467)
-scale = Vector2(0.56, 0.56)
-texture = ExtResource("33_logs")
-offset = Vector2(0, -44.5)
-
-[node name="SeedlingOut151" type="Sprite2D" parent="OutsideScenery" unique_id=1354632279]
-texture_filter = 1
-position = Vector2(873, 800)
-scale = Vector2(0.5, 0.5)
-texture = ExtResource("34_seedling")
-offset = Vector2(0, -44)
-
-[node name="SeedlingOut156" type="Sprite2D" parent="OutsideScenery" unique_id=1432375624]
-texture_filter = 1
-position = Vector2(338, -240)
-scale = Vector2(0.5, 0.5)
-texture = ExtResource("34_seedling")
-offset = Vector2(0, -44)
-
-[node name="Chicken1" type="CharacterBody2D" parent="." unique_id=76633456]
-position = Vector2(560, 140)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("51_cw1"), ExtResource("52_cw2"), ExtResource("53_cw3"), ExtResource("54_cw4")])
-idle_frames = Array[Texture2D]([ExtResource("55_cp1"), ExtResource("56_cp2"), ExtResource("57_cp3")])
-speed = 38.0
-wander_radius = 90.0
-
-[node name="Sprite2D" type="Sprite2D" parent="Chicken1" unique_id=1842506792]
-texture_filter = 1
-scale = Vector2(0.28, 0.28)
-texture = ExtResource("51_cw1")
-offset = Vector2(0, -52)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken1" unique_id=1732410415]
-position = Vector2(0, -7)
-shape = SubResource("CircleShape2D_chicken")
-
-[node name="Chicken2" type="CharacterBody2D" parent="." unique_id=174933376]
-position = Vector2(560, 650)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("51_cw1"), ExtResource("52_cw2"), ExtResource("53_cw3"), ExtResource("54_cw4")])
-idle_frames = Array[Texture2D]([ExtResource("55_cp1"), ExtResource("56_cp2"), ExtResource("57_cp3")])
-speed = 38.0
-wander_radius = 90.0
-
-[node name="Sprite2D" type="Sprite2D" parent="Chicken2" unique_id=907285211]
-texture_filter = 1
-scale = Vector2(0.28, 0.28)
-texture = ExtResource("51_cw1")
-offset = Vector2(0, -52)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken2" unique_id=1448967116]
-position = Vector2(0, -7)
-shape = SubResource("CircleShape2D_chicken")
-
-[node name="Chicken3" type="CharacterBody2D" parent="." unique_id=78489232]
-position = Vector2(100, 150)
-script = ExtResource("50_script")
-walk_frames = Array[Texture2D]([ExtResource("51_cw1"), ExtResource("52_cw2"), ExtResource("53_cw3"), ExtResource("54_cw4")])
-idle_frames = Array[Texture2D]([ExtResource("55_cp1"), ExtResource("56_cp2"), ExtResource("57_cp3")])
-speed = 38.0
-wander_radius = 90.0
-
-[node name="Sprite2D" type="Sprite2D" parent="Chicken3" unique_id=1614828136]
-texture_filter = 1
-scale = Vector2(0.28, 0.28)
-texture = ExtResource("51_cw1")
-offset = Vector2(0, -52)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Chicken3" unique_id=614195077]
-position = Vector2(0, -7)
-shape = SubResource("CircleShape2D_chicken")
-
-[node name="Player" parent="." unique_id=532737915 instance=ExtResource("1_player")]
+[node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(576, 300)
 
-[node name="Beth" parent="." unique_id=1121912796 instance=ExtResource("69_quest_giver")]
-position = Vector2(735, 252)
+[node name="Beth" parent="." instance=ExtResource("69_quest_giver")]
+position = Vector2(360, 336)
 npc_name = "Beth"
 quest_id = "find_rendel"
 
-[node name="ReturnPortal" parent="." unique_id=657607658 instance=ExtResource("4_portal")]
-position = Vector2(672, 212)
+[node name="Sprite2D" parent="Beth" index="2"]
+texture = ExtResource("73_beth")
+
+[node name="ReturnPortal" parent="." instance=ExtResource("4_portal")]
+position = Vector2(576, 236)
 destination_scene = "res://main.tscn"
 destination_position = Vector2(84, 574)
 
-[node name="TownUI" type="CanvasLayer" parent="." unique_id=7369185]
+[node name="TownAmbience" type="Node2D" parent="."]
+script = ExtResource("72_ambience")
+
+[node name="TownUI" type="CanvasLayer" parent="."]
 script = ExtResource("5_town_ui")
 
-[node name="HealthOrb" parent="TownUI" unique_id=2145565031 instance=ExtResource("8_globe_health")]
+[node name="HealthOrb" parent="TownUI" instance=ExtResource("8_globe_health")]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -985,7 +234,7 @@ offset_right = 166.0
 offset_bottom = -22.0
 grow_vertical = 0
 
-[node name="HealthPotion" parent="TownUI" unique_id=165852680 instance=ExtResource("8_health_potion")]
+[node name="HealthPotion" parent="TownUI" instance=ExtResource("8_health_potion")]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -995,7 +244,7 @@ offset_right = 310.0
 offset_bottom = -22.0
 grow_vertical = 0
 
-[node name="ManaOrb" parent="TownUI" unique_id=1316408284 instance=ExtResource("8_globe_mana")]
+[node name="ManaOrb" parent="TownUI" instance=ExtResource("8_globe_mana")]
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -1008,7 +257,7 @@ offset_bottom = -22.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="ManaPotion" parent="TownUI" unique_id=8838019 instance=ExtResource("8_mana_potion")]
+[node name="ManaPotion" parent="TownUI" instance=ExtResource("8_mana_potion")]
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -1021,7 +270,7 @@ offset_bottom = -22.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="SkillSlotQ" type="Control" parent="TownUI" unique_id=1668134948]
+[node name="SkillSlotQ" type="Control" parent="TownUI"]
 layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5
@@ -1037,7 +286,7 @@ grow_vertical = 0
 script = ExtResource("9_skill")
 skill_label = "FIRE 25"
 
-[node name="SkillSlotW" type="Control" parent="TownUI" unique_id=1557738440]
+[node name="SkillSlotW" type="Control" parent="TownUI"]
 layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5
@@ -1053,7 +302,7 @@ grow_vertical = 0
 script = ExtResource("9_skill")
 key_label = "W"
 
-[node name="SkillSlotE" type="Control" parent="TownUI" unique_id=1851421263]
+[node name="SkillSlotE" type="Control" parent="TownUI"]
 layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5
@@ -1069,7 +318,7 @@ grow_vertical = 0
 script = ExtResource("9_skill")
 key_label = "E"
 
-[node name="SkillSlotR" type="Control" parent="TownUI" unique_id=892584519]
+[node name="SkillSlotR" type="Control" parent="TownUI"]
 layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5
@@ -1085,7 +334,7 @@ grow_vertical = 0
 script = ExtResource("9_skill")
 key_label = "R"
 
-[node name="TownName" type="Label" parent="TownUI" unique_id=616158158]
+[node name="TownName" type="Label" parent="TownUI"]
 offset_left = 20.0
 offset_top = 16.0
 offset_right = 380.0
@@ -1096,7 +345,7 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 28
 text = "Oblath"
 
-[node name="TownHint" type="Label" parent="TownUI" unique_id=715427858]
+[node name="TownHint" type="Label" parent="TownUI"]
 offset_left = 20.0
 offset_top = 52.0
 offset_right = 600.0
@@ -1106,7 +355,7 @@ theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 3
 text = "Waystone: replay any level."
 
-[node name="GoldLabel" type="Label" parent="TownUI" unique_id=44291346]
+[node name="GoldLabel" type="Label" parent="TownUI"]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
