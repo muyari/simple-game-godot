@@ -41,6 +41,8 @@ func _ready() -> void:
 	delete_confirmation.confirmed.connect(_on_delete_confirmed)
 	_setup_class_buttons()
 	_build_settings_screen()
+	if DevMode.is_enabled():
+		DevMode.add_badge(self)
 
 	if get_tree().has_meta("return_to_character_select"):
 		get_tree().remove_meta("return_to_character_select")

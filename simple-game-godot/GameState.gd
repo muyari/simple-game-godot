@@ -1427,7 +1427,11 @@ func _ready() -> void:
 	_build_scene_fade()
 	set_process(false)
 	_load_roster()
-	_load_character()
+	if DevMode.is_enabled():
+		DevMode.prepare_characters()
+		_restore_active_character("")
+	else:
+		_load_character()
 
 
 ## Fades to black, shows a loading card (with the calm loading music) while the
@@ -2339,7 +2343,8 @@ func complete_level(level_id: int) -> bool:
 	return true
 
 
-func create_character(display_name: String, character_class: String) -> String:
+## `character_id` is for fixed ids (Developer Mode's characters); new heroes get a generated one.
+func create_character(display_name: String, character_class: String, character_id := "") -> String:
 	var clean_name := display_name.strip_edges()
 	if clean_name.is_empty() or character_class not in ["Warrior", "Witch", "Ranger"]:
 		return ""
@@ -2349,9 +2354,12 @@ func create_character(display_name: String, character_class: String) -> String:
 	if not previous_character_id.is_empty() and not save_character(get_inventory(), get_equipment()):
 		return ""
 
-	var character_id := "character_%d" % Time.get_ticks_usec()
-	while _find_character_index(character_id) >= 0:
-		character_id += "_1"
+	if character_id.is_empty():
+		character_id = "character_%d" % Time.get_ticks_usec()
+		while _find_character_index(character_id) >= 0:
+			character_id += "_1"
+	elif _find_character_index(character_id) >= 0:
+		return ""
 	var save_path := "user://characters/%s.json" % character_id
 	var directory_error := DirAccess.make_dir_recursive_absolute(
 		ProjectSettings.globalize_path("user://characters")
