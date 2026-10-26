@@ -1,8 +1,9 @@
 extends VBoxContainer
 class_name TargetHealthBar
 ## A large health bar at the top of the screen for the selected monster, with its name and what each of its
-## modifiers does. Clicking (or tapping) a monster selects it; clicking another switches to that one. On
-## touch screens, hitting a monster selects it too. The bar stays up until the selected monster dies.
+## modifiers does. Tab selects the nearest monster and each further press switches to the next-nearest
+## (Shift+Tab goes back). On touch screens, hitting a monster selects it. The bar stays up until the
+## selected monster dies.
 
 const WIDTH := 460.0
 const TOP_MARGIN := 18.0
@@ -13,8 +14,29 @@ const BACK := Color(0.12, 0.02, 0.02, 0.88)
 const BORDER := Color("#2a0507")
 ## Below this fraction of health the fill brightens and pulses, and the frame glows red.
 const LOW_HEALTH := 0.25
-## Extra screen pixels around a monster's sprite that still count as clicking it.
-const CLICK_PADDING := 6.0
+const OUTLINE_COLOR := Color("#4da6ff")
+## Draws a one-texel outline around the opaque pixels of the selected monster's sprite. The outline
+## ignores the sprite's modulate, so tinted monsters still get a clean blue edge.
+const OUTLINE_SHADER := """
+shader_type canvas_item;
+
+uniform vec4 outline_color : source_color;
+
+void fragment() {
+	if (texture(TEXTURE, UV).a < 0.1) {
+		vec2 step_size = TEXTURE_PIXEL_SIZE;
+		float neighbours = texture(TEXTURE, UV + vec2(step_size.x, 0.0)).a
+			+ texture(TEXTURE, UV - vec2(step_size.x, 0.0)).a
+			+ texture(TEXTURE, UV + vec2(0.0, step_size.y)).a
+			+ texture(TEXTURE, UV - vec2(0.0, step_size.y)).a;
+		if (neighbours > 0.1) {
+			COLOR = outline_color;
+		}
+	}
+}
+"""
+
+static var outline_material: ShaderMaterial
 
 var player: Player
 var touch_mode := false
@@ -22,6 +44,8 @@ var touch_mode := false
 var selected: Wolf
 var last_hit_seen: Wolf
 var target: Wolf
+## The monster currently wearing the blue selection outline.
+var outlined: Wolf
 var bar: ProgressBar
 var fill_style: StyleBoxFlat
 var frame: HealthBarFrame
@@ -57,16 +81,34 @@ func _notification(what: int) -> void:
 		hide()
 
 
-## Runs before the player's click-to-move and leaves the click unhandled, so clicking a monster both
-## selects it and moves toward it as before.
+## Runs before GUI focus handling so Tab cycles monsters instead of moving focus between HUD buttons.
 func _input(event: InputEvent) -> void:
-	if not event is InputEventMouseButton or event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
+	var key := event as InputEventKey
+	if key == null or key.keycode != KEY_TAB or not key.pressed or key.echo:
 		return
-	if player == null or not is_instance_valid(player):
+	if player == null or not is_instance_valid(player) or player.health <= 0:
 		return
-	# A click on a HUD button over a monster is for the button.
-	if get_viewport().gui_get_hovered_control() != null:
+	get_viewport().set_input_as_handled()
+	_cycle_target(-1 if key.shift_pressed else 1)
+
+
+func _cycle_target(step: int) -> void:
+	var monsters: Array[Wolf] = []
+	for node in get_tree().get_nodes_in_group("enemies"):
+		var enemy := node as Wolf
+		if enemy != null and _is_targetable(enemy):
+			monsters.append(enemy)
+	if monsters.is_empty():
 		return
+	var origin := player.global_position
+	monsters.sort_custom(func(a: Wolf, b: Wolf) -> bool:
+		return a.global_position.distance_squared_to(origin) < b.global_position.distance_squared_to(origin))
+	var index := monsters.find(selected)
+	if index < 0:
+		# Nothing selected yet: start from the nearest (or, going back, the farthest).
+		selected = monsters[0] if step > 0 else monsters[-1]
+	else:
+		selected = monsters[posmod(index + step, monsters.size())]
 	var clicked := Wolf.find_at(get_tree(), player.get_global_mouse_position(), CLICK_PADDING)
 	if clicked != null:
 		selected = clicked
@@ -78,6 +120,7 @@ func _process(delta: float) -> void:
 		target = next_target
 		if target != null:
 			_show_modifiers(target.modifier_ids)
+		_set_outlined(target)
 	if target == null:
 		hide()
 		return
@@ -97,6 +140,25 @@ func _find_target() -> Wolf:
 		selected = null
 		return null
 	return selected if _is_targetable(selected) else null
+
+
+func _exit_tree() -> void:
+	_set_outlined(null)
+
+
+func _set_outlined(enemy: Wolf) -> void:
+	if is_instance_valid(outlined) and outlined.sprite.material == outline_material:
+		outlined.sprite.material = null
+	outlined = enemy
+	if enemy == null:
+		return
+	if outline_material == null:
+		var shader := Shader.new()
+		shader.code = OUTLINE_SHADER
+		outline_material = ShaderMaterial.new()
+		outline_material.shader = shader
+		outline_material.set_shader_parameter("outline_color", OUTLINE_COLOR)
+	enemy.sprite.material = outline_material
 
 
 static func _is_targetable(enemy: Wolf) -> bool:
