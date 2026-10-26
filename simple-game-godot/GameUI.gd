@@ -45,6 +45,13 @@ func _ready() -> void:
 	_build_progression_hud()
 	_build_boss_banner()
 	_build_chest_loot_window()
+	# Quest notices and the arrow to the next forest objective sit under every menu.
+	add_child(QuestTracker.new())
+	add_child(QuestToast.new())
+	var quest_dialogue := QuestDialogue.new()
+	quest_dialogue.opened.connect(_set_player_menu_paused.bind(true))
+	quest_dialogue.closed.connect(_set_player_menu_paused.bind(false))
+	add_child(quest_dialogue)
 	quest_menu = QuestMenu.new()
 	quest_menu.closed.connect(_set_player_menu_paused.bind(false))
 	add_child(quest_menu)

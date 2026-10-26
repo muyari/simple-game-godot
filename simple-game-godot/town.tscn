@@ -207,8 +207,7 @@ position = Vector2(576, 300)
 
 [node name="Beth" parent="." instance=ExtResource("69_quest_giver")]
 position = Vector2(360, 336)
-npc_name = "Beth"
-quest_id = "find_rendel"
+npc_id = "beth"
 
 [node name="Sprite2D" parent="Beth" index="2"]
 texture = ExtResource("73_beth")

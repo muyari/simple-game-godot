@@ -1,9 +1,10 @@
 extends Node2D
 class_name TownProp
 ## Small pieces of village life, drawn smooth and softly lit like the HUD, standing on their node origin
-## so they y-sort with everything else: lamp posts, benches, a well, a signpost, a scarecrow and hay bales.
+## so they y-sort with everything else: lamp posts, benches, a well, a signpost, a scarecrow, hay bales and
+## the notice board.
 
-enum Kind { LAMP, BENCH, WELL, SIGNPOST, SCARECROW, HAY }
+enum Kind { LAMP, BENCH, WELL, SIGNPOST, SCARECROW, HAY, NOTICE_BOARD }
 
 const WOOD := Color("#8a5d33")
 const WOOD_LIGHT := Color("#b48452")
@@ -52,6 +53,27 @@ func _draw() -> void:
 			_draw_scarecrow()
 		Kind.HAY:
 			_draw_hay()
+		Kind.NOTICE_BOARD:
+			_draw_notice_board()
+
+
+func _draw_notice_board() -> void:
+	SmoothDraw.shadow(self, Vector2(-3, 1), Vector2(54, 9))
+	for post_x in [-23.0, 19.0]:
+		SmoothDraw.box(self, Rect2(post_x, -58, 4, 58), WOOD.darkened(0.2), 2.0)
+	# Board, a little shingled roof, and the notices pinned to it.
+	SmoothDraw.box(self, Rect2(-26, -52, 52, 32), WOOD_LIGHT, 3.0)
+	SmoothDraw.flat(self, Rect2(-23, -49, 46, 26), WOOD.lightened(0.05), 2.0)
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-31, -54), Vector2(-24, -64), Vector2(24, -64), Vector2(31, -54)]), CLOTH.darkened(0.15), OUTLINE, 2.0)
+	draw_line(Vector2(-25, -62), Vector2(25, -62), Color(CLOTH.lightened(0.3), 0.6), 1.5, true)
+	var papers := [Rect2(-20, -47, 13, 15), Rect2(-4, -48, 12, 11), Rect2(10, -46, 11, 17), Rect2(-3, -35, 10, 10)]
+	for index in papers.size():
+		var paper: Rect2 = papers[index]
+		SmoothDraw.box(self, paper, SACK.lightened(0.25 if index % 2 == 0 else 0.1), 1.0, Color(OUTLINE, 0.7))
+		for line in int(paper.size.y / 4.0) - 1:
+			var y := paper.position.y + 3.5 + line * 3.5
+			draw_line(Vector2(paper.position.x + 2, y), Vector2(paper.end.x - 2.5, y), Color(OUTLINE, 0.35), 1.0, true)
+		draw_circle(Vector2(paper.get_center().x, paper.position.y + 1.5), 1.3, CLOTH, true, -1.0, true)
 
 
 func _draw_lamp() -> void:

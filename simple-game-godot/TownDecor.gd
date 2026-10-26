@@ -67,6 +67,8 @@ const CHICKEN_PECK: Array[Texture2D] = [
 	preload("res://textures/town_chicken_peck_3.png"),
 ]
 const ANIMAL_SCRIPT = preload("res://AnimalWander.gd")
+## Where the reeve's notice board stands: on the verge of the main street, just east of the plaza.
+const NOTICE_BOARD_SPOT := Vector2(812, 500)
 const FOLK := {
 	"mary": {"side_right": true},
 	"gertrude": {"side_right": false},
@@ -321,6 +323,9 @@ func _build_street_furniture() -> void:
 	_prop(TownProp.Kind.WELL, Vector2(720, 196), 24.0)
 	_prop(TownProp.Kind.SIGNPOST, Vector2(640, 472), 5.0)
 	_prop(TownProp.Kind.SIGNPOST, Vector2(510, 236), 5.0, true)
+	# The notice board, where the reeve posts bounties.
+	var board := _prop(TownProp.Kind.NOTICE_BOARD, NOTICE_BOARD_SPOT, 14.0)
+	QuestTalker.attach(board, "notice_board", 64.0, "Read").talk_radius = 50.0
 
 
 # --- Greenery inside the fence -------------------------------------------------------------------------
@@ -512,6 +517,7 @@ func _distance_outside_fence(point: Vector2) -> float:
 # --- Villagers and critters ----------------------------------------------------------------------------
 
 func _build_folk() -> void:
+	# Mary, Gertrude, Sarah and Elsa each have work for a traveller; see Quests.
 	_folk("mary", Vector2(-200, 400), Rect2(-460, 362, 860, 76), 34.0)
 	_folk("gertrude", Vector2(520, 520), Rect2(440, 470, 280, 70), 16.0)
 	_folk("sarah", Vector2(1100, 400), Rect2(980, 362, 640, 76), 30.0)
@@ -519,7 +525,23 @@ func _build_folk() -> void:
 	var elsa := Townsfolk.new()
 	elsa.front_frames = [load("res://textures/town_folk_elsa_front_a.png"), load("res://textures/town_folk_elsa_front_b.png")]
 	elsa.position = Vector2(-96, 352)
+	_add_talker(elsa, "elsa")
 	level.add_child.call_deferred(elsa)
+	# Pip, home again once he's been found in the forest, plays by his mother's end of the street.
+	if Quests.is_completed(Quests.LOST_PIP):
+		var pip := HubFolk.new()
+		pip.display_name = "Pip"
+		pip.lines = ["Ember's real! She's a fox! Mum doesn't believe me.", "I'm not allowed past the gate till midwinter.", "When I grow up I'm going to fight wolves like you."]
+		pip.body_scale = 0.78
+		pip.skin = Color("#e2b48c")
+		pip.clothes = Color("#5d7d3a")
+		pip.trim = Color("#c9a35a")
+		pip.pants = Color("#6b4a2e")
+		pip.hair = Color("#b8662e")
+		pip.area = Rect2(1180, 470, 220, 60)
+		pip.speed = 44.0
+		pip.position = Vector2(1240, 490)
+		level.add_child.call_deferred(pip)
 
 
 func _folk(name_id: String, spot: Vector2, area: Rect2, speed: float) -> void:
@@ -535,7 +557,13 @@ func _folk(name_id: String, spot: Vector2, area: Rect2, speed: float) -> void:
 	folk.area = area
 	folk.speed = speed
 	folk.position = spot
+	_add_talker(folk, name_id)
 	level.add_child.call_deferred(folk)
+
+
+## Lets the player talk to a villager about quests, with the marker just over her head.
+func _add_talker(folk: Townsfolk, npc_id: String) -> void:
+	QuestTalker.attach(folk, npc_id, folk.front_frames[0].get_height() * folk.sprite_scale)
 
 
 func _butterfly(spot: Vector2) -> void:

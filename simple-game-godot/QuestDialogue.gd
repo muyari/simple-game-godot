@@ -1,10 +1,15 @@
 extends Control
 class_name QuestDialogue
 ## Paged NPC dialogue box, styled like the vendor's. The last page can offer Accept / Decline.
+## talk_to() runs a whole quest conversation with an NPC (see Quests.get_conversation); the hub and level
+## HUDs each own one, and quest givers find it through GROUP.
 
 signal accepted
 signal declined
+signal opened
 signal closed
+
+const GROUP := "quest_dialogue"
 
 var pages: Array[String] = []
 var page_index := 0
@@ -14,9 +19,13 @@ var quest_title_label: Label
 var text_label: Label
 var primary_button: Button
 var secondary_button: Button
+## The quest being offered by the current conversation, while it waits on Accept / Decline.
+var offered_quest_id := ""
+var speaker_id := ""
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	hide()
@@ -71,6 +80,38 @@ func _ready() -> void:
 	primary_button.pressed.connect(press_primary)
 	secondary_button = _make_button(buttons)
 	secondary_button.pressed.connect(press_secondary)
+	accepted.connect(_on_accepted)
+	declined.connect(_on_declined)
+
+
+func _input(event: InputEvent) -> void:
+	if not visible or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if event.keycode == KEY_E:
+		press_primary()
+	elif event.keycode == KEY_ESCAPE:
+		press_secondary()
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+## Starts a conversation with an NPC (or a talking object such as a notice board) by npc id. Talking can
+## move a quest on, complete it and pay out its reward; the pages tell the story of it.
+func talk_to(npc_id: String) -> void:
+	if visible:
+		return
+	speaker_id = npc_id
+	var conversation := Quests.get_conversation(npc_id)
+	var quest_id: String = conversation["quest_id"]
+	var dialogue_pages: Array[String] = []
+	dialogue_pages.assign(conversation["pages"])
+	var payout := Quests.apply_talk(quest_id, conversation["talk"])
+	if not payout.is_empty():
+		dialogue_pages[-1] += "\n\n" + payout
+	offered_quest_id = quest_id if conversation["offer"] else ""
+	var title: String = Quests.get_definition(quest_id).get("title", "") if not quest_id.is_empty() else ""
+	start(Quests.get_npc_name(npc_id), title, dialogue_pages, conversation["offer"])
 
 
 ## Shows the given pages. If offer_choice is true, the last page asks the player to accept or decline.
@@ -81,7 +122,9 @@ func start(speaker: String, quest_title: String, dialogue_pages: Array[String], 
 	offers_choice = offer_choice
 	page_index = 0
 	_show_page()
-	show()
+	if not visible:
+		show()
+		opened.emit()
 
 
 ## E key / left button: continue, or accept on the final choice page.
@@ -103,7 +146,31 @@ func press_secondary() -> void:
 		_close()
 
 
+func _on_accepted() -> void:
+	if offered_quest_id.is_empty():
+		return
+	var quest := Quests.get_definition(offered_quest_id)
+	Quests.accept(offered_quest_id)
+	offered_quest_id = ""
+	_show_reply(quest, "accepted_reply")
+
+
+func _on_declined() -> void:
+	if offered_quest_id.is_empty():
+		return
+	var quest := Quests.get_definition(offered_quest_id)
+	offered_quest_id = ""
+	_show_reply(quest, "declined_reply")
+
+
+func _show_reply(quest: Dictionary, reply_key: String) -> void:
+	var reply: Array[String] = []
+	reply.assign(quest["dialogue"][reply_key])
+	start(Quests.get_npc_name(speaker_id), quest["title"], reply, false)
+
+
 func _close() -> void:
+	offered_quest_id = ""
 	hide()
 	closed.emit()
 
