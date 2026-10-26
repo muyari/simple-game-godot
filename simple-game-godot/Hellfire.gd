@@ -23,6 +23,7 @@ var trail: Array[Vector2] = []
 
 
 static func launch(parent: Node, from: Vector2, toward: Vector2, bolt_damage: int, source: Wolf, bolt_size := 1.0) -> Hellfire:
+	Audio.play_sfx_at("fireball", from, -4.0)
 	var bolt := Hellfire.new()
 	bolt.direction = toward.normalized() if not toward.is_zero_approx() else Vector2.RIGHT
 	bolt.damage = bolt_damage

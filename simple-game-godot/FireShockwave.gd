@@ -15,6 +15,7 @@ var embers: Array[Vector2] = []
 
 
 static func spawn(parent: Node, world_position: Vector2, ring_radius: float) -> FireShockwave:
+	Audio.play_sfx_at("eruption", world_position, -3.0)
 	var wave := FireShockwave.new()
 	wave.radius = ring_radius
 	wave.position = world_position

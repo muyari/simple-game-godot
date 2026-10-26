@@ -15,6 +15,7 @@ var chips: Array[Vector2] = []
 
 
 static func spawn(parent: Node, world_position: Vector2, ring_radius: float) -> IceShockwave:
+	Audio.play_sfx_at("ice_impact", world_position)
 	var wave := IceShockwave.new()
 	wave.radius = ring_radius
 	wave.position = world_position

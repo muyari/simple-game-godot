@@ -48,6 +48,8 @@ func _launch() -> void:
 
 
 func _burst(at: Vector2) -> void:
+	# Distant siege fire: the boom stays well under the music.
+	Audio.play_sfx_at("explosion", at, -12.0)
 	scorches.append({"at": at, "age": 0.0, "size": randf_range(18.0, 30.0)})
 	var flash := FireGlow.attach(self, at, 160.0, Color("#ff7a2a"), 0.9)
 	var fade := flash.create_tween()

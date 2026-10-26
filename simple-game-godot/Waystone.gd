@@ -21,6 +21,7 @@ func can_interact(_player: Player) -> bool:
 
 func interact(_player: Player) -> void:
 	if player_nearby:
+		Audio.play_sfx("waystone")
 		level_selection_requested.emit()
 
 

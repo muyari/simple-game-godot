@@ -69,6 +69,7 @@ func _find_hit_target(step_distance: float) -> Node2D:
 
 
 func _explode(impact_position: Vector2, direct_hit_id: int) -> void:
+	Audio.play_sfx_at("explosion", impact_position, -3.0)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not enemy is Node2D or not enemy.has_method("take_damage"):
 			continue

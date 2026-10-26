@@ -20,6 +20,7 @@ func open_menu() -> void:
 		return
 	show()
 	get_tree().paused = true
+	Audio.play_sfx("ui_open")
 	backdrop.modulate.a = 0.0
 	panel.modulate.a = 0.0
 	panel.pivot_offset = panel.size * 0.5
@@ -33,6 +34,7 @@ func open_menu() -> void:
 
 func close_menu() -> void:
 	hide()
+	Audio.play_sfx("ui_close")
 	get_tree().paused = false
 
 
@@ -80,6 +82,8 @@ func _build_menu() -> void:
 	resume_button = _create_button("Resume")
 	resume_button.pressed.connect(close_menu)
 	contents.add_child(resume_button)
+
+	contents.add_child(AudioSettings.new())
 
 	var character_button := _create_button("Return to Character Selection")
 	character_button.pressed.connect(_on_return_to_character_selection_pressed)

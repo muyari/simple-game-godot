@@ -584,6 +584,11 @@ func is_endgame() -> bool:
 
 
 func _emit_initial_progress() -> void:
+	# The region's track, or the boss's if one was already hunting the player when they left.
+	if boss_spawned and not level_is_complete:
+		Audio.play_music(Audio.BOSS_MUSIC)
+	else:
+		Audio.play_region_music(biome)
 	if level_is_complete:
 		cleared_map_entered.emit()
 		return
@@ -1902,6 +1907,8 @@ func _spawn_level_boss() -> void:
 	boss.global_position = _clamp_to_map(player.global_position + spawn_direction * _get_spawn_distance(spawn_direction))
 	boss_spawned = true
 	boss_incoming.emit()
+	Audio.play_sfx("boss_incoming")
+	Audio.play_music(Audio.BOSS_MUSIC, 0.6)
 	boss_progress_changed.emit(0, 1)
 
 
@@ -1954,6 +1961,8 @@ func _spawn_wolf_boss_pack() -> void:
 	boss_spawned = true
 	boss_wolves_defeated = 0
 	boss_incoming.emit()
+	Audio.play_sfx("boss_incoming")
+	Audio.play_music(Audio.BOSS_MUSIC, 0.6)
 	var spawn_direction := player.facing
 	if spawn_direction.is_zero_approx():
 		spawn_direction = Vector2.RIGHT
@@ -2102,6 +2111,8 @@ func _on_treasure_chest_opened(chest: TreasureChest) -> void:
 
 func _complete_current_level() -> void:
 	level_is_complete = true
+	Audio.play_sfx("level_complete")
+	Audio.play_region_music(biome)
 	level_completed.emit()
 	if is_endgame():
 		# Keep the cleared map (boss loot, chest) for a later visit.

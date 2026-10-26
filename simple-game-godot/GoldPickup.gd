@@ -73,6 +73,7 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 
 	remove_from_group("level_drops")
+	Audio.play_sfx("coin")
 	PickupBurst.spawn(get_parent(), global_position, GOLD_LIGHT, "+%d gold" % amount, 5 + pile_size)
 	collected.emit()
 	GameState.add_gold(amount)

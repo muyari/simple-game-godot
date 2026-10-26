@@ -122,6 +122,7 @@ func start(speaker: String, quest_title: String, dialogue_pages: Array[String], 
 	offers_choice = offer_choice
 	page_index = 0
 	_show_page()
+	Audio.play_sfx("ui_open")
 	if not visible:
 		show()
 		opened.emit()
