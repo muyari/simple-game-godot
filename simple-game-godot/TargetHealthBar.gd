@@ -15,6 +15,8 @@ const BORDER := Color("#2a0507")
 ## Below this fraction of health the fill brightens and pulses, and the frame glows red.
 const LOW_HEALTH := 0.25
 const OUTLINE_COLOR := Color("#4da6ff")
+## Screen pixels of slack round a monster's sprite when clicking to select it.
+const CLICK_PADDING := 6.0
 ## Draws a one-texel outline around the opaque pixels of the selected monster's sprite. The outline
 ## ignores the sprite's modulate, so tinted monsters still get a clean blue edge.
 const OUTLINE_SHADER := """

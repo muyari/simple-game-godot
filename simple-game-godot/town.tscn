@@ -155,7 +155,7 @@ offset_bottom = -80.0
 theme_override_colors/font_color = Color(0.79, 0.94, 1, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 4
-text = "E  Choose a level"
+text = "E  Use the waystone"
 horizontal_alignment = 1
 
 [node name="Vendor" type="Area2D" parent="."]
@@ -353,7 +353,7 @@ offset_bottom = 78.0
 theme_override_colors/font_color = Color(0.95, 0.92, 0.84, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
 theme_override_constants/outline_size = 3
-text = "Waystone: replay any level."
+text = "Waystone: travel between regions. The portal leads to the Forest Outskirts."
 
 [node name="GoldLabel" type="Label" parent="TownUI"]
 anchors_preset = 1

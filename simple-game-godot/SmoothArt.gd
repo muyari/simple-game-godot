@@ -28,11 +28,16 @@ static func apply(root: Node) -> void:
 
 ## Keeps smoothing art added after the scene loads (pickups, effects, spawned props).
 static func watch(tree: SceneTree, scene_root: Node) -> void:
-	tree.node_added.connect(func(node: Node) -> void:
+	var on_added := func(node: Node) -> void:
 		if is_instance_valid(scene_root) and scene_root.is_ancestor_of(node) and not _in_layer(node, scene_root):
 			if node is Sprite2D or node is Polygon2D or node is AnimatedSprite2D:
 				_smooth(node as CanvasItem)
-	)
+	tree.node_added.connect(on_added)
+	# Stop watching when the scene goes, or the lambda outlives the root it captured.
+	scene_root.tree_exiting.connect(func() -> void:
+		if tree.node_added.is_connected(on_added):
+			tree.node_added.disconnect(on_added)
+	, CONNECT_ONE_SHOT)
 
 
 static func _smooth(item: CanvasItem) -> void:

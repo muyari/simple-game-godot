@@ -1,0 +1,284 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://portal.tscn" id="4_portal"]
+[ext_resource type="Script" path="res://TownUI.gd" id="5_town_ui"]
+[ext_resource type="Script" path="res://Vendor.gd" id="6_vendor"]
+[ext_resource type="PackedScene" path="res://health_globe.tscn" id="8_globe_health"]
+[ext_resource type="PackedScene" path="res://mana_globe.tscn" id="8_globe_mana"]
+[ext_resource type="PackedScene" path="res://health_potion.tscn" id="8_health_potion"]
+[ext_resource type="PackedScene" path="res://mana_potion.tscn" id="8_mana_potion"]
+[ext_resource type="Script" path="res://SkillSlot.gd" id="9_skill"]
+[ext_resource type="Script" path="res://Waystone.gd" id="11_waystone"]
+[ext_resource type="Texture2D" path="res://textures/town_waystone.png" id="41_waystone"]
+[ext_resource type="Script" path="res://IceSettlementDecor.gd" id="70_decor"]
+[ext_resource type="Script" path="res://IceAmbience.gd" id="72_ambience"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_vertical"]
+size = Vector2(20, 1020)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_horizontal"]
+size = Vector2(1360, 20)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_waystone"]
+radius = 36.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_waystone_body"]
+radius = 13.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_vendor"]
+radius = 52.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_stall"]
+size = Vector2(110, 24)
+
+[node name="Rimehollow" type="Node2D"]
+y_sort_enabled = true
+
+[node name="Boundary" type="StaticBody2D" parent="."]
+collision_mask = 0
+
+[node name="LeftWall" type="CollisionShape2D" parent="Boundary"]
+position = Vector2(-70, 450)
+shape = SubResource("RectangleShape2D_wall_vertical")
+
+[node name="RightWall" type="CollisionShape2D" parent="Boundary"]
+position = Vector2(1270, 450)
+shape = SubResource("RectangleShape2D_wall_vertical")
+
+[node name="TopWall" type="CollisionShape2D" parent="Boundary"]
+position = Vector2(600, -50)
+shape = SubResource("RectangleShape2D_wall_horizontal")
+
+[node name="BottomWall" type="CollisionShape2D" parent="Boundary"]
+position = Vector2(600, 950)
+shape = SubResource("RectangleShape2D_wall_horizontal")
+
+[node name="Ground" type="Polygon2D" parent="."]
+z_index = -10
+polygon = PackedVector2Array(-2000, -1600, 3400, -1600, 3400, 2800, -2000, 2800)
+
+[node name="HubDecor" type="Node2D" parent="."]
+script = ExtResource("70_decor")
+bounds = Rect2(-60, -40, 1320, 980)
+
+[node name="Waystone" type="Area2D" parent="."]
+position = Vector2(770, 320)
+collision_layer = 0
+script = ExtResource("11_waystone")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Waystone"]
+position = Vector2(0, -16)
+shape = SubResource("CircleShape2D_waystone")
+
+[node name="Body" type="StaticBody2D" parent="Waystone"]
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Waystone/Body"]
+position = Vector2(0, -8)
+shape = SubResource("CircleShape2D_waystone_body")
+
+[node name="Sprite2D" type="Sprite2D" parent="Waystone"]
+texture_filter = 1
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("41_waystone")
+offset = Vector2(0, -47)
+
+[node name="Prompt" type="Label" parent="Waystone"]
+offset_left = -120.0
+offset_top = -104.0
+offset_right = 120.0
+offset_bottom = -80.0
+theme_override_colors/font_color = Color(0.79, 0.94, 1, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+text = "E  Use the waystone"
+horizontal_alignment = 1
+
+[node name="Vendor" type="Area2D" parent="."]
+position = Vector2(420, 320)
+collision_layer = 0
+script = ExtResource("6_vendor")
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="Vendor"]
+position = Vector2(0, -6)
+shape = SubResource("CircleShape2D_vendor")
+
+[node name="Body" type="StaticBody2D" parent="Vendor"]
+collision_mask = 0
+
+[node name="Stall" type="CollisionShape2D" parent="Vendor/Body"]
+position = Vector2(0, -14)
+shape = SubResource("RectangleShape2D_stall")
+
+[node name="Prompt" type="Label" parent="Vendor"]
+offset_left = -60.0
+offset_top = -128.0
+offset_right = 60.0
+offset_bottom = -105.0
+theme_override_colors/font_color = Color(1, 0.91, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+text = "E  Trade"
+horizontal_alignment = 1
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(600, 440)
+
+[node name="ReturnPortal" parent="." instance=ExtResource("4_portal")]
+position = Vector2(1235, 470)
+
+[node name="Ambience" type="Node2D" parent="."]
+script = ExtResource("72_ambience")
+
+[node name="TownUI" type="CanvasLayer" parent="."]
+layer = 3
+script = ExtResource("5_town_ui")
+hub_level_id = 3
+shop_title = "Brannoc's Furs & Steel"
+vendor_greeting = "Furs, blades, and nothing that rusts in the cold.\nTake a look."
+camera_limits = Rect2i(-400, -380, 2000, 1680)
+
+[node name="HealthOrb" parent="TownUI" instance=ExtResource("8_globe_health")]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = -166.0
+offset_right = 166.0
+offset_bottom = -22.0
+grow_vertical = 0
+
+[node name="HealthPotion" parent="TownUI" instance=ExtResource("8_health_potion")]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 250.0
+offset_top = -126.0
+offset_right = 310.0
+offset_bottom = -22.0
+grow_vertical = 0
+
+[node name="ManaOrb" parent="TownUI" instance=ExtResource("8_globe_mana")]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -166.0
+offset_top = -166.0
+offset_right = -22.0
+offset_bottom = -22.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="ManaPotion" parent="TownUI" instance=ExtResource("8_mana_potion")]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -310.0
+offset_top = -126.0
+offset_right = -250.0
+offset_bottom = -22.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="SkillSlotQ" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -132.0
+offset_top = -90.0
+offset_right = -72.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("9_skill")
+skill_label = "FIRE 25"
+
+[node name="SkillSlotW" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -90.0
+offset_right = -4.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("9_skill")
+key_label = "W"
+
+[node name="SkillSlotE" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -90.0
+offset_right = 64.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("9_skill")
+key_label = "E"
+
+[node name="SkillSlotR" type="Control" parent="TownUI"]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 72.0
+offset_top = -90.0
+offset_right = 132.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("9_skill")
+key_label = "R"
+
+[node name="TownName" type="Label" parent="TownUI"]
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 380.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.97, 0.85, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 28
+text = "Rimehollow"
+
+[node name="TownHint" type="Label" parent="TownUI"]
+offset_left = 20.0
+offset_top = 52.0
+offset_right = 600.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(0.95, 0.92, 0.84, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
+theme_override_constants/outline_size = 3
+text = "Waystone: travel between regions. The tunnel east leads down to the Ice Caves."
+
+[node name="GoldLabel" type="Label" parent="TownUI"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 78.0
+offset_right = -16.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
+text = "Gold: 0"
+horizontal_alignment = 2
+

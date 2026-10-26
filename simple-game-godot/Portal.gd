@@ -3,8 +3,11 @@ class_name Portal
 
 @export_file("*.tscn") var destination_scene := ""
 @export var destination_position := Vector2.ZERO
+## Where the portal leads, shown under it and in its prompt. Empty keeps the scene's own labels.
+@export var destination_name := ""
 
 @onready var interaction_prompt: Label = $InteractionPrompt
+@onready var destination_label: Label = $DestinationLabel
 
 var nearby_player: Player
 var is_transitioning := false
@@ -15,6 +18,16 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	interaction_prompt.hide()
+	set_destination_name(destination_name)
+
+
+func set_destination_name(place_name: String) -> void:
+	destination_name = place_name
+	if not is_node_ready():
+		return
+	if not place_name.is_empty():
+		destination_label.text = place_name.to_upper()
+		interaction_prompt.text = "Travel to %s" % place_name
 	interaction_prompt.text = MenuStyle.interact_prompt(interaction_prompt.text.trim_prefix("E  "))
 
 

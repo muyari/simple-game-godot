@@ -2,12 +2,16 @@ extends CanvasLayer
 
 const MINIMUM_ITEM_PRICE = 25
 const EXPERIENCE_BAR_WIDTH = 440.0
-# World-space camera bounds for the town. Top and bottom leave room for the HUD so the
-# fence is never hidden behind it; the sides stay wide so the outside scenery is visible.
-const CAMERA_LIMIT_LEFT = -1000
-const CAMERA_LIMIT_RIGHT = 2150
-const CAMERA_LIMIT_TOP = -820
-const CAMERA_LIMIT_BOTTOM = 1560
+
+## The HUD, shop and waystone of a hub: Oblath, or one of the regional camps. Each hub stages one level
+## (GameState.HUBS); its ReturnPortal is the way into that level.
+@export_range(1, 4, 1) var hub_level_id := 1
+## Shop panel title; empty uses "<hub> Trading Post".
+@export var shop_title := ""
+@export_multiline var vendor_greeting := "What do you want???\nI have everything, come look!"
+## World-space camera bounds. Top and bottom leave room for the HUD so the hub's edge is never
+## hidden behind it; the sides stay wide so the outside scenery is visible.
+@export var camera_limits := Rect2i(-1000, -820, 3150, 2380)
 
 @onready var gold_label: Label = $GoldLabel
 @onready var player: Player = get_node("../Player")
@@ -357,7 +361,7 @@ func _build_shop() -> void:
 	shop_panel.add_child(contents)
 
 	var title := Label.new()
-	title.text = "Oblath Trading Post"
+	title.text = shop_title if not shop_title.is_empty() else "%s Trading Post" % GameState.get_hub_name(hub_level_id)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color("#e8ca86"))
@@ -456,7 +460,7 @@ func _build_dialogue() -> void:
 	dialogue_panel.add_child(contents)
 
 	var dialogue := Label.new()
-	dialogue.text = "What do you want???\nI have everything, come look!"
+	dialogue.text = vendor_greeting
 	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	dialogue.add_theme_color_override("font_color", Color("#e8ca86"))
 	dialogue.add_theme_font_size_override("font_size", 20)
@@ -571,28 +575,25 @@ func _build_waystone_menu() -> void:
 	var contents := VBoxContainer.new()
 	contents.add_theme_constant_override("separation", 12)
 	panel.add_child(contents)
-	_add_menu_title(contents, "Oblath Waystone")
+	_add_menu_title(contents, "%s Waystone" % GameState.get_hub_name(hub_level_id))
 
 	var description := Label.new()
-	description.text = "Choose a region to begin another run."
+	description.text = "Travel to another region's hub, or set out from here."
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	contents.add_child(description)
 
-	var level_options := [
-		[1, "res://main.tscn", GameState.LEVEL_NAMES[1]],
-		[2, "res://desert.tscn", GameState.LEVEL_NAMES[2]],
-		[3, "res://ice_caves.tscn", GameState.LEVEL_NAMES[3]],
-		[4, "res://underworld.tscn", GameState.LEVEL_NAMES[4]]
-	]
-	for level_option in level_options:
-		var level_id: int = level_option[0]
-		var scene_path: String = level_option[1]
-		var level_name: String = level_option[2]
+	# This hub's own region is entered straight from here; the others by way of their hubs.
+	for level_id in GameState.LEVEL_SCENE_PATHS:
+		var level_name: String = GameState.LEVEL_NAMES[level_id]
 		var level_button := Button.new()
-		level_button.text = "Level %d  -  %s" % [level_id, level_name]
+		if level_id == hub_level_id:
+			level_button.text = "Set out  -  %s" % level_name
+			level_button.pressed.connect(_enter_waystone_level.bind(GameState.LEVEL_SCENE_PATHS[level_id], level_name))
+		else:
+			level_button.text = "%s  -  %s" % [GameState.get_hub_name(level_id), level_name]
+			level_button.pressed.connect(_travel_to_hub.bind(level_id))
 		_style_menu_button(level_button, 48.0)
 		level_button.disabled = not GameState.is_level_unlocked(level_id)
-		level_button.pressed.connect(_enter_waystone_level.bind(scene_path, level_name))
 		contents.add_child(level_button)
 
 	var close_button := Button.new()
@@ -902,8 +903,8 @@ func _enter_waystone_level(scene_path: String, level_name: String) -> void:
 		return
 
 	get_tree().set_meta(Player.TOWN_RETURN_SCENE_META, scene_path)
-	get_tree().set_meta(Player.TOWN_RETURN_POSITION_META, Vector2(84, 574))
-	get_tree().set_meta("portal_spawn_position", Vector2(84, 574))
+	get_tree().set_meta(Player.TOWN_RETURN_POSITION_META, GameState.LEVEL_START_POSITION)
+	get_tree().set_meta("portal_spawn_position", GameState.LEVEL_START_POSITION)
 	get_tree().set_meta("portal_player_vitals", {
 		"health": player.health,
 		"mana": player.mana
@@ -918,6 +919,22 @@ func _enter_waystone_level(scene_path: String, level_name: String) -> void:
 			level_name,
 			error_string(error)
 		])
+
+
+## Waystone travel to another region's hub.
+func _travel_to_hub(level_id: int) -> void:
+	if not GameState.is_level_unlocked(level_id):
+		return
+	get_tree().set_meta("portal_spawn_position", GameState.get_hub_arrival(level_id))
+	get_tree().set_meta("portal_player_vitals", {
+		"health": player.health,
+		"mana": player.mana
+	})
+	var error := GameState.change_scene(GameState.get_hub_scene(level_id))
+	if error != OK:
+		get_tree().remove_meta("portal_spawn_position")
+		get_tree().remove_meta("portal_player_vitals")
+		push_error("Could not travel to %s: %s" % [GameState.get_hub_name(level_id), error_string(error)])
 
 
 func _on_inventory_changed(_items: Array[ItemData]) -> void:
@@ -1145,14 +1162,19 @@ func _apply_camera_limits() -> void:
 	var camera: Camera2D = player.get_node("Camera2D")
 	# Limits clamp the camera before its offset is applied, so compensate to keep the
 	# visible edges at the limits above.
-	camera.limit_left = CAMERA_LIMIT_LEFT - int(camera.offset.x)
-	camera.limit_right = CAMERA_LIMIT_RIGHT - int(camera.offset.x)
-	camera.limit_top = CAMERA_LIMIT_TOP - int(camera.offset.y)
-	camera.limit_bottom = CAMERA_LIMIT_BOTTOM - int(camera.offset.y)
+	camera.limit_left = camera_limits.position.x - int(camera.offset.x)
+	camera.limit_right = camera_limits.end.x - int(camera.offset.x)
+	camera.limit_top = camera_limits.position.y - int(camera.offset.y)
+	camera.limit_bottom = camera_limits.end.y - int(camera.offset.y)
 	camera.reset_smoothing()
 
 
+## The ReturnPortal leads into this hub's level: back to where a town portal was cast, otherwise to the
+## level's start.
 func _restore_town_return_destination() -> void:
+	return_portal.destination_scene = GameState.LEVEL_SCENE_PATHS[hub_level_id]
+	return_portal.destination_position = GameState.LEVEL_START_POSITION
+	return_portal.set_destination_name(GameState.LEVEL_NAMES[hub_level_id])
 	if not get_tree().has_meta(Player.TOWN_RETURN_SCENE_META):
 		return
 
@@ -1169,3 +1191,4 @@ func _restore_town_return_destination() -> void:
 
 	return_portal.destination_scene = scene_path
 	return_portal.destination_position = world_position
+	return_portal.set_destination_name(GameState.LEVEL_NAMES.get(GameState.get_level_id(scene_path), "the frontier"))

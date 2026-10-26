@@ -283,10 +283,17 @@ func _load_level(scene_path: String, level_name: String) -> void:
 		level_status.text = "Complete the earlier levels to unlock this area."
 		return
 
+	if not GameState.save_character(GameState.get_inventory(), GameState.get_equipment()):
+		level_status.text = "Could not save your character before setting out."
+		return
+
+	# Every region is entered from its hub, so that's where the journey starts.
 	get_tree().set_meta("selected_character", selected_character_class)
 	get_tree().set_meta("selected_character_id", selected_character_id)
-	var error := GameState.change_scene(scene_path)
+	get_tree().set_meta("portal_spawn_position", GameState.get_hub_arrival(level_id))
+	var error := GameState.change_scene(GameState.get_hub_scene(level_id))
 	if error != OK:
+		get_tree().remove_meta("portal_spawn_position")
 		push_error("Could not load %s: %s" % [level_name, error_string(error)])
 
 
