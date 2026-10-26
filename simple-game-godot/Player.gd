@@ -54,6 +54,13 @@ const MELEE_ENGAGE_RANGE := 54.0
 const RANGED_ENGAGE_RANGE := 340.0
 ## How far the mouse must travel after keyboard movement before attacks aim at the cursor again.
 const MOUSE_AIM_REACQUIRE := 24.0
+## Caps on passive stats that would otherwise make skills free or instant.
+const MAX_COOLDOWN_REDUCTION := 0.4
+const MAX_MANA_COST_REDUCTION := 0.6
+## Warrior skills that swing the sword, so they use the attack frames.
+const WARRIOR_SWING_SKILLS: Array[String] = ["heavy_strike", "shield_bash", "cleave", "execute", "whirlwind"]
+## Health below which Execute deals double damage.
+const EXECUTE_THRESHOLD := 0.35
 
 @export_enum("None", "Fireball", "Iceball", "Town Portal") var e_skill := "None"
 
@@ -102,6 +109,14 @@ var ranger_attack_cooldown_remaining := 0.0
 var ranger_walk_distance := 0.0
 var ranger_smoke_visual_time_remaining := 0.0
 var ranger_smoke_visual_radius := 0.0
+## Tumble and Phase Step: extra evasion for a short time.
+var evasion_buff_time_remaining := 0.0
+var evasion_buff_amount := 0.0
+var passive_health_regen_accumulator := 0.0
+var passive_mana_regen_accumulator := 0.0
+## Short-lived rings and bolts drawn at world positions by skills: {kind, from, to, radius, color,
+## time, duration}.
+var skill_effects: Array[Dictionary] = []
 var witch_familiar: WitchFamiliar
 var selected_character := "Warrior"
 var click_destination := Vector2.ZERO
@@ -213,7 +228,11 @@ func _physics_process(delta: float) -> void:
 			health_changed.emit(health, get_max_health())
 	elif iron_resolve_was_active:
 		iron_resolve_heal_accumulator = 0.0
+	evasion_buff_time_remaining = maxf(evasion_buff_time_remaining - delta, 0.0)
+	_update_passive_regen(delta)
+	_update_skill_effects(delta)
 	if war_cry_was_active or iron_resolve_was_active \
+			or not skill_effects.is_empty() \
 			or frost_nova_visual_time_remaining > 0.0 \
 			or shield_was_active or arcane_shield_time_remaining > 0.0 \
 			or warrior_aoe_visual_time_remaining > 0.0 \
@@ -600,6 +619,88 @@ func _update_ranger_skill_cooldowns(delta: float) -> void:
 			ranger_skill_cooldowns[skill_id] = remaining
 
 
+## The active class's passive stat totals (every stat in GameState.PASSIVE_STAT_DEFAULTS is present).
+func _get_passive_stats() -> Dictionary:
+	match selected_character:
+		"Witch":
+			return GameState.get_witch_passive_stat_totals()
+		"Ranger":
+			return GameState.get_ranger_passive_stat_totals()
+		_:
+			return GameState.get_warrior_passive_stat_totals()
+
+
+func _get_passive_stat(stat_name: String) -> float:
+	return float(_get_passive_stats().get(stat_name, 0.0))
+
+
+## A skill's cooldown at a rank: each rank past the first shaves `per_rank` seconds, then passive
+## cooldown reduction applies.
+func _get_skill_cooldown(definition: Dictionary, rank: int, per_rank: float) -> float:
+	var reduction := clampf(_get_passive_stat("cooldown_reduction"), 0.0, MAX_COOLDOWN_REDUCTION)
+	return maxf((float(definition["cooldown"]) - float(rank - 1) * per_rank) * (1.0 - reduction), 0.5)
+
+
+func _get_skill_mana_cost(base_cost: int) -> int:
+	var reduction := clampf(_get_passive_stat("mana_cost_reduction"), 0.0, MAX_MANA_COST_REDUCTION)
+	return maxi(roundi(float(base_cost) * (1.0 - reduction)), 0)
+
+
+## Passive health and mana regeneration, in whole points as they accumulate.
+func _update_passive_regen(delta: float) -> void:
+	var stats := _get_passive_stats()
+	var max_health := get_max_health()
+	if float(stats["health_regen"]) > 0.0 and health < max_health:
+		passive_health_regen_accumulator += float(stats["health_regen"]) * delta
+		var restored := int(passive_health_regen_accumulator)
+		if restored > 0:
+			passive_health_regen_accumulator -= restored
+			health = mini(health + restored, max_health)
+			health_changed.emit(health, max_health)
+	else:
+		passive_health_regen_accumulator = 0.0
+	var max_mana := get_max_mana()
+	if float(stats["mana_regen"]) > 0.0 and mana < max_mana:
+		passive_mana_regen_accumulator += float(stats["mana_regen"]) * delta
+		var restored := int(passive_mana_regen_accumulator)
+		if restored > 0:
+			passive_mana_regen_accumulator -= restored
+			mana = mini(mana + restored, max_mana)
+			mana_changed.emit(mana, max_mana)
+	else:
+		passive_mana_regen_accumulator = 0.0
+
+
+func _update_skill_effects(delta: float) -> void:
+	for index in range(skill_effects.size() - 1, -1, -1):
+		skill_effects[index]["time"] = float(skill_effects[index]["time"]) - delta
+		if float(skill_effects[index]["time"]) <= 0.0:
+			skill_effects.remove_at(index)
+
+
+## An expanding ring at a world position that fades over `duration`.
+func _add_ring_effect(world_center: Vector2, radius: float, color: Color, duration: float = 0.45) -> void:
+	skill_effects.append({
+		"kind": "ring", "from": world_center, "radius": radius, "color": color,
+		"time": duration, "duration": duration
+	})
+	queue_redraw()
+
+
+## A jagged bolt between two world positions that fades over `duration`.
+func _add_bolt_effect(from: Vector2, to: Vector2, color: Color, duration: float = 0.3) -> void:
+	skill_effects.append({
+		"kind": "bolt", "from": from, "to": to, "color": color,
+		"time": duration, "duration": duration
+	})
+	queue_redraw()
+
+
+func _start_evasion_buff(amount: float, duration: float) -> void:
+	evasion_buff_amount = maxf(amount, evasion_buff_amount if evasion_buff_time_remaining > 0.0 else 0.0)
+	evasion_buff_time_remaining = maxf(evasion_buff_time_remaining, duration)
+
+
 func get_warrior_skill_cooldown_ratio(skill_id: String) -> float:
 	var remaining := float(warrior_skill_cooldowns.get(skill_id, 0.0))
 	if remaining <= 0.0:
@@ -608,8 +709,7 @@ func get_warrior_skill_cooldown_ratio(skill_id: String) -> float:
 	if definition.is_empty():
 		return 0.0
 	var rank := GameState.get_warrior_skill_rank(skill_id)
-	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.3, 0.5)
-	return clampf(remaining / cooldown, 0.0, 1.0)
+	return clampf(remaining / _get_skill_cooldown(definition, rank, 0.3), 0.0, 1.0)
 
 
 func get_warrior_skill_tooltip(skill_id: String) -> String:
@@ -620,8 +720,8 @@ func get_warrior_skill_tooltip(skill_id: String) -> String:
 	return "%s\n%s\n%d mana  |  %.1f sec cooldown" % [
 		definition["name"],
 		definition["description"],
-		definition["mana_cost"],
-		maxf(float(definition["cooldown"]) - float(rank - 1) * 0.3, 0.5)
+		_get_skill_mana_cost(int(definition["mana_cost"])),
+		_get_skill_cooldown(definition, rank, 0.3)
 	]
 
 
@@ -633,8 +733,7 @@ func get_ranger_skill_cooldown_ratio(skill_id: String) -> float:
 	if definition.is_empty():
 		return 0.0
 	var rank := GameState.get_ranger_skill_rank(skill_id)
-	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.35, 0.5)
-	return clampf(remaining / cooldown, 0.0, 1.0)
+	return clampf(remaining / _get_skill_cooldown(definition, rank, 0.35), 0.0, 1.0)
 
 
 func get_ranger_skill_tooltip(skill_id: String) -> String:
@@ -645,8 +744,8 @@ func get_ranger_skill_tooltip(skill_id: String) -> String:
 	return "%s\n%s\n%d mana  |  %.1f sec cooldown" % [
 		definition["name"],
 		definition["description"],
-		_get_ranger_mana_cost(int(definition["mana_cost"])),
-		maxf(float(definition["cooldown"]) - float(rank - 1) * 0.35, 0.5)
+		_get_skill_mana_cost(int(definition["mana_cost"])),
+		_get_skill_cooldown(definition, rank, 0.35)
 	]
 
 
@@ -663,16 +762,13 @@ func _cast_assigned_ranger_skill(slot: String) -> bool:
 	var definition := GameState.get_ranger_skill_definition(skill_id)
 	if definition.is_empty():
 		return false
-	var mana_cost := _get_ranger_mana_cost(int(definition["mana_cost"]))
+	var mana_cost := _get_skill_mana_cost(int(definition["mana_cost"]))
 	if mana < mana_cost:
 		return true
 
 	mana -= mana_cost
 	mana_changed.emit(mana, get_max_mana())
-	ranger_skill_cooldowns[skill_id] = maxf(
-		float(definition["cooldown"]) - float(rank - 1) * 0.35,
-		0.5
-	)
+	ranger_skill_cooldowns[skill_id] = _get_skill_cooldown(definition, rank, 0.35)
 	match skill_id:
 		"power_shot":
 			_spawn_ranger_arrow(
@@ -707,6 +803,35 @@ func _cast_assigned_ranger_skill(slot: String) -> bool:
 			)
 		"smoke_bomb":
 			_cast_ranger_smoke_bomb(rank)
+		"hunters_mark":
+			_cast_ranger_hunters_mark(rank)
+		"deadeye":
+			_spawn_ranger_arrow(
+				aim_direction,
+				_get_ranger_hit_damage(8.0 + float(rank) * 3.0 + float(get_weapon_damage_bonus()) * 1.5, true),
+				4 + rank
+			)
+		"rain_of_arrows":
+			var arrow_count := 8 + (rank - 1) * 2
+			for arrow_index in arrow_count:
+				_spawn_ranger_arrow(
+					aim_direction.rotated(TAU * float(arrow_index) / float(arrow_count)),
+					_get_ranger_hit_damage(1.4 + float(rank) * 0.8 + float(get_weapon_damage_bonus()) * 0.5)
+				)
+		"barrage":
+			var damage := 1.8 + float(rank) * 0.7 + float(get_weapon_damage_bonus()) * 0.6
+			for arrow_index in 4 + rank:
+				get_tree().create_timer(0.09 * float(arrow_index)).timeout.connect(
+					_fire_barrage_arrow.bind(damage)
+				)
+		"snare_trap":
+			_cast_ranger_snare_trap(rank)
+		"tumble":
+			velocity = Vector2.ZERO
+			click_move_active = false
+			move_and_collide(aim_direction * (130.0 + float(rank - 1) * 15.0))
+			_start_evasion_buff(0.3, 1.5 + float(rank - 1) * 0.5)
+			_add_ring_effect(global_position, 44.0, Color(0.8, 0.9, 0.75, 0.8), 0.35)
 		_:
 			ranger_skill_cooldowns.erase(skill_id)
 			mana += mana_cost
@@ -736,7 +861,7 @@ func _spawn_ranger_arrow(
 		1.0 + float(passive_stats.get("accuracy", 0.0))
 	)
 	arrow.damage = arrow_damage
-	arrow.pierce_count = pierce_count
+	arrow.pierce_count = pierce_count + int(passive_stats.get("pierce", 0))
 	arrow.explosion_radius = explosion_radius
 	arrow.explosion_damage = explosion_damage
 	get_tree().current_scene.add_child(arrow)
@@ -760,19 +885,45 @@ func _cast_ranger_smoke_bomb(rank: int) -> void:
 	queue_redraw()
 
 
-func _get_ranger_mana_cost(base_cost: int) -> int:
-	var reduction := float(
-		GameState.get_ranger_passive_stat_totals().get("mana_cost_reduction", 0.0)
-	)
-	return maxi(roundi(float(base_cost) * (1.0 - clampf(reduction, 0.0, 0.6))), 0)
+func _cast_ranger_hunters_mark(rank: int) -> void:
+	var target_enemy := _find_nearest_enemy(480.0)
+	if target_enemy == null or not target_enemy.has_method("apply_curse"):
+		return
+	target_enemy.call("apply_curse", 6.0 + float(rank), 1.2 + float(rank) * 0.1)
+	_add_ring_effect(target_enemy.global_position, 34.0, Color(1.0, 0.4, 0.3, 0.9), 0.6)
 
 
-func _get_ranger_hit_damage(base_damage: float) -> float:
+## A snare springs where you aim, wounding and rooting (stunning) everything inside it.
+func _cast_ranger_snare_trap(rank: int) -> void:
+	var trap_multiplier := 1.0 + _get_passive_stat("trap_efficiency")
+	var center := global_position + aim_direction * 140.0
+	var radius := (80.0 + float(rank - 1) * 12.0) * trap_multiplier
+	var damage := _get_ranger_hit_damage(1.0 + float(rank) * 0.8 + float(get_weapon_damage_bonus()) * 0.5)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy is Node2D or not enemy.has_method("take_damage") \
+				or center.distance_to((enemy as Node2D).global_position) > radius:
+			continue
+		enemy.call("take_damage", damage)
+		if enemy.has_method("apply_stun"):
+			enemy.call("apply_stun", (1.0 + float(rank - 1) * 0.3) * trap_multiplier)
+	_add_ring_effect(center, radius, Color(0.72, 0.6, 0.36, 0.9), 0.6)
+
+
+func _fire_barrage_arrow(damage: float) -> void:
+	if health <= 0:
+		return
+	_spawn_ranger_arrow(aim_direction.rotated(randf_range(-0.05, 0.05)), _get_ranger_hit_damage(damage))
+	ranger_attack_animation_time_remaining = RANGER_ATTACK_DURATION
+
+
+## Arrow damage after passive skill damage and a critical strike roll (always a crit if `force_crit`).
+func _get_ranger_hit_damage(base_damage: float, force_crit: bool = false) -> float:
 	var stats := GameState.get_ranger_passive_stat_totals()
+	var damage := base_damage * (1.0 + float(stats.get("skill_damage_percent", 0.0)))
 	var crit_chance := clampf(0.05 + float(stats.get("critical_chance", 0.0)), 0.0, 0.75)
-	if randf() < crit_chance:
-		return base_damage * (1.5 + float(stats.get("critical_damage", 0.0)))
-	return base_damage
+	if force_crit or randf() < crit_chance:
+		return damage * (1.5 + float(stats.get("critical_damage", 0.0)))
+	return damage
 
 
 func _cast_assigned_warrior_skill(slot: String) -> bool:
@@ -788,14 +939,13 @@ func _cast_assigned_warrior_skill(slot: String) -> bool:
 	var definition := GameState.get_warrior_skill_definition(skill_id)
 	if definition.is_empty():
 		return false
-	var mana_cost := int(definition["mana_cost"])
+	var mana_cost := _get_skill_mana_cost(int(definition["mana_cost"]))
 	if mana < mana_cost:
 		return true
 
 	mana -= mana_cost
 	mana_changed.emit(mana, get_max_mana())
-	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.3, 0.5)
-	warrior_skill_cooldowns[skill_id] = cooldown
+	warrior_skill_cooldowns[skill_id] = _get_skill_cooldown(definition, rank, 0.3)
 	match skill_id:
 		"heavy_strike":
 			_warrior_heavy_strike(rank)
@@ -806,11 +956,22 @@ func _cast_assigned_warrior_skill(slot: String) -> bool:
 		"leap_slam":
 			_warrior_leap_slam(rank)
 		"war_cry":
-			war_cry_time_remaining = 8.0 + float(rank - 1) * 2.0
+			war_cry_time_remaining = _get_warrior_buff_duration(8.0 + float(rank - 1) * 2.0)
 			queue_redraw()
 		"iron_resolve":
-			iron_resolve_time_remaining = 8.0 + float(rank - 1) * 2.0
+			iron_resolve_time_remaining = _get_warrior_buff_duration(8.0 + float(rank - 1) * 2.0)
 			queue_redraw()
+		"execute":
+			_warrior_execute(rank)
+		"whirlwind":
+			_warrior_whirlwind(rank)
+		"earthquake":
+			_warrior_earthquake(rank)
+		"second_wind":
+			var max_health := get_max_health()
+			health = mini(health + roundi(float(max_health) * (0.2 + float(rank - 1) * 0.05)), max_health)
+			health_changed.emit(health, max_health)
+			_add_ring_effect(global_position, 60.0, Color(0.7, 1.0, 0.6, 0.9), 0.5)
 		_:
 			warrior_skill_cooldowns.erase(skill_id)
 			mana += mana_cost
@@ -820,9 +981,26 @@ func _cast_assigned_warrior_skill(slot: String) -> bool:
 	return true
 
 
+## Warrior skill damage with passive skill damage applied.
+func _get_warrior_skill_damage(base_damage: float) -> float:
+	return base_damage * (1.0 + _get_passive_stat("skill_damage_percent"))
+
+
+func _get_warrior_area(radius: float) -> float:
+	return radius * (1.0 + _get_passive_stat("area_of_effect"))
+
+
+func _get_warrior_stun(duration: float) -> float:
+	return duration * (1.0 + _get_passive_stat("stun_duration"))
+
+
+func _get_warrior_buff_duration(duration: float) -> float:
+	return duration * (1.0 + _get_passive_stat("buff_duration"))
+
+
 func _warrior_heavy_strike(rank: int) -> void:
 	_damage_enemies_in_front(
-		2.0 + float(rank) * 0.65 + float(get_weapon_damage_bonus()),
+		_get_warrior_skill_damage(2.0 + float(rank) * 0.65 + float(get_weapon_damage_bonus())),
 		78.0,
 		0.35
 	)
@@ -832,16 +1010,71 @@ func _warrior_shield_bash(rank: int) -> void:
 	var target := _get_facing_enemy(94.0, 0.15)
 	if target == null:
 		return
-	target.call("take_damage", 1.6 + float(rank) * 0.55 + float(get_weapon_damage_bonus()))
+	target.call(
+		"take_damage",
+		_get_warrior_skill_damage(1.6 + float(rank) * 0.55 + float(get_weapon_damage_bonus()))
+	)
 	if target.has_method("apply_stun"):
-		target.call("apply_stun", 0.55 + float(rank - 1) * 0.2)
+		target.call("apply_stun", _get_warrior_stun(0.55 + float(rank - 1) * 0.2))
+
+
+func _warrior_execute(rank: int) -> void:
+	var target := _get_facing_enemy(90.0, 0.2) as Wolf
+	if target == null:
+		return
+	var damage := _get_warrior_skill_damage(3.0 + float(rank) * 0.9 + float(get_weapon_damage_bonus()))
+	if target.health <= target.max_health * EXECUTE_THRESHOLD:
+		damage *= 2.0
+	target.take_damage(damage * _get_war_cry_attack_multiplier())
+	HitFeedback.hit_stop(get_tree(), HitFeedback.HEAVY_HIT_STOP)
 
 
 func _warrior_cleave(rank: int) -> void:
-	var radius := 94.0 + float(rank - 1) * 14.0
-	var damage := 0.75 + float(rank) * 0.45 + float(get_weapon_damage_bonus())
+	var radius := _get_warrior_area(94.0 + float(rank - 1) * 14.0)
+	var damage := _get_warrior_skill_damage(0.75 + float(rank) * 0.45 + float(get_weapon_damage_bonus()))
 	_damage_enemies_in_radius(radius, damage, true)
 	_show_warrior_aoe(radius)
+
+
+## Two full-circle pulses a quarter second apart.
+func _warrior_whirlwind(rank: int) -> void:
+	var radius := _get_warrior_area(100.0 + float(rank - 1) * 10.0)
+	var damage := _get_warrior_skill_damage(0.9 + float(rank) * 0.4 + float(get_weapon_damage_bonus()))
+	_damage_enemies_in_radius(radius, damage, false)
+	_show_warrior_aoe(radius)
+	get_tree().create_timer(0.25).timeout.connect(_warrior_whirlwind_pulse.bind(radius, damage))
+
+
+func _warrior_whirlwind_pulse(radius: float, damage: float) -> void:
+	if health <= 0:
+		return
+	_damage_enemies_in_radius(radius, damage, false)
+	_show_warrior_aoe(radius)
+
+
+## A stunning slam, then a wider aftershock for three quarters of the damage.
+func _warrior_earthquake(rank: int) -> void:
+	var radius := _get_warrior_area(130.0 + float(rank - 1) * 15.0)
+	var damage := _get_warrior_skill_damage(1.6 + float(rank) * 0.7 + float(get_weapon_damage_bonus()))
+	_damage_enemies_in_radius(radius, damage, false)
+	_stun_enemies_in_radius(global_position, radius, _get_warrior_stun(0.5 + float(rank - 1) * 0.15))
+	_show_warrior_aoe(radius)
+	_add_ring_effect(global_position, radius, Color(0.78, 0.55, 0.3, 0.9), 0.6)
+	get_tree().create_timer(0.6).timeout.connect(_warrior_aftershock.bind(radius * 1.25, damage * 0.75))
+
+
+func _warrior_aftershock(radius: float, damage: float) -> void:
+	if health <= 0:
+		return
+	_damage_enemies_in_radius(radius, damage, false)
+	_add_ring_effect(global_position, radius, Color(0.78, 0.55, 0.3, 0.75), 0.5)
+
+
+func _stun_enemies_in_radius(center: Vector2, radius: float, duration: float) -> void:
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy is Node2D and center.distance_to((enemy as Node2D).global_position) <= radius \
+				and enemy.has_method("apply_stun"):
+			enemy.call("apply_stun", duration)
 
 
 func _warrior_leap_slam(rank: int) -> void:
@@ -862,16 +1095,13 @@ func _warrior_leap_slam(rank: int) -> void:
 	var leap_distance := mini(roundi(nearest_distance - 58.0), 150) if nearest_enemy != null else 110
 	if leap_distance > 0:
 		move_and_collide(leap_direction * float(leap_distance))
-	var radius := 104.0 + float(rank - 1) * 14.0
+	var radius := _get_warrior_area(104.0 + float(rank - 1) * 14.0)
 	_damage_enemies_in_radius(
 		radius,
-		1.4 + float(rank) * 0.65 + float(get_weapon_damage_bonus()),
+		_get_warrior_skill_damage(1.4 + float(rank) * 0.65 + float(get_weapon_damage_bonus())),
 		false
 	)
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy is Node2D and global_position.distance_to((enemy as Node2D).global_position) <= radius \
-				and enemy.has_method("apply_stun"):
-			enemy.call("apply_stun", 0.35 + float(rank - 1) * 0.15)
+	_stun_enemies_in_radius(global_position, radius, _get_warrior_stun(0.35 + float(rank - 1) * 0.15))
 	_show_warrior_aoe(radius)
 
 
@@ -880,7 +1110,7 @@ func _start_warrior_skill_animation(skill_id: String) -> void:
 	warrior_skill_animation_time_remaining = 0.58
 	queue_redraw()
 
-	if skill_id in ["heavy_strike", "shield_bash", "cleave"]:
+	if skill_id in WARRIOR_SWING_SKILLS:
 		attack_time_remaining = 0.38
 		attack_hit_applied = true
 
@@ -908,8 +1138,16 @@ func _start_warrior_skill_animation(skill_id: String) -> void:
 			tint = Color("#ffe08a")
 		"war_cry":
 			tint = Color("#ffc95a")
-		"iron_resolve":
+		"iron_resolve", "second_wind":
 			tint = Color("#c2edab")
+		"execute":
+			strike_offset += aim_direction * 6.0
+			tint = Color("#ff9a8a")
+		"whirlwind":
+			tint = Color("#ffd08a")
+		"earthquake":
+			start_offset += Vector2(0.0, -8.0)
+			tint = Color("#e0b07a")
 
 	warrior_skill_animation_tween = create_tween()
 	warrior_skill_animation_tween.tween_property(sprite, "position", start_offset, 0.08) \
@@ -1004,8 +1242,7 @@ func get_witch_skill_cooldown_ratio(skill_id: String) -> float:
 	if definition.is_empty():
 		return 0.0
 	var rank := GameState.get_witch_skill_rank(skill_id)
-	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.12, 0.5)
-	return clampf(remaining / cooldown, 0.0, 1.0)
+	return clampf(remaining / _get_skill_cooldown(definition, rank, 0.12), 0.0, 1.0)
 
 
 func get_witch_skill_tooltip(skill_id: String) -> String:
@@ -1025,20 +1262,42 @@ func get_witch_skill_tooltip(skill_id: String) -> String:
 			return "Frost Nova\nDamage: %.2f per enemy\nAlso stuns nearby enemies" % [(1.5 + float(rank) * 0.75 + damage_bonus) * spell_mult]
 		"summon_wisp":
 			return "Summon Wisp\nDamage: %.1f per bolt\nWisp duration: %.0f sec" % [
-				(1.0 + float(rank)) * spell_mult,
+				(1.0 + float(rank)) * _get_minion_damage_multiplier(),
 				9.0 + float(rank - 1) * 3.0
+			]
+		"chain_lightning":
+			return "Chain Lightning\nDamage: %.1f, jumping to %d more enemies" % [
+				(1.6 + float(rank) * 0.8 + damage_bonus) * spell_mult,
+				2 + rank
+			]
+		"meteor":
+			return "Meteor\nDamage: %.1f in an area\nAlso stuns enemies it lands on" % [
+				(4.0 + float(rank) * 1.6 + damage_bonus) * spell_mult
+			]
+		"wisp_swarm":
+			return "Wisp Swarm\n%d wisps for %.0f sec\nDamage: %.1f per bolt" % [
+				1 + rank,
+				6.0 + float(rank),
+				(0.8 + float(rank) * 0.6) * _get_minion_damage_multiplier()
+			]
+		"phase_step":
+			return "Phase Step\nBlink %.0f units and evade %d%% of attacks for %.1f sec" % [
+				150.0 + float(rank - 1) * 20.0,
+				40,
+				_get_witch_shield_duration(1.0 + float(rank) * 0.25)
 			]
 		"soul_siphon":
 			return "Soul Siphon\nDamage: %.1f\nRestores health and mana" % [(2.0 + float(rank) * 1.5 + damage_bonus) * spell_mult]
 		"arcane_shield":
 			return "Arcane Shield\nNo direct damage\nReduces incoming damage by %d%% for %.1f sec" % [
 				roundi((0.5 + float(rank - 1) * 0.1) * 100.0),
-				4.0 + float(rank - 1) * 1.5
+				_get_witch_shield_duration(4.0 + float(rank - 1) * 1.5)
 			]
 		"curse":
+			var curse_effect := 1.0 + _get_passive_stat("curse_effect")
 			return "Curse\nNo direct damage\nTarget takes %d%% more damage for %.1f sec" % [
-				roundi((0.3 + float(rank - 1) * 0.15) * 100.0),
-				5.0 + float(rank - 1)
+				roundi((0.3 + float(rank - 1) * 0.15) * curse_effect * 100.0),
+				(5.0 + float(rank - 1)) * curse_effect
 			]
 	return str(definition.get("description", ""))
 
@@ -1052,14 +1311,13 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 	var definition := GameState.get_witch_skill_definition(skill_id)
 	if definition.is_empty():
 		return false
-	var mana_cost := int(definition["mana_cost"])
+	var mana_cost := _get_skill_mana_cost(int(definition["mana_cost"]))
 	if mana < mana_cost:
 		return true
 
 	mana -= mana_cost
 	mana_changed.emit(mana, get_max_mana())
-	var cooldown := maxf(float(definition["cooldown"]) - float(rank - 1) * 0.12, 0.5)
-	witch_skill_cooldowns[skill_id] = cooldown
+	witch_skill_cooldowns[skill_id] = _get_skill_cooldown(definition, rank, 0.12)
 	match skill_id:
 		"firebolt":
 			_cast_witch_firebolt(rank)
@@ -1070,11 +1328,25 @@ func _cast_assigned_witch_skill(slot: String) -> bool:
 		"soul_siphon":
 			_cast_witch_soul_siphon(rank)
 		"arcane_shield":
-			arcane_shield_time_remaining = 4.0 + float(rank - 1) * 1.5
+			arcane_shield_time_remaining = _get_witch_shield_duration(4.0 + float(rank - 1) * 1.5)
 			arcane_shield_damage_reduction = 0.5 + float(rank - 1) * 0.1
 			witch_attack_time_remaining = WITCH_ATTACK_DURATION
 		"curse":
 			_cast_witch_curse(rank)
+		"chain_lightning":
+			_cast_witch_chain_lightning(rank)
+		"meteor":
+			_cast_witch_meteor(rank)
+		"wisp_swarm":
+			_cast_witch_wisp_swarm(rank)
+		"phase_step":
+			velocity = Vector2.ZERO
+			click_move_active = false
+			_add_ring_effect(global_position, 40.0, Color(0.72, 0.5, 1.0, 0.85), 0.4)
+			move_and_collide(aim_direction * (150.0 + float(rank - 1) * 20.0))
+			_add_ring_effect(global_position, 40.0, Color(0.72, 0.5, 1.0, 0.85), 0.4)
+			_start_evasion_buff(0.4, _get_witch_shield_duration(1.0 + float(rank) * 0.25))
+			witch_attack_time_remaining = WITCH_ATTACK_DURATION
 		_:
 			witch_skill_cooldowns.erase(skill_id)
 			mana += mana_cost
@@ -1110,7 +1382,7 @@ func _cast_witch_summon_wisp(rank: int) -> void:
 			witch_familiar.duration_remaining,
 			9.0 + float(rank - 1) * 3.0
 		)
-		witch_familiar.damage = (1.0 + float(rank)) * get_spell_damage_multiplier()
+		witch_familiar.damage = (1.0 + float(rank)) * _get_minion_damage_multiplier()
 		return
 
 	witch_familiar = WITCH_FAMILIAR_SCENE.instantiate() as WitchFamiliar
@@ -1119,9 +1391,90 @@ func _cast_witch_summon_wisp(rank: int) -> void:
 		return
 	witch_familiar.owner_player = self
 	witch_familiar.duration = 9.0 + float(rank - 1) * 3.0
-	witch_familiar.damage = (1.0 + float(rank)) * get_spell_damage_multiplier()
+	witch_familiar.damage = (1.0 + float(rank)) * _get_minion_damage_multiplier()
 	get_tree().current_scene.add_child(witch_familiar)
 	witch_familiar.global_position = global_position + Vector2(32.0, -28.0)
+
+
+## Wisp damage scales with both spell damage and passive wisp (minion) damage.
+func _get_minion_damage_multiplier() -> float:
+	return get_spell_damage_multiplier() * (1.0 + _get_passive_stat("minion_damage"))
+
+
+func _get_witch_shield_duration(duration: float) -> float:
+	return duration * (1.0 + _get_passive_stat("shield_duration"))
+
+
+## Extra wisps, separate from Summon Wisp's, spaced around their orbit and gone after a few seconds.
+func _cast_witch_wisp_swarm(rank: int) -> void:
+	var wisp_count := 1 + rank
+	for wisp_index in wisp_count:
+		var wisp := WITCH_FAMILIAR_SCENE.instantiate() as WitchFamiliar
+		if wisp == null:
+			push_error("The Witch familiar scene root must use the WitchFamiliar script.")
+			return
+		wisp.owner_player = self
+		wisp.duration = 6.0 + float(rank)
+		wisp.damage = (0.8 + float(rank) * 0.6) * _get_minion_damage_multiplier()
+		wisp.animation_time = TAU * float(wisp_index) / float(wisp_count) / 2.2
+		wisp.attack_timer = 0.3 * float(wisp_index)
+		get_tree().current_scene.add_child(wisp)
+		wisp.global_position = global_position
+	witch_attack_time_remaining = WITCH_ATTACK_DURATION
+
+
+## Strikes the nearest enemy, then jumps to the nearest enemy not yet hit, losing 10% per jump.
+func _cast_witch_chain_lightning(rank: int) -> void:
+	var target := _find_nearest_enemy(380.0)
+	if target == null:
+		return
+	var damage := (1.6 + float(rank) * 0.8 + get_weapon_damage_bonus()) * get_spell_damage_multiplier()
+	var hit_ids := {}
+	var from := global_position
+	for jump_index in 3 + rank:
+		hit_ids[target.get_instance_id()] = true
+		_add_bolt_effect(from, target.global_position, Color(0.7, 0.85, 1.0, 1.0))
+		from = target.global_position
+		target.call("take_damage", damage)
+		damage *= 0.9
+		var next_target: Node2D
+		var next_distance := 200.0
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if not enemy is Node2D or not enemy.has_method("take_damage") \
+					or hit_ids.has(enemy.get_instance_id()):
+				continue
+			var distance := from.distance_to((enemy as Node2D).global_position)
+			if distance < next_distance:
+				next_target = enemy as Node2D
+				next_distance = distance
+		if next_target == null:
+			break
+		target = next_target
+	witch_attack_time_remaining = WITCH_ATTACK_DURATION
+
+
+## Marks where the meteor will land (the nearest enemy, or ahead of you), then strikes 0.7 sec later.
+func _cast_witch_meteor(rank: int) -> void:
+	var target := _find_nearest_enemy(420.0)
+	var impact := target.global_position if target != null else global_position + aim_direction * 200.0
+	var radius := 90.0 + float(rank - 1) * 12.0
+	var damage := (4.0 + float(rank) * 1.6 + get_weapon_damage_bonus()) * get_spell_damage_multiplier()
+	_add_ring_effect(impact, radius, Color(1.0, 0.55, 0.2, 0.5), 0.7)
+	get_tree().create_timer(0.7).timeout.connect(_witch_meteor_impact.bind(impact, radius, damage))
+	witch_attack_time_remaining = WITCH_ATTACK_DURATION
+
+
+func _witch_meteor_impact(impact: Vector2, radius: float, damage: float) -> void:
+	if health <= 0:
+		return
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy is Node2D or not enemy.has_method("take_damage") \
+				or impact.distance_to((enemy as Node2D).global_position) > radius:
+			continue
+		enemy.call("take_damage", damage)
+	_stun_enemies_in_radius(impact, radius, 0.4)
+	_add_ring_effect(impact, radius, Color(1.0, 0.45, 0.15, 1.0), 0.5)
+	HitFeedback.hit_stop(get_tree(), HitFeedback.HEAVY_HIT_STOP)
 
 
 func _cast_witch_soul_siphon(rank: int) -> void:
@@ -1138,7 +1491,12 @@ func _cast_witch_soul_siphon(rank: int) -> void:
 func _cast_witch_curse(rank: int) -> void:
 	var target_enemy := _find_nearest_enemy(440.0)
 	if target_enemy != null and target_enemy.has_method("apply_curse"):
-		target_enemy.call("apply_curse", 5.0 + float(rank - 1), 1.3 + float(rank - 1) * 0.15)
+		var curse_effect := 1.0 + _get_passive_stat("curse_effect")
+		target_enemy.call(
+			"apply_curse",
+			(5.0 + float(rank - 1)) * curse_effect,
+			1.0 + (0.3 + float(rank - 1) * 0.15) * curse_effect
+		)
 
 
 func _find_nearest_enemy(max_distance: float) -> Node2D:
@@ -1449,42 +1807,18 @@ func _get_equipment_item_score(item: ItemData) -> int:
 
 
 func get_max_health() -> int:
-	var total: int = MAX_HEALTH
-	if selected_character == "Witch":
-		var passive_stats := GameState.get_witch_passive_stat_totals()
-		total += int(passive_stats.get("max_health", 0))
-	elif selected_character == "Warrior":
-		var passive_stats := GameState.get_warrior_passive_stat_totals()
-		total += int(passive_stats.get("max_health", 0))
-	elif selected_character == "Ranger":
-		var passive_stats := GameState.get_ranger_passive_stat_totals()
-		total += int(passive_stats.get("max_health", 0))
-	return total
+	return MAX_HEALTH + int(_get_passive_stats().get("max_health", 0))
 
 
 func get_max_mana() -> int:
-	var total: int = MAX_MANA
-	if selected_character == "Witch":
-		var passive_stats := GameState.get_witch_passive_stat_totals()
-		total += int(passive_stats.get("max_mana", 0))
-	elif selected_character == "Warrior":
-		var passive_stats := GameState.get_warrior_passive_stat_totals()
-		total += int(passive_stats.get("max_mana", 0))
-	elif selected_character == "Ranger":
-		var passive_stats := GameState.get_ranger_passive_stat_totals()
-		total += int(passive_stats.get("max_mana", 0))
-	return total
+	return MAX_MANA + int(_get_passive_stats().get("max_mana", 0))
 
 
 func get_evasion() -> float:
-	var passive_stats: Dictionary
-	if selected_character == "Witch":
-		passive_stats = GameState.get_witch_passive_stat_totals()
-	elif selected_character == "Ranger":
-		passive_stats = GameState.get_ranger_passive_stat_totals()
-	else:
-		return 0.0
-	return clampf(float(passive_stats.get("evasion", 0.0)), 0.0, 0.75)
+	var evasion := _get_passive_stat("evasion")
+	if evasion_buff_time_remaining > 0.0:
+		evasion += evasion_buff_amount
+	return clampf(evasion, 0.0, 0.75)
 
 
 func get_spell_damage_multiplier() -> float:
@@ -1495,21 +1829,11 @@ func get_spell_damage_multiplier() -> float:
 
 
 func get_passive_damage_reduction_percent() -> float:
-	var passive_stats: Dictionary
-	if selected_character == "Witch":
-		passive_stats = GameState.get_witch_passive_stat_totals()
-	elif selected_character == "Warrior":
-		passive_stats = GameState.get_warrior_passive_stat_totals()
-	else:
-		return 0.0
-	return clampf(float(passive_stats.get("damage_reduction_percent", 0.0)), 0.0, 0.8)
+	return clampf(_get_passive_stat("damage_reduction_percent"), 0.0, 0.8)
 
 
 func _get_movement_speed_multiplier() -> float:
-	if selected_character != "Ranger":
-		return 1.0
-	var passive_stats := GameState.get_ranger_passive_stat_totals()
-	return 1.0 + float(passive_stats.get("movement_speed", 0.0))
+	return 1.0 + _get_passive_stat("movement_speed")
 
 
 func refresh_passives_and_vitals() -> void:
@@ -1684,11 +2008,8 @@ func _update_sprite(is_moving: bool) -> void:
 			row = 1
 		var warrior_frame := 1
 		if attack_time_remaining > 0.0:
-			var attack_duration := 0.38 if warrior_skill_animation_id in [
-				"heavy_strike",
-				"shield_bash",
-				"cleave"
-			] else ATTACK_DURATION
+			var attack_duration := 0.38 if warrior_skill_animation_id in WARRIOR_SWING_SKILLS \
+				else ATTACK_DURATION
 			var attack_progress := clampf(
 				1.0 - attack_time_remaining / attack_duration,
 				0.0,
@@ -1727,11 +2048,7 @@ func _update_sword(delta: float) -> void:
 	sword.position = aim_direction * 8.0
 	if attack_time_remaining > 0.0:
 		attack_time_remaining = maxf(attack_time_remaining - delta, 0.0)
-		var special_swing := warrior_skill_animation_id in [
-			"heavy_strike",
-			"shield_bash",
-			"cleave"
-		]
+		var special_swing := warrior_skill_animation_id in WARRIOR_SWING_SKILLS
 		var swing_duration := 0.38 if special_swing else ATTACK_DURATION
 		var swing_arc := ATTACK_ARC
 		match warrior_skill_animation_id:
@@ -1741,6 +2058,10 @@ func _update_sword(delta: float) -> void:
 				swing_arc = 0.62
 			"cleave":
 				swing_arc = 2.8
+			"execute":
+				swing_arc = 1.2
+			"whirlwind":
+				swing_arc = PI
 		var progress := 1.0 - attack_time_remaining / swing_duration
 		sword.rotation = aim_direction.angle() + lerpf(-swing_arc, swing_arc, progress)
 		match warrior_skill_animation_id:
@@ -1748,8 +2069,10 @@ func _update_sword(delta: float) -> void:
 				sword.modulate = Color("#ffe4a0")
 			"shield_bash":
 				sword.modulate = Color("#9de8ff")
-			"cleave":
+			"cleave", "whirlwind":
 				sword.modulate = Color("#ffd08a")
+			"execute":
+				sword.modulate = Color("#ff9a8a")
 			_:
 				sword.modulate = Color.WHITE
 		if selected_character == "Witch":
@@ -1787,6 +2110,7 @@ func _get_primary_attack_damage() -> float:
 
 
 func _draw() -> void:
+	_draw_skill_effects()
 	if warrior_skill_animation_time_remaining > 0.0:
 		_draw_warrior_skill_animation()
 	if warrior_aoe_visual_time_remaining > 0.0:
@@ -1823,6 +2147,26 @@ func _draw() -> void:
 				ranger_smoke_visual_radius * 0.24,
 				Color(0.68, 0.73, 0.72, smoke_alpha)
 			)
+
+
+func _draw_skill_effects() -> void:
+	for effect in skill_effects:
+		var progress := 1.0 - float(effect["time"]) / float(effect["duration"])
+		var color: Color = effect["color"]
+		color.a *= 1.0 - progress
+		var from := to_local(effect["from"])
+		if effect["kind"] == "ring":
+			var radius := float(effect["radius"])
+			draw_arc(from, lerpf(radius * 0.35, radius, minf(progress * 1.6, 1.0)), 0.0, TAU, 48, color, 4.0)
+		else:
+			var to := to_local(effect["to"])
+			var normal := (to - from).orthogonal().normalized()
+			var points := PackedVector2Array([from])
+			for step in range(1, 6):
+				var jitter := normal * (8.0 if step % 2 == 0 else -8.0)
+				points.append(from.lerp(to, float(step) / 6.0) + jitter)
+			points.append(to)
+			draw_polyline(points, color, 3.0)
 
 
 func _draw_warrior_skill_animation() -> void:
@@ -1869,7 +2213,26 @@ func _draw_warrior_skill_animation() -> void:
 				Color(1.0, 0.62, 0.28, alpha),
 				6.0
 			)
-		"leap_slam":
+		"execute":
+			draw_line(
+				aim_direction * 20.0 + aim_direction.orthogonal() * 22.0,
+				aim_direction * lerpf(30.0, 80.0, progress) - aim_direction.orthogonal() * 22.0,
+				Color(1.0, 0.45, 0.38, alpha),
+				6.0
+			)
+		"whirlwind":
+			for sweep_index in range(3):
+				var sweep_angle := facing_angle + progress * TAU * 1.5 + float(sweep_index) * TAU / 3.0
+				draw_arc(
+					Vector2.ZERO,
+					lerpf(40.0, warrior_aoe_visual_radius, 0.7),
+					sweep_angle,
+					sweep_angle + 1.2,
+					24,
+					Color(1.0, 0.7, 0.35, alpha),
+					5.0
+				)
+		"leap_slam", "earthquake":
 			draw_arc(
 				Vector2.ZERO,
 				lerpf(18.0, warrior_aoe_visual_radius, progress),
@@ -1891,7 +2254,7 @@ func _draw_warrior_skill_animation() -> void:
 					Color(1.0, 0.73, 0.27, alpha * (1.0 - float(wave_index) * 0.2)),
 					3.0
 				)
-		"iron_resolve":
+		"iron_resolve", "second_wind":
 			var guard_radius := lerpf(30.0, 56.0, progress)
 			draw_arc(
 				Vector2.ZERO,

@@ -488,6 +488,7 @@ func _build_passives_tab(parent: Control) -> void:
 	# Passive Stats Summary Bar
 	stats_summary_label = Label.new()
 	stats_summary_label.custom_minimum_size.y = 22.0
+	stats_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	stats_summary_label.add_theme_font_size_override("font_size", 13)
 	stats_summary_label.add_theme_color_override("font_color", Color("#a9c08a"))
 	passives_container.add_child(stats_summary_label)
@@ -817,12 +818,19 @@ func _refresh_passive_summary() -> void:
 	var bonus_hp: int = totals.get("max_health", 0)
 	var bonus_mp: int = totals.get("max_mana", 0)
 
-	stats_summary_label.text = "Allocated Stats:  Spell Damage +%d%%  |  Evasion +%d%%  |  Damage Reduction -%d%%  |  Health +%d  |  Mana +%d" % [
+	stats_summary_label.text = "Allocated Stats:  Spell Damage +%d%%  |  Evasion +%d%%  |  Damage Reduction -%d%%  |  Health +%d  |  Mana +%d  |  Regen %.1f HP / %.1f MP per sec  |  Cooldowns -%d%%  |  Mana Costs -%d%%  |  Wisp Damage +%d%%  |  Curse Effect +%d%%  |  Ward Duration +%d%%" % [
 		spell_pct,
 		evasion_pct,
 		red_pct,
 		bonus_hp,
-		bonus_mp
+		bonus_mp,
+		float(totals.get("health_regen", 0.0)),
+		float(totals.get("mana_regen", 0.0)),
+		roundi(float(totals.get("cooldown_reduction", 0.0)) * 100.0),
+		roundi(float(totals.get("mana_cost_reduction", 0.0)) * 100.0),
+		roundi(float(totals.get("minion_damage", 0.0)) * 100.0),
+		roundi(float(totals.get("curse_effect", 0.0)) * 100.0),
+		roundi(float(totals.get("shield_duration", 0.0)) * 100.0)
 	]
 
 
@@ -861,7 +869,10 @@ func _refresh_passive_details() -> void:
 		unlock_passive_button.text = "Allocate Passive (%d Point(s))" % int(def.get("point_cost", 1))
 		unlock_passive_button.disabled = false
 	else:
-		unlock_passive_button.text = "Locked (Requires Level, Prerequisites, & 1 Point)"
+		unlock_passive_button.text = "Locked (Requires Level %d, Prerequisites, & %d Point(s))" % [
+			int(def.get("required_level", 1)),
+			int(def.get("point_cost", 1))
+		]
 		unlock_passive_button.disabled = true
 
 

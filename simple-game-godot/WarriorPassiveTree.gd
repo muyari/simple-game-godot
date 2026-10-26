@@ -3,7 +3,9 @@ class_name WarriorPassiveTree
 
 signal skill_tree_requested
 
-const WARRIOR_PASSIVE_BRANCHES: Array[String] = ["All", "Tank", "Bruiser", "Slayer"]
+const WARRIOR_PASSIVE_BRANCHES: Array[String] = [
+	"All", "Tank", "Slayer", "Bruiser", "Commander", "Battlemaster"
+]
 
 
 func _ready() -> void:
@@ -55,10 +57,19 @@ func _get_points_text() -> String:
 
 func _refresh_passive_summary() -> void:
 	var totals := _get_passive_stat_totals()
-	stats_summary_label.text = "Allocated Stats:  Health +%d  |  Armor +%d  |  Weapon Damage +%d  |  Damage Reduction -%d%%  |  Stamina +%d" % [
+	stats_summary_label.text = "Allocated Stats:  Health +%d  |  Armor +%d  |  Weapon Damage +%d  |  Skill Damage +%d%%  |  Damage Reduction -%d%%  |  Stamina +%d  |  Regen %.1f HP / %.1f MP per sec  |  Cooldowns -%d%%  |  Mana Costs -%d%%  |  Buffs +%d%%  |  Stuns +%d%%  |  Area +%d%%  |  Speed +%d%%" % [
 		int(totals.get("max_health", 0)),
 		int(totals.get("armor", 0)),
 		int(totals.get("weapon_damage_bonus", 0)),
+		roundi(float(totals.get("skill_damage_percent", 0.0)) * 100.0),
 		roundi(float(totals.get("damage_reduction_percent", 0.0)) * 100.0),
-		int(totals.get("max_mana", 0))
+		int(totals.get("max_mana", 0)),
+		float(totals.get("health_regen", 0.0)),
+		float(totals.get("mana_regen", 0.0)),
+		roundi(float(totals.get("cooldown_reduction", 0.0)) * 100.0),
+		roundi(float(totals.get("mana_cost_reduction", 0.0)) * 100.0),
+		roundi(float(totals.get("buff_duration", 0.0)) * 100.0),
+		roundi(float(totals.get("stun_duration", 0.0)) * 100.0),
+		roundi(float(totals.get("area_of_effect", 0.0)) * 100.0),
+		roundi(float(totals.get("movement_speed", 0.0)) * 100.0)
 	]

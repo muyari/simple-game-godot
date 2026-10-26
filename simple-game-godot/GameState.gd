@@ -74,7 +74,11 @@ const WITCH_SKILL_ORDER = [
 	"summon_wisp",
 	"soul_siphon",
 	"arcane_shield",
-	"curse"
+	"curse",
+	"chain_lightning",
+	"meteor",
+	"wisp_swarm",
+	"phase_step"
 ]
 const WITCH_SKILL_TREE = {
 	"firebolt": {
@@ -154,16 +158,72 @@ const WITCH_SKILL_TREE = {
 		"prerequisites": [],
 		"mana_cost": 18,
 		"cooldown": 12.0
+	},
+	"chain_lightning": {
+		"name": "Chain Lightning",
+		"short_label": "CHAIN",
+		"icon_path": "res://textures/skills/chain_lightning.svg",
+		"branch": "Elemental",
+		"description": "Arc lightning into the nearest foe that leaps to more enemies with each rank.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 6,
+		"prerequisites": ["firebolt"],
+		"mana_cost": 22,
+		"cooldown": 4.0
+	},
+	"meteor": {
+		"name": "Meteor",
+		"short_label": "METEOR",
+		"icon_path": "res://textures/skills/meteor.svg",
+		"branch": "Elemental",
+		"description": "Call down a meteor on the nearest foe, crushing and stunning everything it lands on.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 10,
+		"prerequisites": ["frost_nova"],
+		"mana_cost": 34,
+		"cooldown": 12.0
+	},
+	"wisp_swarm": {
+		"name": "Wisp Swarm",
+		"short_label": "SWARM",
+		"icon_path": "res://textures/skills/wisp_swarm.svg",
+		"branch": "Summoner",
+		"description": "Release a swarm of short-lived wisps that fight beside you. Each rank adds a wisp.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 8,
+		"prerequisites": ["summon_wisp"],
+		"mana_cost": 36,
+		"cooldown": 20.0
+	},
+	"phase_step": {
+		"name": "Phase Step",
+		"short_label": "PHASE",
+		"icon_path": "res://textures/skills/phase_step.svg",
+		"branch": "Support",
+		"description": "Blink forward through the veil and slip half out of reality, evading most attacks.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 5,
+		"prerequisites": ["arcane_shield"],
+		"mana_cost": 14,
+		"cooldown": 8.0
 	}
 }
 const WITCH_SKILL_SLOTS = ["Q", "W", "E", "R"]
 const WARRIOR_SKILL_ORDER: Array[String] = [
 	"heavy_strike",
 	"shield_bash",
+	"execute",
 	"cleave",
 	"leap_slam",
+	"whirlwind",
+	"earthquake",
 	"war_cry",
-	"iron_resolve"
+	"iron_resolve",
+	"second_wind"
 ]
 const WARRIOR_SKILL_TREE := {
 	"heavy_strike": {
@@ -249,12 +309,67 @@ const WARRIOR_SKILL_TREE := {
 		"mana_cost": 18,
 		"cooldown": 18.0,
 		"position": [4, 1]
+	},
+	"execute": {
+		"name": "Execute",
+		"short_label": "EXEC",
+		"icon_path": "res://textures/warrior_skills/execute.svg",
+		"branch": "Single Target",
+		"description": "Bring down a finishing blow. Deals double damage to foes below 35% health.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 8,
+		"prerequisites": ["shield_bash"],
+		"mana_cost": 14,
+		"cooldown": 9.0
+	},
+	"whirlwind": {
+		"name": "Whirlwind",
+		"short_label": "WHIRL",
+		"icon_path": "res://textures/warrior_skills/whirlwind.svg",
+		"branch": "Area",
+		"description": "Spin with your weapon outstretched, striking every enemy around you twice.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 7,
+		"prerequisites": ["cleave"],
+		"mana_cost": 18,
+		"cooldown": 8.0
+	},
+	"earthquake": {
+		"name": "Earthquake",
+		"short_label": "QUAKE",
+		"icon_path": "res://textures/warrior_skills/earthquake.svg",
+		"branch": "Area",
+		"description": "Split the ground, stunning nearby enemies, then follow with a wider aftershock.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 12,
+		"prerequisites": ["leap_slam"],
+		"mana_cost": 26,
+		"cooldown": 16.0
+	},
+	"second_wind": {
+		"name": "Second Wind",
+		"short_label": "WIND",
+		"icon_path": "res://textures/warrior_skills/second_wind.svg",
+		"branch": "Support",
+		"description": "Dig deep and instantly recover a share of your maximum health.",
+		"max_rank": 3,
+		"point_cost": 1,
+		"required_level": 9,
+		"prerequisites": ["iron_resolve"],
+		"mana_cost": 10,
+		"cooldown": 24.0
 	}
 }
 const WARRIOR_SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
 
 const RANGER_SKILL_ORDER: Array[String] = [
-	"power_shot", "multi_shot", "explosive_arrow", "smoke_bomb"
+	"power_shot", "hunters_mark", "deadeye",
+	"multi_shot", "rain_of_arrows", "barrage",
+	"explosive_arrow", "snare_trap",
+	"smoke_bomb", "tumble"
 ]
 const RANGER_SKILL_TREE: Dictionary = {
 	"power_shot": {
@@ -292,638 +407,962 @@ const RANGER_SKILL_TREE: Dictionary = {
 		"description": "Burst into smoke, staggering nearby enemies so you can reposition.",
 		"max_rank": 3, "point_cost": 1, "required_level": 2, "prerequisites": [],
 		"mana_cost": 16, "cooldown": 12.0, "position": [4, 0]
+	},
+	"hunters_mark": {
+		"name": "Hunter's Mark",
+		"short_label": "MARK",
+		"icon_path": "res://textures/ranger_skills/hunters_mark.svg",
+		"branch": "Precision",
+		"description": "Mark the nearest foe so it takes more damage from every source.",
+		"max_rank": 3, "point_cost": 1, "required_level": 4, "prerequisites": ["power_shot"],
+		"mana_cost": 10, "cooldown": 10.0
+	},
+	"deadeye": {
+		"name": "Deadeye",
+		"short_label": "DEAD",
+		"icon_path": "res://textures/ranger_skills/deadeye.svg",
+		"branch": "Precision",
+		"description": "Loose a perfect shot that always critically strikes and pierces a line of foes.",
+		"max_rank": 3, "point_cost": 1, "required_level": 12, "prerequisites": ["hunters_mark"],
+		"mana_cost": 24, "cooldown": 14.0
+	},
+	"rain_of_arrows": {
+		"name": "Rain of Arrows",
+		"short_label": "RAIN",
+		"icon_path": "res://textures/ranger_skills/rain_of_arrows.svg",
+		"branch": "Volley",
+		"description": "Fire a ring of arrows in every direction. Each rank adds two arrows.",
+		"max_rank": 3, "point_cost": 1, "required_level": 7, "prerequisites": ["multi_shot"],
+		"mana_cost": 20, "cooldown": 9.0
+	},
+	"barrage": {
+		"name": "Barrage",
+		"short_label": "BARRAGE",
+		"icon_path": "res://textures/ranger_skills/barrage.svg",
+		"branch": "Volley",
+		"description": "Rapidly fire a stream of arrows where you aim. Each rank adds an arrow.",
+		"max_rank": 3, "point_cost": 1, "required_level": 10, "prerequisites": ["multi_shot"],
+		"mana_cost": 22, "cooldown": 8.0
+	},
+	"snare_trap": {
+		"name": "Snare Trap",
+		"short_label": "SNARE",
+		"icon_path": "res://textures/ranger_skills/snare_trap.svg",
+		"branch": "Control",
+		"description": "Spring a snare ahead of you that wounds and roots every enemy caught in it.",
+		"max_rank": 3, "point_cost": 1, "required_level": 6, "prerequisites": ["explosive_arrow"],
+		"mana_cost": 16, "cooldown": 10.0
+	},
+	"tumble": {
+		"name": "Tumble",
+		"short_label": "TUMBLE",
+		"icon_path": "res://textures/ranger_skills/tumble.svg",
+		"branch": "Mobility",
+		"description": "Roll toward where you aim and gain a burst of evasion for a moment.",
+		"max_rank": 3, "point_cost": 1, "required_level": 5, "prerequisites": ["smoke_bomb"],
+		"mana_cost": 8, "cooldown": 6.0
 	}
 }
 const RANGER_SKILL_SLOTS: Array[String] = ["Q", "W", "E", "R"]
 
 const WARRIOR_PASSIVE_ORDER: Array[String] = [
-	"iron_vitality", "reinforced_armor", "steadfast_guard", "unyielding", "colossus",
-	"battle_training", "enduring_stamina", "heavy_hands", "combat_veteran", "warbringer",
-	"precise_strikes", "weapon_mastery", "savage_force", "executioner", "warlord"
+	# Tank
+	"iron_vitality", "reinforced_armor", "steadfast_guard", "thick_hide", "unyielding", "bulwark", "regenerative_flesh", "fortress", "colossus",
+	# Slayer
+	"precise_strikes", "weapon_mastery", "savage_force", "brutal_technique", "executioner", "rending_blows", "bloodlust", "deathblow", "warlord",
+	# Bruiser
+	"battle_training", "enduring_stamina", "heavy_hands", "second_breath", "combat_veteran", "measured_strikes", "deep_reserves", "relentless", "warbringer",
+	# Commander
+	"battle_rhythm", "rallying_presence", "quick_recovery", "forced_march", "commanding_shout", "tactician", "swift_advance", "field_marshal", "supreme_commander",
+	# Battlemaster
+	"concussive_blows", "wide_arcs", "crushing_impact", "sweeping_reach", "shockwave", "skull_cracker", "earthbreaker", "titans_grip", "juggernaut"
 ]
-
 const WARRIOR_PASSIVE_TREE: Dictionary = {
+	# --- Tank ---
 	"iron_vitality": {
 		"name": "Iron Vitality", "branch": "Tank",
 		"description": "Gain +12 maximum health.",
 		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
-		"stats": {"max_health": 12}, "x": 0, "y": 0
+		"stats": {"max_health": 12}
 	},
 	"reinforced_armor": {
 		"name": "Reinforced Armor", "branch": "Tank",
 		"description": "Gain +1 flat damage reduction from armor.",
 		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["iron_vitality"],
-		"stats": {"armor": 1}, "x": 0, "y": 1
+		"stats": {"armor": 1}
 	},
 	"steadfast_guard": {
 		"name": "Steadfast Guard", "branch": "Tank",
 		"description": "Reduce incoming damage by 2%.",
 		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["reinforced_armor"],
-		"stats": {"damage_reduction_percent": 0.02}, "x": 0, "y": 2
+		"stats": {"damage_reduction_percent": 0.02}
+	},
+	"thick_hide": {
+		"name": "Thick Hide", "branch": "Tank",
+		"description": "Regenerate 0.5 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["reinforced_armor"],
+		"stats": {"health_regen": 0.5}
 	},
 	"unyielding": {
 		"name": "Unyielding", "branch": "Tank",
 		"description": "Gain +20 maximum health.",
 		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["steadfast_guard"],
-		"stats": {"max_health": 20}, "x": 0, "y": 3
+		"stats": {"max_health": 20}
+	},
+	"bulwark": {
+		"name": "Bulwark", "branch": "Tank",
+		"description": "Gain +2 flat damage reduction from armor.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["unyielding"],
+		"stats": {"armor": 2}
+	},
+	"regenerative_flesh": {
+		"name": "Regenerative Flesh", "branch": "Tank",
+		"description": "Regenerate 1 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["unyielding"],
+		"stats": {"health_regen": 1.0}
+	},
+	"fortress": {
+		"name": "Fortress", "branch": "Tank",
+		"description": "Gain +15 maximum health and reduce incoming damage by 3%.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["bulwark"],
+		"stats": {"max_health": 15, "damage_reduction_percent": 0.03}
 	},
 	"colossus": {
 		"name": "Colossus", "branch": "Tank",
-		"description": "Gain +25 maximum health and 3% damage reduction.",
-		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["unyielding"],
-		"stats": {"max_health": 25, "damage_reduction_percent": 0.03}, "x": 0, "y": 4
+		"description": "Super passive: +30 maximum health, +1 armor, and 4% less damage taken.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["fortress"],
+		"stats": {"max_health": 30, "damage_reduction_percent": 0.04, "armor": 1}
 	},
-	"battle_training": {
-		"name": "Battle Training", "branch": "Bruiser",
-		"description": "Gain +1 weapon damage.",
-		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
-		"stats": {"weapon_damage_bonus": 1}, "x": 2, "y": 0
-	},
-	"enduring_stamina": {
-		"name": "Enduring Stamina", "branch": "Bruiser",
-		"description": "Gain +10 maximum mana for Warrior skills.",
-		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["battle_training"],
-		"stats": {"max_mana": 10}, "x": 2, "y": 1
-	},
-	"heavy_hands": {
-		"name": "Heavy Hands", "branch": "Bruiser",
-		"description": "Gain +2 weapon damage.",
-		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["enduring_stamina"],
-		"stats": {"weapon_damage_bonus": 2}, "x": 2, "y": 2
-	},
-	"combat_veteran": {
-		"name": "Combat Veteran", "branch": "Bruiser",
-		"description": "Gain +15 maximum health and +5 maximum mana.",
-		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["heavy_hands"],
-		"stats": {"max_health": 15, "max_mana": 5}, "x": 2, "y": 3
-	},
-	"warbringer": {
-		"name": "Warbringer", "branch": "Bruiser",
-		"description": "Gain +3 weapon damage.",
-		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["combat_veteran"],
-		"stats": {"weapon_damage_bonus": 3}, "x": 2, "y": 4
-	},
+	# --- Slayer ---
 	"precise_strikes": {
 		"name": "Precise Strikes", "branch": "Slayer",
 		"description": "Gain +2 weapon damage.",
 		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
-		"stats": {"weapon_damage_bonus": 2}, "x": 4, "y": 0
+		"stats": {"weapon_damage_bonus": 2}
 	},
 	"weapon_mastery": {
 		"name": "Weapon Mastery", "branch": "Slayer",
 		"description": "Gain +2 weapon damage.",
 		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["precise_strikes"],
-		"stats": {"weapon_damage_bonus": 2}, "x": 4, "y": 1
+		"stats": {"weapon_damage_bonus": 2}
 	},
 	"savage_force": {
 		"name": "Savage Force", "branch": "Slayer",
 		"description": "Gain +20 maximum health and +1 weapon damage.",
 		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["weapon_mastery"],
-		"stats": {"max_health": 20, "weapon_damage_bonus": 1}, "x": 4, "y": 2
+		"stats": {"max_health": 20, "weapon_damage_bonus": 1}
+	},
+	"brutal_technique": {
+		"name": "Brutal Technique", "branch": "Slayer",
+		"description": "Warrior skills deal 8% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["weapon_mastery"],
+		"stats": {"skill_damage_percent": 0.08}
 	},
 	"executioner": {
 		"name": "Executioner", "branch": "Slayer",
 		"description": "Gain +3 weapon damage.",
 		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["savage_force"],
-		"stats": {"weapon_damage_bonus": 3}, "x": 4, "y": 3
+		"stats": {"weapon_damage_bonus": 3}
+	},
+	"rending_blows": {
+		"name": "Rending Blows", "branch": "Slayer",
+		"description": "Warrior skills deal 10% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["executioner"],
+		"stats": {"skill_damage_percent": 0.1}
+	},
+	"bloodlust": {
+		"name": "Bloodlust", "branch": "Slayer",
+		"description": "Gain +1 weapon damage and 4% movement speed.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["executioner"],
+		"stats": {"weapon_damage_bonus": 1, "movement_speed": 0.04}
+	},
+	"deathblow": {
+		"name": "Deathblow", "branch": "Slayer",
+		"description": "Gain +2 weapon damage and Warrior skills deal 10% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["rending_blows"],
+		"stats": {"weapon_damage_bonus": 2, "skill_damage_percent": 0.1}
 	},
 	"warlord": {
 		"name": "Warlord", "branch": "Slayer",
-		"description": "Gain +4 weapon damage and +10 maximum health.",
-		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["executioner"],
-		"stats": {"weapon_damage_bonus": 4, "max_health": 10}, "x": 4, "y": 4
+		"description": "Super passive: +4 weapon damage, +10 maximum health, and 12% more skill damage.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["deathblow"],
+		"stats": {"weapon_damage_bonus": 4, "max_health": 10, "skill_damage_percent": 0.12}
+	},
+	# --- Bruiser ---
+	"battle_training": {
+		"name": "Battle Training", "branch": "Bruiser",
+		"description": "Gain +1 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"weapon_damage_bonus": 1}
+	},
+	"enduring_stamina": {
+		"name": "Enduring Stamina", "branch": "Bruiser",
+		"description": "Gain +10 maximum mana for Warrior skills.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["battle_training"],
+		"stats": {"max_mana": 10}
+	},
+	"heavy_hands": {
+		"name": "Heavy Hands", "branch": "Bruiser",
+		"description": "Gain +2 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["enduring_stamina"],
+		"stats": {"weapon_damage_bonus": 2}
+	},
+	"second_breath": {
+		"name": "Second Breath", "branch": "Bruiser",
+		"description": "Regenerate 0.5 mana per second.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["enduring_stamina"],
+		"stats": {"mana_regen": 0.5}
+	},
+	"combat_veteran": {
+		"name": "Combat Veteran", "branch": "Bruiser",
+		"description": "Gain +15 maximum health and +5 maximum mana.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["heavy_hands"],
+		"stats": {"max_health": 15, "max_mana": 5}
+	},
+	"measured_strikes": {
+		"name": "Measured Strikes", "branch": "Bruiser",
+		"description": "Reduce Warrior skill mana costs by 10%.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["combat_veteran"],
+		"stats": {"mana_cost_reduction": 0.1}
+	},
+	"deep_reserves": {
+		"name": "Deep Reserves", "branch": "Bruiser",
+		"description": "Gain +15 maximum mana.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["combat_veteran"],
+		"stats": {"max_mana": 15}
+	},
+	"relentless": {
+		"name": "Relentless", "branch": "Bruiser",
+		"description": "Regenerate 1 mana and 0.5 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["measured_strikes"],
+		"stats": {"mana_regen": 1.0, "health_regen": 0.5}
+	},
+	"warbringer": {
+		"name": "Warbringer", "branch": "Bruiser",
+		"description": "Super passive: +3 weapon damage, +20 maximum mana, and 10% cheaper skills.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["relentless"],
+		"stats": {"weapon_damage_bonus": 3, "max_mana": 20, "mana_cost_reduction": 0.1}
+	},
+	# --- Commander ---
+	"battle_rhythm": {
+		"name": "Battle Rhythm", "branch": "Commander",
+		"description": "Warrior skills recharge 4% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"cooldown_reduction": 0.04}
+	},
+	"rallying_presence": {
+		"name": "Rallying Presence", "branch": "Commander",
+		"description": "War Cry and Iron Resolve last 15% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["battle_rhythm"],
+		"stats": {"buff_duration": 0.15}
+	},
+	"quick_recovery": {
+		"name": "Quick Recovery", "branch": "Commander",
+		"description": "Warrior skills recharge 4% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["rallying_presence"],
+		"stats": {"cooldown_reduction": 0.04}
+	},
+	"forced_march": {
+		"name": "Forced March", "branch": "Commander",
+		"description": "Gain 5% movement speed.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["rallying_presence"],
+		"stats": {"movement_speed": 0.05}
+	},
+	"commanding_shout": {
+		"name": "Commanding Shout", "branch": "Commander",
+		"description": "War Cry and Iron Resolve last 15% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["quick_recovery"],
+		"stats": {"buff_duration": 0.15}
+	},
+	"tactician": {
+		"name": "Tactician", "branch": "Commander",
+		"description": "Warrior skills recharge 5% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["commanding_shout"],
+		"stats": {"cooldown_reduction": 0.05}
+	},
+	"swift_advance": {
+		"name": "Swift Advance", "branch": "Commander",
+		"description": "Gain 5% movement speed.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["commanding_shout"],
+		"stats": {"movement_speed": 0.05}
+	},
+	"field_marshal": {
+		"name": "Field Marshal", "branch": "Commander",
+		"description": "Buffs last 20% longer and skills recharge 3% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["tactician"],
+		"stats": {"buff_duration": 0.2, "cooldown_reduction": 0.03}
+	},
+	"supreme_commander": {
+		"name": "Supreme Commander", "branch": "Commander",
+		"description": "Super passive: 6% faster cooldowns, 25% longer buffs, and 5% movement speed.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["field_marshal"],
+		"stats": {"cooldown_reduction": 0.06, "buff_duration": 0.25, "movement_speed": 0.05}
+	},
+	# --- Battlemaster ---
+	"concussive_blows": {
+		"name": "Concussive Blows", "branch": "Battlemaster",
+		"description": "Your stuns last 15% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"stun_duration": 0.15}
+	},
+	"wide_arcs": {
+		"name": "Wide Arcs", "branch": "Battlemaster",
+		"description": "Area skills reach 8% further.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["concussive_blows"],
+		"stats": {"area_of_effect": 0.08}
+	},
+	"crushing_impact": {
+		"name": "Crushing Impact", "branch": "Battlemaster",
+		"description": "Your stuns last 15% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["wide_arcs"],
+		"stats": {"stun_duration": 0.15}
+	},
+	"sweeping_reach": {
+		"name": "Sweeping Reach", "branch": "Battlemaster",
+		"description": "Area skills reach 8% further.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["wide_arcs"],
+		"stats": {"area_of_effect": 0.08}
+	},
+	"shockwave": {
+		"name": "Shockwave", "branch": "Battlemaster",
+		"description": "Area skills reach 10% further.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["crushing_impact"],
+		"stats": {"area_of_effect": 0.1}
+	},
+	"skull_cracker": {
+		"name": "Skull Cracker", "branch": "Battlemaster",
+		"description": "Your stuns last 20% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["shockwave"],
+		"stats": {"stun_duration": 0.2}
+	},
+	"earthbreaker": {
+		"name": "Earthbreaker", "branch": "Battlemaster",
+		"description": "Area skills reach 10% further and deal 5% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["shockwave"],
+		"stats": {"area_of_effect": 0.1, "skill_damage_percent": 0.05}
+	},
+	"titans_grip": {
+		"name": "Titan's Grip", "branch": "Battlemaster",
+		"description": "Stuns last 15% longer and gain +2 weapon damage.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["skull_cracker"],
+		"stats": {"stun_duration": 0.15, "weapon_damage_bonus": 2}
+	},
+	"juggernaut": {
+		"name": "Juggernaut", "branch": "Battlemaster",
+		"description": "Super passive: 15% larger areas, 25% longer stuns, and 4% less damage taken.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["titans_grip"],
+		"stats": {"area_of_effect": 0.15, "stun_duration": 0.25, "damage_reduction_percent": 0.04}
 	}
 }
 
 const WITCH_PASSIVE_ORDER: Array[String] = [
-	# Spire of Arcana (Elemental)
-	"arcane_spark",
-	"ember_mastery",
-	"frost_affinity",
-	"spell_weaver",
-	"elemental_overload",
-	"ignited_fury",
-	"glacial_focus",
-	"super_archmages_nexus",
-	# Shadow & Siphon (Occult)
-	"soul_tether",
-	"essence_siphon",
-	"shadow_mend",
-	"vital_surge",
-	"decay_aura",
-	"dark_harvest",
-	"spirit_channel",
-	"super_void_ascendancy",
-	# Aegis of Phantoms (Defense)
-	"mist_shroud",
-	"phantom_step",
-	"warding_veil",
-	"evasive_reflex",
-	"iron_will",
-	"hardened_skin",
-	"ethereal_flow",
-	"super_spectral_bastion",
-	# Mystic Wellspring (Mana & Utility)
-	"mana_reservoir",
-	"inner_trance",
-	"crystal_clarity",
-	"sorcerers_cunning",
-	"spell_flux",
-	"abyssal_reserves",
-	"arcane_shielding",
-	"super_infinite_conduit",
-	# Astral Convergence (Apex)
-	"celestial_attunement",
-	"super_celestial_sovereign"
+	# Spire of Arcana
+	"arcane_spark", "ember_mastery", "spell_weaver", "frost_affinity", "elemental_overload", "ignited_fury", "glacial_focus", "arcane_torrent", "super_archmages_nexus",
+	# Shadow & Siphon
+	"soul_tether", "essence_siphon", "shadow_mend", "grave_vigor", "vital_surge", "dark_harvest", "decay_aura", "spirit_channel", "super_void_ascendancy",
+	# Aegis of Phantoms
+	"mist_shroud", "phantom_step", "warding_veil", "ward_weaver", "evasive_reflex", "iron_will", "hardened_skin", "ethereal_flow", "super_spectral_bastion",
+	# Mystic Wellspring
+	"mana_reservoir", "inner_trance", "crystal_clarity", "flowing_thoughts", "sorcerers_cunning", "spell_flux", "arcane_shielding", "abyssal_reserves", "super_infinite_conduit",
+	# Astral Convergence
+	"star_touched", "astral_hex", "wisp_bond", "malediction", "constellation_legion", "celestial_attunement", "doom_sigil", "starfall_binding", "super_celestial_sovereign"
 ]
-
 const WITCH_PASSIVE_TREE: Dictionary = {
-	# --- Spire of Arcana (Elemental) ---
+	# --- Spire of Arcana ---
 	"arcane_spark": {
-		"name": "Arcane Spark",
-		"branch": "Spire of Arcana",
+		"name": "Arcane Spark", "branch": "Spire of Arcana",
 		"description": "Increases spell damage by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 1,
-		"prerequisites": [],
-		"stats": {"spell_damage_percent": 0.04},
-		"x": 2, "y": 0
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"spell_damage_percent": 0.04}
 	},
 	"ember_mastery": {
-		"name": "Ember Mastery",
-		"branch": "Spire of Arcana",
+		"name": "Ember Mastery", "branch": "Spire of Arcana",
 		"description": "Increases spell damage by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 2,
-		"prerequisites": ["arcane_spark"],
-		"stats": {"spell_damage_percent": 0.04},
-		"x": 1, "y": 1
-	},
-	"frost_affinity": {
-		"name": "Frost Affinity",
-		"branch": "Spire of Arcana",
-		"description": "Increases spell damage by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 2,
-		"prerequisites": ["arcane_spark"],
-		"stats": {"spell_damage_percent": 0.04},
-		"x": 3, "y": 1
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["arcane_spark"],
+		"stats": {"spell_damage_percent": 0.04}
 	},
 	"spell_weaver": {
-		"name": "Spell Weaver",
-		"branch": "Spire of Arcana",
+		"name": "Spell Weaver", "branch": "Spire of Arcana",
 		"description": "Increases spell damage by +5%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 4,
-		"prerequisites": ["ember_mastery", "frost_affinity"],
-		"stats": {"spell_damage_percent": 0.05},
-		"x": 2, "y": 2
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["ember_mastery"],
+		"stats": {"spell_damage_percent": 0.05}
+	},
+	"frost_affinity": {
+		"name": "Frost Affinity", "branch": "Spire of Arcana",
+		"description": "Increases spell damage by +3% and Witch skills recharge 3% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["ember_mastery"],
+		"stats": {"spell_damage_percent": 0.03, "cooldown_reduction": 0.03}
 	},
 	"elemental_overload": {
-		"name": "Elemental Overload",
-		"branch": "Spire of Arcana",
+		"name": "Elemental Overload", "branch": "Spire of Arcana",
 		"description": "Increases spell damage by +5%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 6,
-		"prerequisites": ["spell_weaver"],
-		"stats": {"spell_damage_percent": 0.05},
-		"x": 2, "y": 3
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["spell_weaver"],
+		"stats": {"spell_damage_percent": 0.05}
 	},
 	"ignited_fury": {
-		"name": "Ignited Fury",
-		"branch": "Spire of Arcana",
+		"name": "Ignited Fury", "branch": "Spire of Arcana",
 		"description": "Increases spell damage by +5%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 8,
-		"prerequisites": ["elemental_overload"],
-		"stats": {"spell_damage_percent": 0.05},
-		"x": 1, "y": 4
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["elemental_overload"],
+		"stats": {"spell_damage_percent": 0.05}
 	},
 	"glacial_focus": {
-		"name": "Glacial Focus",
-		"branch": "Spire of Arcana",
-		"description": "Increases spell damage by +5%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 8,
-		"prerequisites": ["elemental_overload"],
-		"stats": {"spell_damage_percent": 0.05},
-		"x": 3, "y": 4
+		"name": "Glacial Focus", "branch": "Spire of Arcana",
+		"description": "Witch skills recharge 5% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["elemental_overload"],
+		"stats": {"cooldown_reduction": 0.05}
+	},
+	"arcane_torrent": {
+		"name": "Arcane Torrent", "branch": "Spire of Arcana",
+		"description": "Increases spell damage by +6%.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["ignited_fury"],
+		"stats": {"spell_damage_percent": 0.06}
 	},
 	"super_archmages_nexus": {
-		"name": "Archmage's Nexus",
-		"branch": "Spire of Arcana",
+		"name": "Archmage's Nexus", "branch": "Spire of Arcana",
 		"description": "Super Node: Enhances destructive prowess and evasion.\nGrants +12% spell damage and +6% evasion.",
-		"is_super": true,
-		"point_cost": 1,
-		"required_level": 10,
-		"prerequisites": ["ignited_fury", "glacial_focus"],
-		"stats": {"spell_damage_percent": 0.12, "evasion": 0.06},
-		"x": 2, "y": 5
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["arcane_torrent"],
+		"stats": {"spell_damage_percent": 0.12, "evasion": 0.06}
 	},
-
-	# --- Shadow & Siphon (Occult) ---
+	# --- Shadow & Siphon ---
 	"soul_tether": {
-		"name": "Soul Tether",
-		"branch": "Shadow & Siphon",
+		"name": "Soul Tether", "branch": "Shadow & Siphon",
 		"description": "Increases maximum health by +15.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 1,
-		"prerequisites": [],
-		"stats": {"max_health": 15},
-		"x": 0, "y": 2
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"max_health": 15}
 	},
 	"essence_siphon": {
-		"name": "Essence Siphon",
-		"branch": "Shadow & Siphon",
+		"name": "Essence Siphon", "branch": "Shadow & Siphon",
 		"description": "Increases maximum health by +15.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 3,
-		"prerequisites": ["soul_tether"],
-		"stats": {"max_health": 15},
-		"x": 0, "y": 3
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["soul_tether"],
+		"stats": {"max_health": 15}
 	},
 	"shadow_mend": {
-		"name": "Shadow Mend",
-		"branch": "Shadow & Siphon",
+		"name": "Shadow Mend", "branch": "Shadow & Siphon",
 		"description": "Increases maximum health by +20.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 5,
-		"prerequisites": ["essence_siphon"],
-		"stats": {"max_health": 20},
-		"x": 0, "y": 4
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["essence_siphon"],
+		"stats": {"max_health": 20}
+	},
+	"grave_vigor": {
+		"name": "Grave Vigor", "branch": "Shadow & Siphon",
+		"description": "Regenerate 0.6 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["essence_siphon"],
+		"stats": {"health_regen": 0.6}
 	},
 	"vital_surge": {
-		"name": "Vital Surge",
-		"branch": "Shadow & Siphon",
+		"name": "Vital Surge", "branch": "Shadow & Siphon",
 		"description": "Increases maximum health by +20.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 7,
-		"prerequisites": ["shadow_mend"],
-		"stats": {"max_health": 20},
-		"x": 0, "y": 5
-	},
-	"decay_aura": {
-		"name": "Decay Aura",
-		"branch": "Shadow & Siphon",
-		"description": "Increases spell damage by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 8,
-		"prerequisites": ["vital_surge"],
-		"stats": {"spell_damage_percent": 0.04},
-		"x": 0, "y": 6
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["shadow_mend"],
+		"stats": {"max_health": 20}
 	},
 	"dark_harvest": {
-		"name": "Dark Harvest",
-		"branch": "Shadow & Siphon",
+		"name": "Dark Harvest", "branch": "Shadow & Siphon",
 		"description": "Reduces damage taken by 3%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 9,
-		"prerequisites": ["vital_surge"],
-		"stats": {"damage_reduction_percent": 0.03},
-		"x": 1, "y": 6
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["vital_surge"],
+		"stats": {"damage_reduction_percent": 0.03}
+	},
+	"decay_aura": {
+		"name": "Decay Aura", "branch": "Shadow & Siphon",
+		"description": "Increases spell damage by +4% and regenerates 0.4 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["vital_surge"],
+		"stats": {"spell_damage_percent": 0.04, "health_regen": 0.4}
 	},
 	"spirit_channel": {
-		"name": "Spirit Channel",
-		"branch": "Shadow & Siphon",
-		"description": "Increases maximum health by +20.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 10,
-		"prerequisites": ["decay_aura", "dark_harvest"],
-		"stats": {"max_health": 20},
-		"x": 0, "y": 7
+		"name": "Spirit Channel", "branch": "Shadow & Siphon",
+		"description": "Increases maximum health by +20 and regenerates 0.5 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["dark_harvest"],
+		"stats": {"max_health": 20, "health_regen": 0.5}
 	},
 	"super_void_ascendancy": {
-		"name": "Void Ascendancy",
-		"branch": "Shadow & Siphon",
+		"name": "Void Ascendancy", "branch": "Shadow & Siphon",
 		"description": "Super Node: Merges life-force with eldritch defense.\nGrants +45 maximum health and 5% less damage taken.",
-		"is_super": true,
-		"point_cost": 1,
-		"required_level": 12,
-		"prerequisites": ["spirit_channel"],
-		"stats": {"max_health": 45, "damage_reduction_percent": 0.05},
-		"x": 0, "y": 8
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["spirit_channel"],
+		"stats": {"max_health": 45, "damage_reduction_percent": 0.05}
 	},
-
-	# --- Aegis of Phantoms (Defense) ---
+	# --- Aegis of Phantoms ---
 	"mist_shroud": {
-		"name": "Mist Shroud",
-		"branch": "Aegis of Phantoms",
+		"name": "Mist Shroud", "branch": "Aegis of Phantoms",
 		"description": "Increases evasion by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 1,
-		"prerequisites": [],
-		"stats": {"evasion": 0.04},
-		"x": 4, "y": 2
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"evasion": 0.04}
 	},
 	"phantom_step": {
-		"name": "Phantom Step",
-		"branch": "Aegis of Phantoms",
+		"name": "Phantom Step", "branch": "Aegis of Phantoms",
 		"description": "Increases evasion by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 3,
-		"prerequisites": ["mist_shroud"],
-		"stats": {"evasion": 0.04},
-		"x": 4, "y": 3
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["mist_shroud"],
+		"stats": {"evasion": 0.04}
 	},
 	"warding_veil": {
-		"name": "Warding Veil",
-		"branch": "Aegis of Phantoms",
+		"name": "Warding Veil", "branch": "Aegis of Phantoms",
 		"description": "Reduces damage taken by 3%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 5,
-		"prerequisites": ["phantom_step"],
-		"stats": {"damage_reduction_percent": 0.03},
-		"x": 4, "y": 4
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["phantom_step"],
+		"stats": {"damage_reduction_percent": 0.03}
+	},
+	"ward_weaver": {
+		"name": "Ward Weaver", "branch": "Aegis of Phantoms",
+		"description": "Arcane Shield and Phase Step last 25% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["phantom_step"],
+		"stats": {"shield_duration": 0.25}
 	},
 	"evasive_reflex": {
-		"name": "Evasive Reflex",
-		"branch": "Aegis of Phantoms",
+		"name": "Evasive Reflex", "branch": "Aegis of Phantoms",
 		"description": "Increases evasion by +5%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 7,
-		"prerequisites": ["warding_veil"],
-		"stats": {"evasion": 0.05},
-		"x": 4, "y": 5
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["warding_veil"],
+		"stats": {"evasion": 0.05}
 	},
 	"iron_will": {
-		"name": "Iron Will",
-		"branch": "Aegis of Phantoms",
+		"name": "Iron Will", "branch": "Aegis of Phantoms",
 		"description": "Reduces damage taken by 3%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 8,
-		"prerequisites": ["evasive_reflex"],
-		"stats": {"damage_reduction_percent": 0.03},
-		"x": 3, "y": 6
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["evasive_reflex"],
+		"stats": {"damage_reduction_percent": 0.03}
 	},
 	"hardened_skin": {
-		"name": "Hardened Skin",
-		"branch": "Aegis of Phantoms",
-		"description": "Reduces damage taken by 3%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 8,
-		"prerequisites": ["evasive_reflex"],
-		"stats": {"damage_reduction_percent": 0.03},
-		"x": 4, "y": 6
+		"name": "Hardened Skin", "branch": "Aegis of Phantoms",
+		"description": "Arcane Shield and Phase Step last 20% longer; reduces damage taken by 2%.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["evasive_reflex"],
+		"stats": {"shield_duration": 0.2, "damage_reduction_percent": 0.02}
 	},
 	"ethereal_flow": {
-		"name": "Ethereal Flow",
-		"branch": "Aegis of Phantoms",
+		"name": "Ethereal Flow", "branch": "Aegis of Phantoms",
 		"description": "Increases evasion by +5%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 10,
-		"prerequisites": ["iron_will", "hardened_skin"],
-		"stats": {"evasion": 0.05},
-		"x": 4, "y": 7
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["iron_will"],
+		"stats": {"evasion": 0.05}
 	},
 	"super_spectral_bastion": {
-		"name": "Spectral Bastion",
-		"branch": "Aegis of Phantoms",
+		"name": "Spectral Bastion", "branch": "Aegis of Phantoms",
 		"description": "Super Node: Weaves phantasmal wards around your form.\nGrants +6% evasion and 6% less damage taken.",
-		"is_super": true,
-		"point_cost": 1,
-		"required_level": 12,
-		"prerequisites": ["ethereal_flow"],
-		"stats": {"evasion": 0.06, "damage_reduction_percent": 0.06},
-		"x": 4, "y": 8
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["ethereal_flow"],
+		"stats": {"evasion": 0.06, "damage_reduction_percent": 0.06}
 	},
-
-	# --- Mystic Wellspring (Mana & Utility) ---
+	# --- Mystic Wellspring ---
 	"mana_reservoir": {
-		"name": "Mana Reservoir",
-		"branch": "Mystic Wellspring",
+		"name": "Mana Reservoir", "branch": "Mystic Wellspring",
 		"description": "Increases maximum mana by +20.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 1,
-		"prerequisites": [],
-		"stats": {"max_mana": 20},
-		"x": 2, "y": 6
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"max_mana": 20}
 	},
 	"inner_trance": {
-		"name": "Inner Trance",
-		"branch": "Mystic Wellspring",
+		"name": "Inner Trance", "branch": "Mystic Wellspring",
 		"description": "Increases maximum mana by +20.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 3,
-		"prerequisites": ["mana_reservoir"],
-		"stats": {"max_mana": 20},
-		"x": 2, "y": 7
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["mana_reservoir"],
+		"stats": {"max_mana": 20}
 	},
 	"crystal_clarity": {
-		"name": "Crystal Clarity",
-		"branch": "Mystic Wellspring",
+		"name": "Crystal Clarity", "branch": "Mystic Wellspring",
+		"description": "Regenerate 0.8 mana per second.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["inner_trance"],
+		"stats": {"mana_regen": 0.8}
+	},
+	"flowing_thoughts": {
+		"name": "Flowing Thoughts", "branch": "Mystic Wellspring",
 		"description": "Increases maximum mana by +25.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 5,
-		"prerequisites": ["inner_trance"],
-		"stats": {"max_mana": 25},
-		"x": 2, "y": 8
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["inner_trance"],
+		"stats": {"max_mana": 25}
 	},
 	"sorcerers_cunning": {
-		"name": "Sorcerer's Cunning",
-		"branch": "Mystic Wellspring",
-		"description": "Increases spell damage by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 7,
-		"prerequisites": ["crystal_clarity"],
-		"stats": {"spell_damage_percent": 0.04},
-		"x": 1, "y": 9
+		"name": "Sorcerer's Cunning", "branch": "Mystic Wellspring",
+		"description": "Reduces Witch skill mana costs by 8%.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["crystal_clarity"],
+		"stats": {"mana_cost_reduction": 0.08}
 	},
 	"spell_flux": {
-		"name": "Spell Flux",
-		"branch": "Mystic Wellspring",
-		"description": "Increases spell damage by +4%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 7,
-		"prerequisites": ["crystal_clarity"],
-		"stats": {"spell_damage_percent": 0.04},
-		"x": 3, "y": 9
-	},
-	"abyssal_reserves": {
-		"name": "Abyssal Reserves",
-		"branch": "Mystic Wellspring",
-		"description": "Increases maximum mana by +25.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 9,
-		"prerequisites": ["sorcerers_cunning", "spell_flux"],
-		"stats": {"max_mana": 25},
-		"x": 2, "y": 10
+		"name": "Spell Flux", "branch": "Mystic Wellspring",
+		"description": "Regenerate 1 mana per second.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["sorcerers_cunning"],
+		"stats": {"mana_regen": 1.0}
 	},
 	"arcane_shielding": {
-		"name": "Arcane Shielding",
-		"branch": "Mystic Wellspring",
+		"name": "Arcane Shielding", "branch": "Mystic Wellspring",
 		"description": "Reduces damage taken by 3%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 11,
-		"prerequisites": ["abyssal_reserves"],
-		"stats": {"damage_reduction_percent": 0.03},
-		"x": 2, "y": 11
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["sorcerers_cunning"],
+		"stats": {"damage_reduction_percent": 0.03}
+	},
+	"abyssal_reserves": {
+		"name": "Abyssal Reserves", "branch": "Mystic Wellspring",
+		"description": "Increases maximum mana by +25 and reduces mana costs by 7%.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["spell_flux"],
+		"stats": {"max_mana": 25, "mana_cost_reduction": 0.07}
 	},
 	"super_infinite_conduit": {
-		"name": "Infinite Conduit",
-		"branch": "Mystic Wellspring",
-		"description": "Super Node: Floods your mind with infinite magical potential.\nGrants +50 maximum mana and +8% spell damage.",
-		"is_super": true,
-		"point_cost": 1,
-		"required_level": 13,
-		"prerequisites": ["arcane_shielding"],
-		"stats": {"max_mana": 50, "spell_damage_percent": 0.08},
-		"x": 2, "y": 12
+		"name": "Infinite Conduit", "branch": "Mystic Wellspring",
+		"description": "Super Node: Floods your mind with infinite magical potential.\nGrants +50 maximum mana, +8% spell damage, and +1 mana per second.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["abyssal_reserves"],
+		"stats": {"max_mana": 50, "spell_damage_percent": 0.08, "mana_regen": 1.0}
 	},
-
-	# --- Astral Convergence (Apex) ---
+	# --- Astral Convergence ---
+	"star_touched": {
+		"name": "Star-Touched", "branch": "Astral Convergence",
+		"description": "Your wisps deal 10% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"minion_damage": 0.1}
+	},
+	"astral_hex": {
+		"name": "Astral Hex", "branch": "Astral Convergence",
+		"description": "Curse is 15% stronger and lasts 15% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["star_touched"],
+		"stats": {"curse_effect": 0.15}
+	},
+	"wisp_bond": {
+		"name": "Wisp Bond", "branch": "Astral Convergence",
+		"description": "Your wisps deal 15% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["astral_hex"],
+		"stats": {"minion_damage": 0.15}
+	},
+	"malediction": {
+		"name": "Malediction", "branch": "Astral Convergence",
+		"description": "Curse is 15% stronger and lasts 15% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["astral_hex"],
+		"stats": {"curse_effect": 0.15}
+	},
+	"constellation_legion": {
+		"name": "Constellation Legion", "branch": "Astral Convergence",
+		"description": "Wisps deal 15% more damage and Witch skills recharge 4% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["wisp_bond"],
+		"stats": {"minion_damage": 0.15, "cooldown_reduction": 0.04}
+	},
 	"celestial_attunement": {
-		"name": "Celestial Attunement",
-		"branch": "Astral Convergence",
-		"description": "Increases spell damage by +5%.",
-		"is_super": false,
-		"point_cost": 1,
-		"required_level": 14,
-		"prerequisites": ["super_archmages_nexus", "super_infinite_conduit"],
-		"stats": {"spell_damage_percent": 0.05},
-		"x": 2, "y": 13
+		"name": "Celestial Attunement", "branch": "Astral Convergence",
+		"description": "Increases spell damage by +5% and wisp damage by 10%.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["constellation_legion"],
+		"stats": {"spell_damage_percent": 0.05, "minion_damage": 0.1}
+	},
+	"doom_sigil": {
+		"name": "Doom Sigil", "branch": "Astral Convergence",
+		"description": "Curse is 20% stronger and lasts 20% longer.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["constellation_legion"],
+		"stats": {"curse_effect": 0.2}
+	},
+	"starfall_binding": {
+		"name": "Starfall Binding", "branch": "Astral Convergence",
+		"description": "Wisps deal 15% more damage and Curse is 10% stronger.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["celestial_attunement"],
+		"stats": {"minion_damage": 0.15, "curse_effect": 0.1}
 	},
 	"super_celestial_sovereign": {
-		"name": "Celestial Sovereign",
-		"branch": "Astral Convergence",
-		"description": "Super Node: Master of heavens, fate, and cosmic arcana.\nGrants +10% spell damage, +30 maximum health, +30 maximum mana, and +5% evasion.",
-		"is_super": true,
-		"point_cost": 1,
-		"required_level": 16,
-		"prerequisites": ["celestial_attunement", "super_void_ascendancy", "super_spectral_bastion"],
-		"stats": {
-			"spell_damage_percent": 0.10,
-			"max_health": 30,
-			"max_mana": 30,
-			"evasion": 0.05
-		},
-		"x": 2, "y": 14
+		"name": "Celestial Sovereign", "branch": "Astral Convergence",
+		"description": "Super Node: Master of heavens, fate, and cosmic arcana.\nGrants +10% spell damage, +25% wisp damage, +20% curse effect, +20 health and +20 mana.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["starfall_binding"],
+		"stats": {"spell_damage_percent": 0.1, "minion_damage": 0.25, "curse_effect": 0.2, "max_health": 20, "max_mana": 20}
 	}
 }
 
 const RANGER_PASSIVE_ORDER: Array[String] = [
-	"keen_sight", "steady_aim", "critical_focus", "deadly_precision", "eagles_eye",
-	"quickstep", "light_footed", "windrunner", "evasive_reflex", "wind_dancer",
-	"trapcraft", "volatile_payload", "efficient_fletching", "field_rations", "master_trapper"
+	# Precision
+	"keen_sight", "steady_aim", "critical_focus", "sharpened_tips", "deadly_precision", "piercing_shots", "hunters_focus", "lethal_aim", "eagles_eye",
+	# Skirmisher
+	"quickstep", "light_footed", "windrunner", "fleet_arrows", "evasive_reflex", "blur", "hit_and_run", "shadow_stride", "wind_dancer",
+	# Trapper
+	"trapcraft", "volatile_payload", "demolitionist", "tangling_wire", "shrapnel", "chain_reaction", "camouflage", "saboteur", "master_trapper",
+	# Fletcher
+	"efficient_fletching", "quiver_discipline", "steady_breathing", "arrow_recovery", "focused_mind", "rapid_nocking", "deep_quiver", "master_fletcher", "endless_quiver",
+	# Survivalist
+	"field_rations", "hardy", "natures_mend", "thick_leathers", "wilderness_lore", "second_nature", "tough_as_roots", "survival_instinct", "untamed"
 ]
 const RANGER_PASSIVE_TREE: Dictionary = {
+	# --- Precision ---
 	"keen_sight": {
 		"name": "Keen Sight", "branch": "Precision",
 		"description": "Improve arrow accuracy by 10%, widening your hit margin and range.",
 		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
-		"stats": {"accuracy": 0.10}, "x": 0, "y": 0
+		"stats": {"accuracy": 0.1}
 	},
 	"steady_aim": {
 		"name": "Steady Aim", "branch": "Precision",
 		"description": "Gain +4% critical hit chance.",
 		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["keen_sight"],
-		"stats": {"critical_chance": 0.04}, "x": 0, "y": 1
+		"stats": {"critical_chance": 0.04}
 	},
 	"critical_focus": {
 		"name": "Critical Focus", "branch": "Precision",
 		"description": "Increase critical damage by 20%.",
 		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["steady_aim"],
-		"stats": {"critical_damage": 0.20}, "x": 0, "y": 2
+		"stats": {"critical_damage": 0.2}
+	},
+	"sharpened_tips": {
+		"name": "Sharpened Tips", "branch": "Precision",
+		"description": "Arrows deal 6% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["steady_aim"],
+		"stats": {"skill_damage_percent": 0.06}
 	},
 	"deadly_precision": {
 		"name": "Deadly Precision", "branch": "Precision",
 		"description": "Gain +5% critical hit chance and +10% arrow accuracy.",
 		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["critical_focus"],
-		"stats": {"critical_chance": 0.05, "accuracy": 0.10}, "x": 0, "y": 3
+		"stats": {"critical_chance": 0.05, "accuracy": 0.1}
+	},
+	"piercing_shots": {
+		"name": "Piercing Shots", "branch": "Precision",
+		"description": "Every arrow pierces one additional enemy.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["deadly_precision"],
+		"stats": {"pierce": 1}
+	},
+	"hunters_focus": {
+		"name": "Hunter's Focus", "branch": "Precision",
+		"description": "Increase critical damage by 15%.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["deadly_precision"],
+		"stats": {"critical_damage": 0.15}
+	},
+	"lethal_aim": {
+		"name": "Lethal Aim", "branch": "Precision",
+		"description": "Gain +4% critical hit chance and arrows deal 8% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["piercing_shots"],
+		"stats": {"critical_chance": 0.04, "skill_damage_percent": 0.08}
 	},
 	"eagles_eye": {
 		"name": "Eagle's Eye", "branch": "Precision",
 		"description": "Super passive: +8% critical chance and +30% critical damage.",
-		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["deadly_precision"],
-		"stats": {"critical_chance": 0.08, "critical_damage": 0.30}, "x": 0, "y": 4
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["lethal_aim"],
+		"stats": {"critical_chance": 0.08, "critical_damage": 0.3}
 	},
+	# --- Skirmisher ---
 	"quickstep": {
 		"name": "Quickstep", "branch": "Skirmisher",
 		"description": "Increase Ranger movement speed by 5%.",
 		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
-		"stats": {"movement_speed": 0.05}, "x": 2, "y": 0
+		"stats": {"movement_speed": 0.05}
 	},
 	"light_footed": {
 		"name": "Light-Footed", "branch": "Skirmisher",
 		"description": "Gain +5% chance to evade incoming attacks.",
 		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["quickstep"],
-		"stats": {"evasion": 0.05}, "x": 2, "y": 1
+		"stats": {"evasion": 0.05}
 	},
 	"windrunner": {
 		"name": "Windrunner", "branch": "Skirmisher",
 		"description": "Increase movement speed by another 5% and projectile speed by 10%.",
 		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["light_footed"],
-		"stats": {"movement_speed": 0.05, "projectile_speed": 0.10}, "x": 2, "y": 2
+		"stats": {"movement_speed": 0.05, "projectile_speed": 0.1}
+	},
+	"fleet_arrows": {
+		"name": "Fleet Arrows", "branch": "Skirmisher",
+		"description": "Increase projectile speed by 15%.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["light_footed"],
+		"stats": {"projectile_speed": 0.15}
 	},
 	"evasive_reflex": {
 		"name": "Evasive Reflex", "branch": "Skirmisher",
 		"description": "Gain +7% chance to evade incoming attacks.",
 		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["windrunner"],
-		"stats": {"evasion": 0.07}, "x": 2, "y": 3
+		"stats": {"evasion": 0.07}
+	},
+	"blur": {
+		"name": "Blur", "branch": "Skirmisher",
+		"description": "Gain +4% evasion and 3% movement speed.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["evasive_reflex"],
+		"stats": {"evasion": 0.04, "movement_speed": 0.03}
+	},
+	"hit_and_run": {
+		"name": "Hit and Run", "branch": "Skirmisher",
+		"description": "Ranger skills recharge 4% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["evasive_reflex"],
+		"stats": {"cooldown_reduction": 0.04}
+	},
+	"shadow_stride": {
+		"name": "Shadow Stride", "branch": "Skirmisher",
+		"description": "Gain +5% chance to evade incoming attacks.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["blur"],
+		"stats": {"evasion": 0.05}
 	},
 	"wind_dancer": {
 		"name": "Wind Dancer", "branch": "Skirmisher",
 		"description": "Super passive: +10% movement speed, +10% projectile speed, and +15 health.",
-		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["evasive_reflex"],
-		"stats": {"movement_speed": 0.10, "projectile_speed": 0.10, "max_health": 15}, "x": 2, "y": 4
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["shadow_stride"],
+		"stats": {"movement_speed": 0.1, "projectile_speed": 0.1, "max_health": 15}
 	},
+	# --- Trapper ---
 	"trapcraft": {
 		"name": "Trapcraft", "branch": "Trapper",
-		"description": "Increase Explosive Arrow and Smoke Bomb effectiveness by 10%.",
+		"description": "Increase Explosive Arrow, Snare Trap and Smoke Bomb effectiveness by 10%.",
 		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
-		"stats": {"trap_efficiency": 0.10}, "x": 4, "y": 0
+		"stats": {"trap_efficiency": 0.1}
 	},
 	"volatile_payload": {
 		"name": "Volatile Payload", "branch": "Trapper",
 		"description": "Increase trap and explosive area by another 15%.",
 		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["trapcraft"],
-		"stats": {"trap_efficiency": 0.15}, "x": 4, "y": 1
+		"stats": {"trap_efficiency": 0.15}
 	},
-	"efficient_fletching": {
-		"name": "Efficient Fletching", "branch": "Trapper",
-		"description": "Reduce Ranger skill mana costs by 10%.",
+	"demolitionist": {
+		"name": "Demolitionist", "branch": "Trapper",
+		"description": "Traps are 10% more effective and arrows deal 5% more damage.",
 		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["volatile_payload"],
-		"stats": {"mana_cost_reduction": 0.10}, "x": 4, "y": 2
+		"stats": {"trap_efficiency": 0.1, "skill_damage_percent": 0.05}
 	},
-	"field_rations": {
-		"name": "Field Rations", "branch": "Trapper",
-		"description": "Gain +15 maximum health and +10 maximum mana.",
-		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["efficient_fletching"],
-		"stats": {"max_health": 15, "max_mana": 10}, "x": 4, "y": 3
+	"tangling_wire": {
+		"name": "Tangling Wire", "branch": "Trapper",
+		"description": "Traps are 10% more effective.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["volatile_payload"],
+		"stats": {"trap_efficiency": 0.1}
+	},
+	"shrapnel": {
+		"name": "Shrapnel", "branch": "Trapper",
+		"description": "Traps are 12% more effective.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["demolitionist"],
+		"stats": {"trap_efficiency": 0.12}
+	},
+	"chain_reaction": {
+		"name": "Chain Reaction", "branch": "Trapper",
+		"description": "Traps are 15% more effective.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["shrapnel"],
+		"stats": {"trap_efficiency": 0.15}
+	},
+	"camouflage": {
+		"name": "Camouflage", "branch": "Trapper",
+		"description": "Gain +4% chance to evade incoming attacks.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["shrapnel"],
+		"stats": {"evasion": 0.04}
+	},
+	"saboteur": {
+		"name": "Saboteur", "branch": "Trapper",
+		"description": "Traps are 10% more effective and arrows deal 6% more damage.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["chain_reaction"],
+		"stats": {"trap_efficiency": 0.1, "skill_damage_percent": 0.06}
 	},
 	"master_trapper": {
 		"name": "Master Trapper", "branch": "Trapper",
 		"description": "Super passive: +25% trap effectiveness and +10% Ranger skill mana savings.",
-		"is_super": true, "point_cost": 2, "required_level": 10, "prerequisites": ["field_rations"],
-		"stats": {"trap_efficiency": 0.25, "mana_cost_reduction": 0.10}, "x": 4, "y": 4
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["saboteur"],
+		"stats": {"trap_efficiency": 0.25, "mana_cost_reduction": 0.1}
+	},
+	# --- Fletcher ---
+	"efficient_fletching": {
+		"name": "Efficient Fletching", "branch": "Fletcher",
+		"description": "Reduce Ranger skill mana costs by 10%.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"mana_cost_reduction": 0.1}
+	},
+	"quiver_discipline": {
+		"name": "Quiver Discipline", "branch": "Fletcher",
+		"description": "Gain +15 maximum mana.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["efficient_fletching"],
+		"stats": {"max_mana": 15}
+	},
+	"steady_breathing": {
+		"name": "Steady Breathing", "branch": "Fletcher",
+		"description": "Regenerate 0.6 mana per second.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["quiver_discipline"],
+		"stats": {"mana_regen": 0.6}
+	},
+	"arrow_recovery": {
+		"name": "Arrow Recovery", "branch": "Fletcher",
+		"description": "Reduce Ranger skill mana costs by 5%.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["quiver_discipline"],
+		"stats": {"mana_cost_reduction": 0.05}
+	},
+	"focused_mind": {
+		"name": "Focused Mind", "branch": "Fletcher",
+		"description": "Regenerate 0.8 mana per second.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["steady_breathing"],
+		"stats": {"mana_regen": 0.8}
+	},
+	"rapid_nocking": {
+		"name": "Rapid Nocking", "branch": "Fletcher",
+		"description": "Ranger skills recharge 5% faster.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["focused_mind"],
+		"stats": {"cooldown_reduction": 0.05}
+	},
+	"deep_quiver": {
+		"name": "Deep Quiver", "branch": "Fletcher",
+		"description": "Gain +20 maximum mana.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["focused_mind"],
+		"stats": {"max_mana": 20}
+	},
+	"master_fletcher": {
+		"name": "Master Fletcher", "branch": "Fletcher",
+		"description": "Skills recharge 5% faster and cost 5% less mana.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["rapid_nocking"],
+		"stats": {"cooldown_reduction": 0.05, "mana_cost_reduction": 0.05}
+	},
+	"endless_quiver": {
+		"name": "Endless Quiver", "branch": "Fletcher",
+		"description": "Super passive: +1.5 mana per second, 6% faster cooldowns, and +20 mana.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["master_fletcher"],
+		"stats": {"mana_regen": 1.5, "cooldown_reduction": 0.06, "max_mana": 20}
+	},
+	# --- Survivalist ---
+	"field_rations": {
+		"name": "Field Rations", "branch": "Survivalist",
+		"description": "Gain +15 maximum health and +10 maximum mana.",
+		"is_super": false, "point_cost": 1, "required_level": 1, "prerequisites": [],
+		"stats": {"max_health": 15, "max_mana": 10}
+	},
+	"hardy": {
+		"name": "Hardy", "branch": "Survivalist",
+		"description": "Gain +15 maximum health.",
+		"is_super": false, "point_cost": 1, "required_level": 2, "prerequisites": ["field_rations"],
+		"stats": {"max_health": 15}
+	},
+	"natures_mend": {
+		"name": "Nature's Mend", "branch": "Survivalist",
+		"description": "Regenerate 0.6 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["hardy"],
+		"stats": {"health_regen": 0.6}
+	},
+	"thick_leathers": {
+		"name": "Thick Leathers", "branch": "Survivalist",
+		"description": "Reduce incoming damage by 3%.",
+		"is_super": false, "point_cost": 1, "required_level": 4, "prerequisites": ["hardy"],
+		"stats": {"damage_reduction_percent": 0.03}
+	},
+	"wilderness_lore": {
+		"name": "Wilderness Lore", "branch": "Survivalist",
+		"description": "Gain +20 maximum health.",
+		"is_super": false, "point_cost": 1, "required_level": 6, "prerequisites": ["natures_mend"],
+		"stats": {"max_health": 20}
+	},
+	"second_nature": {
+		"name": "Second Nature", "branch": "Survivalist",
+		"description": "Regenerate 0.8 health per second.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["wilderness_lore"],
+		"stats": {"health_regen": 0.8}
+	},
+	"tough_as_roots": {
+		"name": "Tough as Roots", "branch": "Survivalist",
+		"description": "Reduce incoming damage by 3%.",
+		"is_super": false, "point_cost": 1, "required_level": 8, "prerequisites": ["wilderness_lore"],
+		"stats": {"damage_reduction_percent": 0.03}
+	},
+	"survival_instinct": {
+		"name": "Survival Instinct", "branch": "Survivalist",
+		"description": "Gain +20 maximum health and 3% less damage taken.",
+		"is_super": false, "point_cost": 1, "required_level": 10, "prerequisites": ["second_nature"],
+		"stats": {"max_health": 20, "damage_reduction_percent": 0.03}
+	},
+	"untamed": {
+		"name": "Untamed", "branch": "Survivalist",
+		"description": "Super passive: +30 maximum health, +1 health per second, and 5% less damage taken.",
+		"is_super": true, "point_cost": 2, "required_level": 12, "prerequisites": ["survival_instinct"],
+		"stats": {"max_health": 30, "health_regen": 1.0, "damage_reduction_percent": 0.05}
 	}
+}
+
+## Every stat a passive node can grant, with its type: whole-number stats are ints, the rest are
+## fractions (0.05 = 5%) or per-second amounts. Not every class reads every stat.
+const PASSIVE_STAT_DEFAULTS: Dictionary = {
+	"max_health": 0,
+	"max_mana": 0,
+	"armor": 0,
+	"weapon_damage_bonus": 0,
+	"pierce": 0,
+	"damage_reduction_percent": 0.0,
+	"evasion": 0.0,
+	"health_regen": 0.0,
+	"mana_regen": 0.0,
+	"mana_cost_reduction": 0.0,
+	"cooldown_reduction": 0.0,
+	"movement_speed": 0.0,
+	"skill_damage_percent": 0.0,
+	"spell_damage_percent": 0.0,
+	"area_of_effect": 0.0,
+	"stun_duration": 0.0,
+	"buff_duration": 0.0,
+	"accuracy": 0.0,
+	"critical_chance": 0.0,
+	"critical_damage": 0.0,
+	"projectile_speed": 0.0,
+	"trap_efficiency": 0.0,
+	"minion_damage": 0.0,
+	"curse_effect": 0.0,
+	"shield_duration": 0.0
 }
 
 const MAX_PLAYER_LEVEL = 25
@@ -1408,7 +1847,9 @@ func can_unlock_witch_skill(skill_id: String) -> bool:
 			or current_rank >= int(skill["max_rank"]) \
 			or skill_tree_points < int(skill["point_cost"]):
 		return false
-
+	for prerequisite_id in skill["prerequisites"]:
+		if get_witch_skill_rank(str(prerequisite_id)) <= 0:
+			return false
 	return true
 
 
@@ -1508,23 +1949,21 @@ func unlock_witch_passive(passive_id: String) -> bool:
 
 
 func get_witch_passive_stat_totals() -> Dictionary:
-	var totals := {
-		"spell_damage_percent": 0.0,
-		"evasion": 0.0,
-		"max_health": 0,
-		"max_mana": 0,
-		"damage_reduction_percent": 0.0
-	}
 	if _get_active_character_class() != "Witch":
-		return totals
+		return PASSIVE_STAT_DEFAULTS.duplicate()
+	return _sum_passive_stats(WITCH_PASSIVE_TREE, witch_unlocked_passives)
 
-	for passive_id in witch_unlocked_passives:
-		if not WITCH_PASSIVE_TREE.has(passive_id):
+
+## Adds up the stats of the unlocked nodes; every stat in PASSIVE_STAT_DEFAULTS is always present,
+## with whole-number stats kept as ints.
+func _sum_passive_stats(tree: Dictionary, unlocked_passives: Array[String]) -> Dictionary:
+	var totals := PASSIVE_STAT_DEFAULTS.duplicate()
+	for passive_id in unlocked_passives:
+		if not tree.has(passive_id):
 			continue
-		var node: Dictionary = WITCH_PASSIVE_TREE[passive_id]
-		var stats: Dictionary = node.get("stats", {})
+		var stats: Dictionary = tree[passive_id].get("stats", {})
 		for stat_name in stats:
-			if stat_name == "max_health" or stat_name == "max_mana":
+			if typeof(totals.get(stat_name, 0.0)) == TYPE_INT:
 				totals[stat_name] = int(totals.get(stat_name, 0)) + int(stats[stat_name])
 			else:
 				totals[stat_name] = float(totals.get(stat_name, 0.0)) + float(stats[stat_name])
@@ -1591,26 +2030,9 @@ func unlock_warrior_passive(passive_id: String) -> bool:
 
 
 func get_warrior_passive_stat_totals() -> Dictionary:
-	var totals := {
-		"max_health": 0,
-		"max_mana": 0,
-		"armor": 0,
-		"weapon_damage_bonus": 0,
-		"damage_reduction_percent": 0.0
-	}
 	if _get_active_character_class() != "Warrior":
-		return totals
-
-	for passive_id in warrior_unlocked_passives:
-		if not WARRIOR_PASSIVE_TREE.has(passive_id):
-			continue
-		var stats: Dictionary = WARRIOR_PASSIVE_TREE[passive_id].get("stats", {})
-		for stat_name in stats:
-			if typeof(totals.get(stat_name, 0)) == TYPE_INT:
-				totals[stat_name] = int(totals.get(stat_name, 0)) + int(stats[stat_name])
-			else:
-				totals[stat_name] = float(totals.get(stat_name, 0.0)) + float(stats[stat_name])
-	return totals
+		return PASSIVE_STAT_DEFAULTS.duplicate()
+	return _sum_passive_stats(WARRIOR_PASSIVE_TREE, warrior_unlocked_passives)
 
 
 func get_ranger_passive_definitions() -> Array[Dictionary]:
@@ -1672,31 +2094,9 @@ func unlock_ranger_passive(passive_id: String) -> bool:
 
 
 func get_ranger_passive_stat_totals() -> Dictionary:
-	var totals := {
-		"accuracy": 0.0,
-		"critical_chance": 0.0,
-		"critical_damage": 0.0,
-		"evasion": 0.0,
-		"projectile_speed": 0.0,
-		"trap_efficiency": 0.0,
-		"mana_cost_reduction": 0.0,
-		"movement_speed": 0.0,
-		"max_health": 0,
-		"max_mana": 0
-	}
 	if _get_active_character_class() != "Ranger":
-		return totals
-
-	for passive_id in ranger_unlocked_passives:
-		if not RANGER_PASSIVE_TREE.has(passive_id):
-			continue
-		var stats: Dictionary = RANGER_PASSIVE_TREE[passive_id].get("stats", {})
-		for stat_name in stats:
-			if typeof(totals.get(stat_name, 0)) == TYPE_INT:
-				totals[stat_name] = int(totals.get(stat_name, 0)) + int(stats[stat_name])
-			else:
-				totals[stat_name] = float(totals.get(stat_name, 0.0)) + float(stats[stat_name])
-	return totals
+		return PASSIVE_STAT_DEFAULTS.duplicate()
+	return _sum_passive_stats(RANGER_PASSIVE_TREE, ranger_unlocked_passives)
 
 
 func get_level_state(level_id: int) -> Dictionary:
