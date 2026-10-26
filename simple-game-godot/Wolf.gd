@@ -66,6 +66,14 @@ var aura_refresh_remaining := 0.0
 var always_alert := false
 ## While not alert the monster stands idle and its physics (chasing, attacking) is off.
 var is_alert := false
+## Bosses shrug off blows: no flinch, no interrupted attacks and barely any knockback.
+var stagger_immune := false
+## Fades from 1 to 0 after each hit; drives the white hit flash.
+var hit_flash := 0.0
+var hit_knockback := Vector2.ZERO
+## Set by the player while the mouse is over this monster.
+var hovered := false
+var stagger_recovery := 0.0
 
 
 func _ready() -> void:
@@ -88,6 +96,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_hit_reaction(delta)
 	if stun_time_remaining > 0.0:
 		stun_time_remaining = maxf(stun_time_remaining - delta, 0.0)
 		if stun_time_remaining == 0.0 and health > 0.0 and is_alert:
@@ -230,6 +239,7 @@ func take_damage(amount: float) -> void:
 	alert()
 
 	if randf() < minf(get_stat(MonsterModifiers.STAT_DODGE), MonsterModifiers.MAX_DODGE_CHANCE):
+		HitFeedback.number(get_parent(), _body_point(), 0.0)
 		return
 
 	var reduction := minf(
@@ -241,6 +251,7 @@ func take_damage(amount: float) -> void:
 	health -= damage_taken
 	health_bar.value = health
 	last_hit = self
+	_react_to_hit(damage_taken)
 	_reflect_damage(damage_taken)
 	if health == 0:
 		died.emit()
@@ -377,3 +388,88 @@ func _reflect_damage(damage_taken: float) -> void:
 		return
 	var reflected := maxi(roundi(damage_taken / max_health * reflect * target.get_max_health()), 1)
 	target.take_damage(reflected)
+
+
+# --- Hit reactions -------------------------------------------------------------------------------------
+
+## A hit for at least this share of max health is heavy: it staggers longer and interrupts an attack.
+const HEAVY_HIT_FRACTION := 0.2
+const FLINCH_TIME := 0.1
+const STAGGER_TIME := 0.35
+const KNOCKBACK := 170.0
+const HEAVY_KNOCKBACK := 290.0
+const KNOCKBACK_DECAY := 1300.0
+const FLASH_TIME := 0.13
+## After a stagger a monster keeps its footing this long, so rapid hits can't pin it in place.
+const STAGGER_RECOVERY := 0.8
+
+
+## Picks the living monster drawn under `point` (world space); overlapping sprites go to the one whose
+## feet are nearest. `padding` grows each sprite's box in screen-ish pixels.
+static func find_at(tree: SceneTree, point: Vector2, padding := 6.0) -> Wolf:
+	var best: Wolf = null
+	var best_distance := INF
+	for node in tree.get_nodes_in_group("enemies"):
+		var enemy := node as Wolf
+		if enemy == null or enemy.health <= 0.0 or not enemy.is_inside_tree() or not enemy.sprite.is_visible_in_tree():
+			continue
+		var sprite_padding := padding / maxf(enemy.sprite.global_transform.get_scale().x, 0.01)
+		if not enemy.sprite.get_rect().grow(sprite_padding).has_point(enemy.sprite.to_local(point)):
+			continue
+		var distance := enemy.global_position.distance_squared_to(point)
+		if distance < best_distance:
+			best = enemy
+			best_distance = distance
+	return best
+
+
+## Roughly the middle of the monster's body, where hits land and numbers rise from.
+func _body_point() -> Vector2:
+	return sprite.global_position + Vector2(0.0, -12.0)
+
+
+## Flash, a damage number and sparks, then a shove away from the player; anything but a boss flinches,
+## and a heavy blow staggers it and breaks off whatever attack it was winding up.
+func _react_to_hit(damage_taken: float) -> void:
+	if damage_taken <= 0.0:
+		return
+	var heavy := damage_taken >= max_health * HEAVY_HIT_FRACTION
+	var away := Vector2.RIGHT
+	if target != null and is_instance_valid(target):
+		away = (global_position - target.global_position).normalized()
+	hit_flash = 1.0
+	HitFeedback.number(get_parent(), _body_point() + Vector2(0.0, -14.0), damage_taken, heavy)
+	HitFeedback.sparks(get_parent(), _body_point() - away * 8.0, away, heavy)
+	if health <= 0.0:
+		return
+	# Small hits only nudge; a blow worth a fifth of its health or more sends it flying.
+	var weight := clampf(damage_taken / (max_health * HEAVY_HIT_FRACTION), 0.2, 1.0)
+	var push := HEAVY_KNOCKBACK if heavy else KNOCKBACK * weight
+	hit_knockback += away * push * (0.12 if stagger_immune else 1.0)
+	if stagger_immune or stagger_recovery > 0.0:
+		return
+	stagger_recovery = STAGGER_RECOVERY
+	apply_stun(STAGGER_TIME if heavy else FLINCH_TIME)
+	if heavy:
+		_interrupt_attack()
+
+
+## Breaks off an attack in progress. Monsters with their own attack states override this.
+func _interrupt_attack() -> void:
+	if state == State.WINDING_UP:
+		state = State.COOLDOWN
+		state_timer = ATTACK_COOLDOWN * 0.5
+	attack_animation_time_remaining = 0.0
+	swipe_timer = 0.0
+	swipe.hide()
+
+
+func _update_hit_reaction(delta: float) -> void:
+	stagger_recovery = maxf(stagger_recovery - delta, 0.0)
+	if hit_knockback.length_squared() > 1.0:
+		move_and_collide(hit_knockback * delta)
+		hit_knockback = hit_knockback.move_toward(Vector2.ZERO, KNOCKBACK_DECAY * delta)
+	hit_flash = maxf(hit_flash - delta / FLASH_TIME, 0.0)
+	# White flash on a hit, a faint glow while the mouse is over it.
+	var glow := hit_flash * 2.2 + (0.22 if hovered else 0.0)
+	sprite.self_modulate = Color(1.0 + glow, 1.0 + glow, 1.0 + glow)

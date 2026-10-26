@@ -99,3 +99,11 @@ func _roar_shard_burst() -> void:
 		shard.direction = direction
 		get_tree().current_scene.add_child(shard)
 		shard.global_position = global_position + direction * 30.0
+
+
+## A heavy blow during the wind-up stops the charge before it starts.
+func _interrupt_attack() -> void:
+	if yeti_mode == YetiMode.WINDING_UP:
+		yeti_mode = YetiMode.RECOVERING
+		yeti_timer = CHARGE_COOLDOWN * 0.5
+		clear_action()

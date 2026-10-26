@@ -51,6 +51,9 @@ const TOWN_SCENE_PATH = "res://town.tscn"
 const TOWN_ARRIVAL_POSITION = Vector2(576, 300)
 const TOWN_RETURN_SCENE_META = "town_return_scene"
 const TOWN_RETURN_POSITION_META = "town_return_position"
+## Click-to-attack (mouse controls): how close the player walks before swinging, or before shooting.
+const MELEE_ENGAGE_RANGE := 54.0
+const RANGED_ENGAGE_RANGE := 340.0
 
 @export_enum("None", "Fireball", "Iceball", "Town Portal") var e_skill := "None"
 
@@ -113,6 +116,12 @@ var attack_hit_applied := false
 var town_portal: Portal
 var town_portal_cast_time_remaining := 0.0
 var is_casting_town_portal := false
+## Mouse controls: the monster clicked to attack (walked up to, then struck), whether the button is
+## still held (keep attacking it), and Shift-click attacking toward the cursor without moving.
+var attack_target: Wolf
+var attack_target_held := false
+var stand_attack_held := false
+var hovered_enemy: Wolf
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var sword: Node2D = $Sword
@@ -236,6 +245,28 @@ func _physics_process(delta: float) -> void:
 		else:
 			direction = to_destination.normalized()
 
+	var mouse_controls := not free_aim
+	if mouse_controls:
+		_update_hovered_enemy()
+	# Click-to-attack: walk to the clicked monster, then strike it; keys or a ground click call it off.
+	var attack_now := false
+	if keyboard_direction != Vector2.ZERO:
+		attack_target = null
+	if attack_target != null and (not is_instance_valid(attack_target) or attack_target.health <= 0.0):
+		attack_target = null
+	if attack_target != null:
+		var to_target := attack_target.global_position - global_position
+		if to_target.length() > _engage_range():
+			direction = to_target.normalized()
+		else:
+			direction = Vector2.ZERO
+			_aim_at(attack_target.global_position)
+			attack_now = true
+	elif stand_attack_held and mouse_controls:
+		direction = Vector2.ZERO
+		_aim_at(get_global_mouse_position())
+		attack_now = true
+
 	if is_casting_town_portal:
 		velocity = Vector2.ZERO
 		animation_time = 0.0
@@ -273,8 +304,13 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(movement_velocity, DECELERATION * delta)
 		animation_time = 0.0
 
-	if Input.is_action_just_pressed("ui_accept") or aim_held:
-		_use_primary_attack()
+	var space_attack := Input.is_action_just_pressed("ui_accept")
+	if space_attack and mouse_controls and not aim_held and attack_target == null:
+		_aim_at(get_global_mouse_position())
+	if space_attack or aim_held or attack_now:
+		# One click is one attack; holding the button keeps attacking the same monster.
+		if _use_primary_attack() and attack_target != null and not attack_target_held:
+			attack_target = null
 
 	_update_sword(delta)
 	_update_wand()
@@ -298,9 +334,31 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton \
 			and event.button_index == MOUSE_BUTTON_LEFT \
 			and not event.pressed:
+		attack_target_held = false
+		stand_attack_held = false
 		if mouse_move_held:
 			_finish_mouse_move(event.position)
 		return
+	if event is InputEventMouseButton \
+			and event.button_index == MOUSE_BUTTON_LEFT \
+			and event.pressed \
+			and not free_aim:
+		# Shift-click attacks toward the cursor where you stand; clicking a monster goes after it.
+		if event.shift_pressed:
+			stand_attack_held = true
+			attack_target = null
+			click_move_active = false
+			get_viewport().set_input_as_handled()
+			return
+		var clicked := Wolf.find_at(get_tree(), get_global_mouse_position())
+		if clicked != null:
+			attack_target = clicked
+			attack_target_held = true
+			click_move_active = false
+			mouse_move_held = false
+			get_viewport().set_input_as_handled()
+			return
+		attack_target = null
 	if event is InputEventMouseButton \
 			and event.button_index == MOUSE_BUTTON_LEFT \
 			and event.pressed:
@@ -363,6 +421,9 @@ func tap_attack() -> void:
 func activate_skill_slot(slot: String) -> void:
 	if health <= 0 or is_casting_town_portal:
 		return
+	# With a mouse, skills go where you point, like the basic attack.
+	if not free_aim and not aim_held:
+		_aim_at(get_global_mouse_position())
 	if selected_character == "Witch":
 		if slot == "E":
 			if not _cast_assigned_witch_skill(slot):
@@ -420,11 +481,14 @@ func cast_town_portal() -> void:
 	_open_town_portal()
 
 
-func _use_primary_attack() -> void:
+## Starts the class's basic attack along aim_direction. Returns whether one actually started (it may be
+## on cooldown or mid-swing).
+func _use_primary_attack() -> bool:
 	if selected_character == "Witch":
 		if iceball_cooldown_remaining <= 0.0:
 			_cast_iceball()
 			iceball_cooldown_remaining = ICEBALL_COOLDOWN
+			return true
 	elif selected_character == "Ranger":
 		if ranger_attack_cooldown_remaining <= 0.0:
 			_spawn_ranger_arrow(
@@ -433,9 +497,45 @@ func _use_primary_attack() -> void:
 			)
 			ranger_attack_cooldown_remaining = 0.42
 			ranger_attack_animation_time_remaining = RANGER_ATTACK_DURATION
+			return true
 	elif attack_time_remaining <= 0.0:
 		attack_time_remaining = ATTACK_DURATION
 		attack_hit_applied = false
+		return true
+	return false
+
+
+## How close the player gets to a clicked monster before attacking it.
+func _engage_range() -> float:
+	return MELEE_ENGAGE_RANGE if selected_character == "Warrior" else RANGED_ENGAGE_RANGE
+
+
+## Turns attacks (and the sprite) toward a world point, in any direction.
+func _aim_at(point: Vector2) -> void:
+	var to_point := point - global_position
+	if to_point.is_zero_approx():
+		return
+	aim_direction = to_point.normalized()
+	facing = _cardinal_direction(to_point)
+
+
+## Mouse controls: lights up the monster under the cursor and shows a crosshair over it.
+func _update_hovered_enemy() -> void:
+	var hovered: Wolf = null
+	if get_viewport().gui_get_hovered_control() == null:
+		hovered = Wolf.find_at(get_tree(), get_global_mouse_position())
+	if hovered == hovered_enemy:
+		return
+	if is_instance_valid(hovered_enemy):
+		hovered_enemy.hovered = false
+	hovered_enemy = hovered
+	if hovered != null:
+		hovered.hovered = true
+	Input.set_default_cursor_shape(Input.CURSOR_CROSS if hovered != null else Input.CURSOR_ARROW)
+
+
+func _exit_tree() -> void:
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 
 
 func _cast_e_skill() -> void:
@@ -838,6 +938,7 @@ func _damage_enemies_in_front(damage: float, max_distance: float, min_dot: float
 	var target := _get_facing_enemy(max_distance, min_dot)
 	if target != null and target.has_method("take_damage"):
 		target.call("take_damage", damage * _get_war_cry_attack_multiplier())
+		HitFeedback.hit_stop(get_tree(), HitFeedback.HEAVY_HIT_STOP)
 
 
 func _damage_enemies_in_radius(radius: float, damage: float, facing_only: bool) -> void:
@@ -852,6 +953,7 @@ func _damage_enemies_in_radius(radius: float, damage: float, facing_only: bool) 
 				and to_enemy.normalized().dot(aim_direction) < -0.25:
 			continue
 		enemy.call("take_damage", damage * _get_war_cry_attack_multiplier())
+		HitFeedback.hit_stop(get_tree(), HitFeedback.HEAVY_HIT_STOP)
 
 
 func _is_live_warrior_target(enemy: Node) -> bool:
@@ -1637,6 +1739,7 @@ func _damage_wolves_in_swing() -> void:
 		var to_enemy := enemy_node.global_position - global_position
 		if to_enemy.length() <= SWORD_REACH and to_enemy.normalized().dot(aim_direction) >= SWORD_HIT_DOT_THRESHOLD:
 			enemy.call("take_damage", _get_primary_attack_damage())
+			HitFeedback.hit_stop(get_tree(), HitFeedback.HIT_STOP)
 
 
 func _get_primary_attack_damage() -> float:

@@ -67,7 +67,7 @@ func _input(event: InputEvent) -> void:
 	# A click on a HUD button over a monster is for the button.
 	if get_viewport().gui_get_hovered_control() != null:
 		return
-	var clicked := _monster_at(player.get_global_mouse_position())
+	var clicked := Wolf.find_at(get_tree(), player.get_global_mouse_position(), CLICK_PADDING)
 	if clicked != null:
 		selected = clicked
 
@@ -97,25 +97,6 @@ func _find_target() -> Wolf:
 		selected = null
 		return null
 	return selected if _is_targetable(selected) else null
-
-
-func _monster_at(point: Vector2) -> Wolf:
-	var best: Wolf = null
-	var best_distance := INF
-	for node in get_tree().get_nodes_in_group("enemies"):
-		var enemy := node as Wolf
-		if enemy == null or not _is_targetable(enemy):
-			continue
-		var sprite := enemy.sprite
-		var padding := CLICK_PADDING / maxf(sprite.global_transform.get_scale().x, 0.01)
-		if not sprite.get_rect().grow(padding).has_point(sprite.to_local(point)):
-			continue
-		# Overlapping sprites: the monster whose body is closest to the click wins.
-		var distance := enemy.global_position.distance_squared_to(point)
-		if distance < best_distance:
-			best = enemy
-			best_distance = distance
-	return best
 
 
 static func _is_targetable(enemy: Wolf) -> bool:
