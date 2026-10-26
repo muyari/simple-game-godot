@@ -1,9 +1,9 @@
 [gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://resource_globe.tscn" id="1_globe"]
-[ext_resource type="Texture2D" uid="uid://efvw0ldx8y6n" path="res://textures/mana_globe_fill.png" id="2_fill"]
 
 [node name="ManaGlobe" instance=ExtResource("1_globe")]
-
-[node name="Fill" parent="." index="1"]
-texture = ExtResource("2_fill")
+liquid_deep = Color(0.02, 0.06, 0.32, 1)
+liquid_bright = Color(0.22, 0.55, 1, 1)
+gem_color = Color(0.2, 0.45, 0.95, 1)
+pulse_when_low = false

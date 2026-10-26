@@ -57,6 +57,7 @@ var breath_spray: CPUParticles2D
 
 
 func _ready() -> void:
+	stagger_immune = true
 	max_health = 120.0
 	attack_damage = BITE_DAMAGE
 	experience_reward = 200

@@ -80,3 +80,10 @@ func _throw(to_target: Vector2) -> void:
 	var angles := [0.0] if casts % 3 != 0 else [-FAN_SPREAD, 0.0, FAN_SPREAD]
 	for angle in angles:
 		Hellfire.launch(get_parent(), origin, aim.rotated(angle), get_outgoing_damage(BOLT_DAMAGE), self)
+
+
+## A heavy blow spoils a cast before the bolt leaves its hand.
+func _interrupt_attack() -> void:
+	if casting and not thrown:
+		casting = false
+		clear_action()

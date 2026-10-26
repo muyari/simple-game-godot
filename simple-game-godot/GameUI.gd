@@ -578,7 +578,7 @@ func _on_player_died() -> void:
 	)
 
 
-## Centred end-of-run panel (death or area cleared). Each action is
+## Centred panel shown when the player dies. Each action is
 ## [label, callable]; the "Return to Town" one is kept so it can be disabled
 ## while the level saves.
 func _show_outcome(eyebrow: String, title: String, subtitle: String, actions: Array) -> void:
@@ -596,11 +596,6 @@ func _show_outcome(eyebrow: String, title: String, subtitle: String, actions: Ar
 		if action[1] == _on_return_to_town_pressed:
 			return_to_town_button = button
 	outcome_overlay.show()
-
-
-func _hide_outcome() -> void:
-	outcome_overlay.hide()
-	_set_player_menu_paused(false)
 
 
 func _build_outcome_overlay() -> void:
@@ -892,29 +887,24 @@ func _on_level_completed() -> void:
 	var level_id := GameState.get_level_id(get_tree().current_scene.scene_file_path)
 	if not GameState.complete_level(level_id):
 		push_error("Could not persist completion for level %d." % level_id)
-	var next_level_name := str(GameState.LEVEL_NAMES.get(level_id + 1, ""))
-	_set_player_menu_paused(true)
-	_show_outcome(
-		"AREA SECURED",
-		str(GameState.LEVEL_NAMES.get(level_id, "Area Cleared")),
-		"Every foe has fallen. %s" % (
-			"%s now awaits at the Waystone." % next_level_name if not next_level_name.is_empty()
-			else "You have conquered the frontier."
-		),
-		[
-			["Keep Exploring", _hide_outcome],
-			["Return to Town", _on_return_to_town_pressed],
-			["Choose Another Level", _on_return_to_levels_pressed],
-		]
-	)
+	# No pop-up: the boss's loot is still on the ground. A banner, a marker in the corner and a way home.
+	_show_banner("Area Secured", QUEST_BANNER_COLOR)
+	enemy_progress_label.text = "✓  %s secured" % str(GameState.LEVEL_NAMES.get(level_id, "Area"))
+	enemy_progress_label.add_theme_color_override("font_color", Color("#a9d98a"))
+	_show_corner_return_button()
 
 
-func _on_return_to_levels_pressed() -> void:
-	get_tree().set_meta("return_to_level_select", true)
-	var error := GameState.change_scene("res://Menu.tscn")
-	if error != OK:
-		get_tree().remove_meta("return_to_level_select")
-		push_error("Could not return to level select: %s" % error_string(error))
+## A small "Return to Town" button tucked under the top-left HUD once the level is cleared.
+func _show_corner_return_button() -> void:
+	var button := Button.new()
+	button.text = "Return to Town"
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 15)
+	button.position = Vector2(20.0, 96.0)
+	button.custom_minimum_size = Vector2(150.0, 34.0 if not TouchControls.is_supported() else 46.0)
+	button.pressed.connect(_on_return_to_town_pressed)
+	add_child(button)
+	return_to_town_button = button
 
 
 func _on_return_to_town_pressed() -> void:
@@ -933,7 +923,7 @@ func _on_return_to_town_pressed() -> void:
 		return
 	get_tree().set_meta(Player.TOWN_RETURN_SCENE_META, scene_path)
 	get_tree().set_meta(Player.TOWN_RETURN_POSITION_META, player.global_position)
-	get_tree().set_meta("portal_spawn_position", Vector2(576, 350))
+	get_tree().set_meta("portal_spawn_position", Vector2(576, 300))
 	get_tree().set_meta("portal_player_vitals", {
 		"health": Player.MAX_HEALTH,
 		"mana": player.mana

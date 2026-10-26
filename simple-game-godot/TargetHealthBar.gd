@@ -109,6 +109,9 @@ func _cycle_target(step: int) -> void:
 		selected = monsters[0] if step > 0 else monsters[-1]
 	else:
 		selected = monsters[posmod(index + step, monsters.size())]
+	var clicked := Wolf.find_at(get_tree(), player.get_global_mouse_position(), CLICK_PADDING)
+	if clicked != null:
+		selected = clicked
 
 
 func _process(delta: float) -> void:
