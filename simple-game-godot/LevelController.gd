@@ -5,6 +5,8 @@ signal level_completed
 signal boss_incoming
 signal boss_progress_changed(defeated: int, total: int)
 signal chest_loot_opened(chest: TreasureChest)
+## Emitted instead of progress when the player comes back to a random map they already cleared.
+signal cleared_map_entered
 
 const WOLF_SCENE = preload("res://wolf.tscn")
 const SCORPION_SCENE = preload("res://scorpion.tscn")
@@ -413,6 +415,25 @@ const ALPHA_WOLF_EXPERIENCE = 60
 const BOSS_ROLE_META = "boss_role"
 const CHEST_MIN_ITEMS = 1
 const CHEST_MAX_ITEMS = 2
+## Random maps draw their monsters from every region's pool.
+const ENDGAME_MONSTER_SCENES: Array[String] = [
+	"res://wolf.tscn", "res://scorpion.tscn", "res://snake.tscn",
+	"res://crystalback_yeti.tscn", "res://ice_golem.tscn",
+	"res://imp.tscn", "res://hellhound.tscn", "res://fire_fiend.tscn",
+]
+## Random maps first bring every monster up to the Underworld's strength (the early regions' monsters
+## are far frailer), then apply the tier's multipliers. Health factor by scene; "wolf_pack" is the
+## forest boss pack.
+const ENDGAME_HEALTH_BASELINE := {
+	"res://wolf.tscn": 6.0,
+	"res://scorpion.tscn": 5.0,
+	"res://snake.tscn": 6.0,
+	"res://desert_boss.tscn": 8.0,
+	"res://ice_boss.tscn": 1.5,
+	"wolf_pack": 12.0,
+}
+## Monster modifiers roll as if the area were this many levels deeper per tier.
+const ENDGAME_MODIFIER_LEVELS_PER_TIER := 1
 
 @export var player_path: NodePath = NodePath("../Player")
 @export_enum("Forest", "Desert", "Ice Caves", "Underworld") var biome := 0
@@ -438,9 +459,22 @@ var item_pool: Array[ItemData] = []
 var loot_random := RandomNumberGenerator.new()
 ## Counts down to bringing in the next straggler; starts at the arrival grace period.
 var straggler_timer := STRAGGLER_ARRIVAL_GRACE
+## Which region's boss guards the end of the level (same numbering as biome). In the campaign it is the
+## level's own; random maps roll any of them.
+var boss_kind := 0
+## Random map difficulty tier (GameState.ENDGAME_TIERS); 0 on campaign levels.
+var endgame_tier := 0
+## Mixed into the scenery seed so random maps don't repeat the campaign's layout. 0 on campaign levels.
+var map_seed := 0
+var treasure_chests: Array[TreasureChest] = []
 
 
 func _ready() -> void:
+	level_id = _get_level_id()
+	boss_kind = biome
+	if level_id == GameState.ENDGAME_LEVEL_ID:
+		_setup_endgame_run()
+
 	var ground := get_node_or_null("../Background/Sprite2D") as Sprite2D
 	if ground != null:
 		if biome == 0:
@@ -479,7 +513,6 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 
-	level_id = _get_level_id()
 	var level_state: Dictionary = GameState.get_level_state(level_id)
 	if level_state.is_empty():
 		region_origin = player.global_position + player_camera.offset / player_camera.zoom
@@ -498,6 +531,7 @@ func _ready() -> void:
 	if not level_state.is_empty():
 		call_deferred("_restore_active_enemies", level_state.get("enemies", []))
 		call_deferred("_restore_level_drops", level_state.get("drops", []))
+		call_deferred("_restore_level_chests", level_state.get("chests", []))
 	player.died.connect(_on_player_died)
 	if biome == 0:
 		get_parent().add_child.call_deferred(ForestAmbience.new())
@@ -510,9 +544,34 @@ func _ready() -> void:
 	call_deferred("_emit_initial_progress")
 
 
+## Takes this random map's layout, boss, seed and tier from the saved run. New maps are only ever rolled
+## at a waystone; coming back to a cleared map returns to it as it was left, with nothing left to spawn.
+func _setup_endgame_run() -> void:
+	var run := GameState.get_endgame_run()
+	if run.is_empty():
+		# Only reachable without going through a waystone (e.g. a stale save); fall back to a 1x map.
+		if not GameState.start_endgame_run(1, 1):
+			push_error("Could not roll a random map.")
+		run = GameState.get_endgame_run()
+	if run.is_empty():
+		return
+	biome = int(run["layout"])
+	boss_kind = int(run["boss"])
+	map_seed = int(run["seed"])
+	endgame_tier = int(run["tier"])
+	level_is_complete = bool(run["cleared"])
+
+
+func is_endgame() -> bool:
+	return endgame_tier > 0
+
+
 func _emit_initial_progress() -> void:
+	if level_is_complete:
+		cleared_map_entered.emit()
+		return
 	progress_changed.emit(enemies_defeated, _get_max_enemies())
-	if biome == 0 and boss_spawned:
+	if boss_kind == 0 and boss_spawned:
 		boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
 	elif _has_level_boss() and boss_spawned:
 		boss_progress_changed.emit(0, 1)
@@ -576,7 +635,9 @@ func save_current_level_state() -> bool:
 	if level_id == 0:
 		push_error("Cannot save level state for an unsupported scene.")
 		return false
-	if level_is_complete:
+	# Cleared campaign levels start over next time. A cleared random map stays as it was left (its
+	# remaining drops and chest), so the player can come back for them.
+	if level_is_complete and not is_endgame():
 		return true
 
 	var enemy_records: Array[Dictionary] = []
@@ -632,7 +693,8 @@ func save_current_level_state() -> bool:
 		"current_region": [current_region.x, current_region.y],
 		"spawned_enemy_regions": cleared_regions,
 		"enemies": enemy_records,
-		"drops": drop_records
+		"drops": drop_records,
+		"chests": _chest_records()
 	}
 	if not GameState.set_level_state(level_id, level_state):
 		push_error("Could not persist progress for level %d." % level_id)
@@ -688,6 +750,7 @@ func _restore_active_enemies(raw_enemies: Variant) -> void:
 
 		enemy.target_path = NodePath("../Player")
 		enemy.modifier_ids = MonsterModifiers.sanitize(enemy_record.get("modifiers", []))
+		_apply_endgame_scaling(enemy, enemy_scene.resource_path)
 		if str(scene_path) in LEVEL_BOSS_SCENES:
 			enemy.always_alert = true
 			enemy.died.connect(_on_level_boss_died.bind(enemy))
@@ -841,6 +904,8 @@ func _get_level_id() -> int:
 
 
 func _physics_process(delta: float) -> void:
+	if level_is_complete:
+		return
 	if enemies_spawned >= _get_max_enemies():
 		_call_in_straggler(delta)
 		return
@@ -921,7 +986,7 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 	active_scenery_region = region
 
 	var random := RandomNumberGenerator.new()
-	random.seed = int(region.x) * 73856093 ^ int(region.y) * 19349663
+	random.seed = int(region.x) * 73856093 ^ int(region.y) * 19349663 ^ map_seed
 	var region_center := region_origin + Vector2(region) * region_size
 
 	if biome == 1:
@@ -946,8 +1011,9 @@ func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, r
 	floor_detail.z_index = -8
 	get_parent().call_deferred("add_child", floor_detail)
 
+	# The apple trees belong to the forest's quests, so random maps leave them out.
 	var apple_index := FOREST_APPLE_TREE_REGIONS.find(region)
-	if apple_index >= 0:
+	if apple_index >= 0 and not is_endgame():
 		_add_forest_apple_tree(random, apple_index, region_center, spread)
 
 	if random.randf() < 0.5:
@@ -1639,19 +1705,36 @@ func _get_region_for_position(world_position: Vector2) -> Vector2i:
 
 
 func _get_max_enemies() -> int:
+	var extra := 0
+	if is_endgame():
+		extra = int(GameState.ENDGAME_TIERS[endgame_tier]["extra_monsters"])
 	match biome:
 		1:
-			return MAX_DESERT_ENEMIES
+			return MAX_DESERT_ENEMIES + extra
 		2:
-			return MAX_ICE_ENEMIES
+			return MAX_ICE_ENEMIES + extra
 		3:
-			return MAX_UNDERWORLD_ENEMIES
-	return MAX_FOREST_ENEMIES
+			return MAX_UNDERWORLD_ENEMIES + extra
+	return MAX_FOREST_ENEMIES + extra
+
+
+## Sets a monster's endgame health and damage multipliers before it enters the tree. baseline_key is
+## its scene path (or "wolf_pack"); does nothing on campaign levels.
+func _apply_endgame_scaling(enemy: Wolf, baseline_key: String) -> void:
+	if not is_endgame():
+		return
+	var tier: Dictionary = GameState.ENDGAME_TIERS[endgame_tier]
+	enemy.health_scale = float(ENDGAME_HEALTH_BASELINE.get(baseline_key, 1.0)) * float(tier["health"])
+	enemy.damage_scale = float(tier["damage"])
 
 
 func _spawn_enemy(direction: Vector2) -> bool:
 	var enemy_scene: PackedScene = WOLF_SCENE
-	if biome == 1:
+	if is_endgame():
+		enemy_scene = _get_enemy_scene(
+			ENDGAME_MONSTER_SCENES[loot_random.randi_range(0, ENDGAME_MONSTER_SCENES.size() - 1)]
+		)
+	elif biome == 1:
 		enemy_scene = SCORPION_SCENE if loot_random.randf() < 0.75 else SNAKE_SCENE
 	elif biome == 2:
 		enemy_scene = CRYSTALBACK_YETI_SCENE if loot_random.randf() < 0.55 else ICE_GOLEM_SCENE
@@ -1670,7 +1753,11 @@ func _spawn_enemy(direction: Vector2) -> bool:
 		return false
 
 	enemy.target_path = NodePath("../Player")
-	enemy.modifier_ids = MonsterModifiers.roll(loot_random, area_level)
+	enemy.modifier_ids = MonsterModifiers.roll(
+		loot_random,
+		area_level + endgame_tier * ENDGAME_MODIFIER_LEVELS_PER_TIER
+	)
+	_apply_endgame_scaling(enemy, enemy_scene.resource_path)
 	enemy.died.connect(_on_enemy_died.bind(enemy))
 	get_parent().add_child(enemy)
 	enemy.global_position = player.global_position + direction * _get_spawn_distance(direction)
@@ -1682,14 +1769,14 @@ func _spawn_enemy(direction: Vector2) -> bool:
 
 ## Levels that end with a single boss monster rather than the forest's wolf pack.
 func _has_level_boss() -> bool:
-	return biome in [1, 2, 3]
+	return boss_kind in [1, 2, 3]
 
 
 func _spawn_level_boss() -> void:
 	var boss_scene: PackedScene = DESERT_BOSS_SCENE
-	if biome == 2:
+	if boss_kind == 2:
 		boss_scene = ICE_BOSS_SCENE
-	elif biome == 3:
+	elif boss_kind == 3:
 		boss_scene = ARCHDEMON_SCENE
 	var boss := boss_scene.instantiate() as Wolf
 	if boss == null:
@@ -1697,6 +1784,7 @@ func _spawn_level_boss() -> void:
 		set_physics_process(false)
 		return
 
+	_apply_endgame_scaling(boss, boss_scene.resource_path)
 	boss.always_alert = true
 	boss.target_path = NodePath("../Player")
 	boss.died.connect(_on_level_boss_died.bind(boss))
@@ -1733,7 +1821,7 @@ func _on_enemy_died(enemy: Wolf) -> void:
 	_drop_enemy_loot(enemy)
 
 	var max_enemies := _get_max_enemies()
-	if biome == 0 and enemies_defeated == max_enemies and not boss_spawned:
+	if boss_kind == 0 and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_wolf_boss_pack()
 		_save_level_state()
 	elif _has_level_boss() and enemies_defeated == max_enemies and not boss_spawned:
@@ -1748,8 +1836,8 @@ func _on_level_boss_died(boss: Wolf) -> void:
 	if not player.gain_experience(experience_reward):
 		push_error("Could not award %d XP for defeating the level boss." % experience_reward)
 	_drop_enemy_loot(boss, true)
-	if biome in [2, 3]:
-		# The Cryohydra and the Archdemon guard a hoard as well.
+	if boss_kind in [2, 3] or is_endgame():
+		# The Cryohydra and the Archdemon guard a hoard as well, as does every random map's boss.
 		_spawn_treasure_chest(boss.global_position + Vector2(0.0, 40.0))
 	_complete_current_level()
 
@@ -1787,6 +1875,7 @@ func _spawn_boss_wolf(world_position: Vector2, is_alpha: bool, saved_health := -
 		wolf.max_health = Wolf.MAX_HEALTH * ALPHA_WOLF_HEALTH_MULTIPLIER
 		wolf.attack_damage = roundi(Wolf.ATTACK_DAMAGE * ALPHA_WOLF_DAMAGE_MULTIPLIER)
 		wolf.experience_reward = ALPHA_WOLF_EXPERIENCE
+	_apply_endgame_scaling(wolf, "wolf_pack")
 	wolf.died.connect(_on_boss_wolf_died.bind(wolf))
 	get_parent().add_child(wolf)
 	wolf.global_position = world_position
@@ -1810,22 +1899,71 @@ func _on_boss_wolf_died(wolf: Wolf) -> void:
 	_complete_current_level()
 
 
-func _spawn_treasure_chest(world_position: Vector2) -> void:
+func _spawn_treasure_chest(world_position: Vector2) -> TreasureChest:
 	var chest := TREASURE_CHEST_SCENE.instantiate() as TreasureChest
 	if chest == null:
 		push_error("The treasure chest scene root must use the TreasureChest script.")
-		return
+		return null
 
 	chest.opened.connect(_on_treasure_chest_opened.bind(chest))
 	get_parent().call_deferred("add_child", chest)
 	chest.position = world_position
+	treasure_chests.append(chest)
+	return chest
+
+
+## Chests that still hold something, for the level save.
+func _chest_records() -> Array[Dictionary]:
+	var records: Array[Dictionary] = []
+	for chest in treasure_chests:
+		if not is_instance_valid(chest) or not chest.has_loot_left():
+			continue
+		var loot_records: Array[Dictionary] = []
+		for item in chest.loot:
+			loot_records.append(_item_to_record(item))
+		records.append({
+			"position": [chest.position.x, chest.position.y],
+			"loot_rolled": chest.loot_rolled,
+			"is_open": chest.is_open,
+			"loot": loot_records
+		})
+	return records
+
+
+func _restore_level_chests(raw_chests: Variant) -> void:
+	if typeof(raw_chests) != TYPE_ARRAY:
+		push_error("Saved chest list is invalid.")
+		return
+	for raw_chest in raw_chests:
+		if typeof(raw_chest) != TYPE_DICTIONARY:
+			push_error("Ignoring an invalid saved chest.")
+			continue
+		var chest_position: Variant = _vector_from_record(raw_chest.get("position", []), "chest position")
+		if chest_position == null:
+			continue
+		var chest := _spawn_treasure_chest(chest_position)
+		if chest == null:
+			continue
+		chest.loot_rolled = bool(raw_chest.get("loot_rolled", false))
+		chest.is_open = bool(raw_chest.get("is_open", false))
+		var raw_loot: Variant = raw_chest.get("loot", [])
+		if typeof(raw_loot) != TYPE_ARRAY:
+			continue
+		for raw_item in raw_loot:
+			if typeof(raw_item) != TYPE_DICTIONARY:
+				continue
+			var item := _item_from_record(raw_item)
+			if item != null:
+				chest.loot.append(item)
 
 
 func _on_treasure_chest_opened(chest: TreasureChest) -> void:
 	if not chest.loot_rolled:
 		chest.loot_rolled = true
 		# Quest items (like Rendel's coat) come first, and only while their quest is at the right stage.
-		chest.loot.append_array(Quests.create_chest_quest_items())
+		# They belong to the campaign's bosses, not to random maps.
+		if not is_endgame():
+			chest.loot.append_array(Quests.create_chest_quest_items())
 		if item_pool.is_empty():
 			push_error("The treasure chest has no loot table to draw from.")
 		else:
@@ -1842,10 +1980,15 @@ func _on_treasure_chest_opened(chest: TreasureChest) -> void:
 func _complete_current_level() -> void:
 	level_is_complete = true
 	level_completed.emit()
+	if is_endgame():
+		# Keep the cleared map (boss loot, chest) for a later visit.
+		_save_level_state()
 
 
 func _get_scaled_experience_reward(enemy: Wolf) -> int:
 	var area_multiplier := 1.0 + float(area_level - 1) * 0.5
+	if is_endgame():
+		area_multiplier *= float(GameState.ENDGAME_TIERS[endgame_tier]["experience"])
 	return maxi(roundi(enemy.experience_reward * area_multiplier), 1)
 
 
@@ -1859,9 +2002,9 @@ func _drop_enemy_loot(enemy: Wolf, is_level_boss := false) -> void:
 	_spawn_gold_pickup(origin + gold_hop, gold_amount, -gold_hop)
 	if is_level_boss:
 		var boss_gear := _create_desert_gear(true)
-		if biome == 2:
+		if _get_gear_region() == 2:
 			boss_gear = _create_ice_gear(true)
-		elif biome == 3:
+		elif _get_gear_region() == 3:
 			boss_gear = _create_underworld_gear(true)
 		var boss_hop := _drop_hop()
 		_spawn_item_pickup(boss_gear, origin + boss_hop, -boss_hop)
@@ -1875,6 +2018,11 @@ func _drop_enemy_loot(enemy: Wolf, is_level_boss := false) -> void:
 		_drop_random_enemy_item(origin, _drop_hop() + scatter)
 
 
+## Whose gear table drops here (same numbering as biome). Random maps drop the Underworld's, the best.
+func _get_gear_region() -> int:
+	return 3 if is_endgame() else biome
+
+
 ## A random hop for a fresh drop: where it lands relative to the monster.
 func _drop_hop() -> Vector2:
 	var distance := loot_random.randf_range(DROP_HOP_DISTANCE.x, DROP_HOP_DISTANCE.y)
@@ -1884,11 +2032,12 @@ func _drop_hop() -> Vector2:
 ## Drops a random piece of the area's gear, hopping from origin out to origin + hop.
 func _drop_random_enemy_item(origin: Vector2, hop: Vector2) -> void:
 	var item: ItemData = null
-	if biome == 1:
+	var gear_region := _get_gear_region()
+	if gear_region == 1:
 		item = _create_desert_gear(false)
-	elif biome == 2:
+	elif gear_region == 2:
 		item = _create_ice_gear(false)
-	elif biome == 3:
+	elif gear_region == 3:
 		item = _create_underworld_gear(false)
 	elif not item_pool.is_empty():
 		item = item_pool[loot_random.randi_range(0, item_pool.size() - 1)]

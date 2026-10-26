@@ -4,6 +4,7 @@ const EXPERIENCE_BAR_WIDTH = 440.0
 const BOSS_BANNER_DURATION = 3.0
 const BOSS_BANNER_COLOR := Color("#ff6a4d")
 const QUEST_BANNER_COLOR := Color("#ffd34d")
+const ENDGAME_BANNER_COLOR := Color("#c99bff")
 
 
 @onready var health_orb: ResourceGlobe = $HealthOrb
@@ -96,6 +97,9 @@ func _ready() -> void:
 	level_controller.boss_incoming.connect(_on_boss_incoming)
 	level_controller.boss_progress_changed.connect(_on_boss_progress_changed)
 	level_controller.chest_loot_opened.connect(_on_chest_loot_opened)
+	level_controller.cleared_map_entered.connect(_on_cleared_map_entered)
+	if _is_endgame() and not bool(level_controller.get("level_is_complete")):
+		_show_banner("%s Random Map" % _endgame_tier_name(), ENDGAME_BANNER_COLOR)
 
 
 func _connect_skill_slot_clicks(player: Player) -> void:
@@ -643,6 +647,18 @@ func _build_outcome_overlay() -> void:
 
 func _on_enemy_progress_changed(defeated: int, total: int) -> void:
 	enemy_progress_label.text = "Enemies defeated: %d/%d" % [defeated, total]
+	if _is_endgame():
+		enemy_progress_label.text = "%s map  -  %s" % [_endgame_tier_name(), enemy_progress_label.text]
+
+
+func _is_endgame() -> bool:
+	var level_controller := get_node_or_null("../LevelController")
+	return level_controller != null and level_controller.has_method("is_endgame") \
+			and bool(level_controller.call("is_endgame"))
+
+
+func _endgame_tier_name() -> String:
+	return GameState.get_endgame_tier_name(int(get_node("../LevelController").get("endgame_tier")))
 
 
 func _on_boss_incoming() -> void:
@@ -885,11 +901,41 @@ func _build_progression_hud() -> void:
 
 func _on_level_completed() -> void:
 	var level_id := GameState.get_level_id(get_tree().current_scene.scene_file_path)
+	if level_id == GameState.ENDGAME_LEVEL_ID:
+		_on_endgame_map_completed()
+		return
+	var campaign_was_complete := GameState.is_campaign_complete()
 	if not GameState.complete_level(level_id):
 		push_error("Could not persist completion for level %d." % level_id)
 	# No pop-up: the boss's loot is still on the ground. A banner, a marker in the corner and a way home.
-	_show_banner("Area Secured", QUEST_BANNER_COLOR)
 	enemy_progress_label.text = "✓  %s secured" % str(GameState.LEVEL_NAMES.get(level_id, "Area"))
+	enemy_progress_label.add_theme_color_override("font_color", Color("#a9d98a"))
+	if not campaign_was_complete and GameState.is_campaign_complete():
+		# The last campaign level just fell: point the player at the endgame.
+		_show_banner("Random Maps Unlocked", ENDGAME_BANNER_COLOR)
+		portal_hint_label.text = "The waystones stir: random maps await at any hub's waystone."
+	else:
+		_show_banner("Area Secured", QUEST_BANNER_COLOR)
+	_show_corner_return_button()
+
+
+func _on_endgame_map_completed() -> void:
+	var tier := int(GameState.get_endgame_run().get("tier", 1))
+	if not GameState.finish_endgame_run():
+		push_error("Could not record the cleared random map.")
+	_show_banner("Map Cleared", ENDGAME_BANNER_COLOR)
+	enemy_progress_label.text = "✓  %s map cleared  (%d at this tier)" % [
+		GameState.get_endgame_tier_name(tier),
+		GameState.get_endgame_clears(tier)
+	]
+	enemy_progress_label.add_theme_color_override("font_color", Color("#a9d98a"))
+	portal_hint_label.text = "New random maps are started at a waystone."
+	_show_corner_return_button()
+
+
+## Back on a random map that was already cleared: nothing left to fight, just the way home.
+func _on_cleared_map_entered() -> void:
+	enemy_progress_label.text = "✓  %s map cleared" % _endgame_tier_name()
 	enemy_progress_label.add_theme_color_override("font_color", Color("#a9d98a"))
 	_show_corner_return_button()
 

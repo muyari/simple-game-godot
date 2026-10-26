@@ -208,6 +208,8 @@ func _summon_imp(world_position: Vector2) -> void:
 		return
 	imp.target_path = target_path
 	imp.always_alert = true
+	imp.health_scale = health_scale
+	imp.damage_scale = damage_scale
 	imp.set_meta(SUMMONED_META, true)
 	get_parent().add_child(imp)
 	imp.global_position = world_position

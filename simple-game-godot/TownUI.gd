@@ -2,6 +2,8 @@ extends CanvasLayer
 
 const MINIMUM_ITEM_PRICE = 25
 const EXPERIENCE_BAR_WIDTH = 440.0
+## The waystone menu lists every region plus random maps, so its buttons are a little shorter.
+const WAYSTONE_BUTTON_HEIGHT = 40.0
 
 ## The HUD, shop and waystone of a hub: Oblath, or one of the regional camps. Each hub stages one level
 ## (GameState.HUBS); its ReturnPortal is the way into that level.
@@ -569,11 +571,11 @@ func _build_waystone_menu() -> void:
 	backdrop.color = Color(0.02, 0.03, 0.025, 0.72)
 	waystone_overlay.add_child(backdrop)
 
-	var panel := _create_menu_panel(Vector2(600, 470))
+	var panel := _create_menu_panel(Vector2(600, 580 if GameState.is_campaign_complete() else 440))
 	waystone_overlay.add_child(panel)
 
 	var contents := VBoxContainer.new()
-	contents.add_theme_constant_override("separation", 12)
+	contents.add_theme_constant_override("separation", 8)
 	panel.add_child(contents)
 	_add_menu_title(contents, "%s Waystone" % GameState.get_hub_name(hub_level_id))
 
@@ -592,15 +594,95 @@ func _build_waystone_menu() -> void:
 		else:
 			level_button.text = "%s  -  %s" % [GameState.get_hub_name(level_id), level_name]
 			level_button.pressed.connect(_travel_to_hub.bind(level_id))
-		_style_menu_button(level_button, 48.0)
+		_style_menu_button(level_button, WAYSTONE_BUTTON_HEIGHT)
 		level_button.disabled = not GameState.is_level_unlocked(level_id)
 		contents.add_child(level_button)
 
+	_build_endgame_section(contents)
+
 	var close_button := Button.new()
 	close_button.text = "Close" + MenuStyle.key_hint("Esc")
-	_style_menu_button(close_button, 48.0)
+	_style_menu_button(close_button, WAYSTONE_BUTTON_HEIGHT)
 	close_button.pressed.connect(_close_waystone)
 	contents.add_child(close_button)
+
+
+## Random maps: locked until the campaign is cleared, then a difficulty picker plus a way back into an
+## unfinished map.
+func _build_endgame_section(contents: VBoxContainer) -> void:
+	contents.add_child(HSeparator.new())
+	var heading := Label.new()
+	heading.add_theme_font_size_override("font_size", 20)
+	heading.add_theme_color_override("font_color", Color("#e8ca86"))
+	contents.add_child(heading)
+	if not GameState.is_campaign_complete():
+		heading.text = "Random Maps  (Locked)"
+		var locked_hint := Label.new()
+		locked_hint.text = "Defeat the Archdemon in The Underworld to awaken the waystones."
+		locked_hint.modulate = Color(1.0, 1.0, 1.0, 0.65)
+		contents.add_child(locked_hint)
+		return
+
+	heading.text = "Random Maps"
+	var description := Label.new()
+	description.text = "Any region's layout and monsters. Higher tiers: tougher, more foes, more XP."
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	contents.add_child(description)
+
+	# The last map stays reachable, cleared or not, until a new one replaces it.
+	var run := GameState.get_endgame_run()
+	if not run.is_empty():
+		var resume_button := Button.new()
+		resume_button.text = "%s  -  %s map in %s" % [
+			"Return to cleared" if bool(run["cleared"]) else "Resume",
+			GameState.get_endgame_tier_name(int(run["tier"])),
+			_endgame_layout_name(int(run["layout"]))
+		]
+		_style_menu_button(resume_button, WAYSTONE_BUTTON_HEIGHT)
+		resume_button.pressed.connect(
+			_enter_waystone_level.bind(GameState.ENDGAME_SCENE, GameState.LEVEL_NAMES[GameState.ENDGAME_LEVEL_ID])
+		)
+		contents.add_child(resume_button)
+
+	var tier_row := HBoxContainer.new()
+	tier_row.add_theme_constant_override("separation", 10)
+	contents.add_child(tier_row)
+	for tier in GameState.ENDGAME_TIERS:
+		var definition: Dictionary = GameState.ENDGAME_TIERS[tier]
+		var tier_button := Button.new()
+		tier_button.text = "New %s map" % definition["name"]
+		tier_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tier_button.custom_minimum_size.y = WAYSTONE_BUTTON_HEIGHT
+		tier_button.add_theme_font_size_override("font_size", 18)
+		tier_button.tooltip_text = "Monster health x%s, damage x%s\n+%d monsters to clear\nExperience x%s\nCleared %d times" % [
+			definition["health"],
+			definition["damage"],
+			definition["extra_monsters"],
+			definition["experience"],
+			GameState.get_endgame_clears(tier)
+		]
+		if GameState.has_unfinished_endgame_run():
+			tier_button.tooltip_text += "\nAbandons your unfinished map."
+		tier_button.pressed.connect(_start_endgame_run.bind(tier))
+		tier_row.add_child(tier_button)
+
+	var clears: PackedStringArray = []
+	for tier in GameState.ENDGAME_TIERS:
+		clears.append("%s: %d" % [GameState.get_endgame_tier_name(tier), GameState.get_endgame_clears(tier)])
+	var clears_label := Label.new()
+	clears_label.text = "Maps cleared  -  " + "   ".join(clears)
+	clears_label.modulate = Color(1.0, 1.0, 1.0, 0.7)
+	contents.add_child(clears_label)
+
+
+func _endgame_layout_name(layout: int) -> String:
+	return str(GameState.LEVEL_NAMES.get(layout + 1, "the frontier"))
+
+
+func _start_endgame_run(tier: int) -> void:
+	if not GameState.start_endgame_run(tier, hub_level_id):
+		return
+	_enter_waystone_level(GameState.ENDGAME_SCENE, GameState.LEVEL_NAMES[GameState.ENDGAME_LEVEL_ID])
 
 
 func _build_character_menu() -> void:
