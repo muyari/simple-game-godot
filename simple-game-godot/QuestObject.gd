@@ -1,13 +1,14 @@
 extends Area2D
 class_name QuestObject
 ## Something out in the forest that a quest has the player use: an apple tree to pick, a moonpetal to
-## gather, a wayfire to light, Rendel's axe to pull from its stump, Ilsa's journal, or the Gloomhollow's
-## mouth. Drawn smooth and softly lit like the hub props, standing on its node origin so it y-sorts.
+## gather, a wayfire to light, Rendel's axe to pull from its stump, Ilsa's journal, Perry's hat, the
+## Gloomhollow's mouth or the gate of Oblath. Drawn smooth and softly lit like the hub props, standing on its
+## node origin so it y-sorts.
 ## Using it records a Quests event (see Quests.record_event); it is only usable while a quest wants it.
 
 signal used(quest_object: QuestObject)
 
-enum Kind { APPLES, MOONPETAL, WAYFIRE, AXE_STUMP, JOURNAL, CAVE_MOUTH, CAVE_EXIT, SHRINE }
+enum Kind { APPLES, MOONPETAL, WAYFIRE, AXE_STUMP, JOURNAL, CAVE_MOUTH, CAVE_EXIT, SHRINE, PERRYS_HAT, TOWN_GATE }
 
 const OUTLINE := Color(0.13, 0.08, 0.05)
 const WOOD := Color("#8a5d33")
@@ -22,7 +23,7 @@ const FLAME := Color("#ff7a1f")
 const FLAME_CORE := Color("#ffe28a")
 const STEEL := Color("#aab3ba")
 const LEATHER := Color("#6b3f24")
-## How a kind is used: the Quests event it records, its target and the prompt. CAVE_* travel instead, and
+## How a kind is used: the Quests event it records, its target and the prompt. DOORS travel instead, and
 ## SHRINE only talks (it carries a QuestTalker).
 const USES := {
 	Kind.APPLES: {"event": "collect", "target": "apple", "action": "Pick apples"},
@@ -33,15 +34,23 @@ const USES := {
 	Kind.CAVE_MOUTH: {"event": "", "target": "", "action": "Enter the Gloomhollow"},
 	Kind.CAVE_EXIT: {"event": "", "target": "", "action": "Leave the cave"},
 	Kind.SHRINE: {"event": "", "target": "", "action": ""},
+	Kind.PERRYS_HAT: {"event": "collect", "target": "perrys_hat", "action": "Take Perry's hat", "item": "Perry's Old Hat"},
+	Kind.TOWN_GATE: {"event": "", "target": "", "action": "Enter Oblath"},
 }
+const DOORS: Array[Kind] = [Kind.CAVE_MOUTH, Kind.CAVE_EXIT, Kind.TOWN_GATE]
+const FELT := Color("#6b5a44")
+const IRON := Color("#3d3936")
+const LAMPLIGHT := Color("#ffd28a")
 
 var kind := Kind.MOONPETAL
 ## Stable id for per-object quest flags, e.g. "moonpetal_2".
 var object_id := ""
 ## The quest whose flags say whether this object has been used (e.g. a lit wayfire stays lit).
 var quest_id := ""
-## For CAVE_MOUTH / CAVE_EXIT: whether the door can be used right now.
+## For doors: whether the door can be used right now.
 var door_open := Callable()
+## How far the TOWN_GATE's doors have swung open, 0 to 1.
+var open_amount := 0.0
 var player_nearby := false
 var prompt: Label
 var time := 0.0
@@ -54,7 +63,7 @@ func _ready() -> void:
 	phase = randf() * TAU
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
-	circle.radius = 56.0 if kind in [Kind.CAVE_MOUTH, Kind.APPLES] else 34.0
+	circle.radius = 72.0 if kind == Kind.TOWN_GATE else 56.0 if kind in [Kind.CAVE_MOUTH, Kind.APPLES] else 34.0
 	shape.shape = circle
 	shape.position = Vector2(0, -10)
 	add_child(shape)
@@ -87,6 +96,9 @@ func _ready() -> void:
 		cave_mouth.offset = Vector2(0, -cave_mouth.texture.get_height() * 0.5)
 		cave_mouth.show_behind_parent = true
 		add_child(cave_mouth)
+	elif kind == Kind.TOWN_GATE:
+		for side: float in [-1.0, 1.0]:
+			FireGlow.attach(self, Vector2(side * 60.0, -86.0), 90.0, LAMPLIGHT, 0.4)
 	add_to_group("interactables")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -101,7 +113,7 @@ func _process(delta: float) -> void:
 
 func is_wanted() -> bool:
 	var use: Dictionary = USES[kind]
-	if kind in [Kind.CAVE_MOUTH, Kind.CAVE_EXIT]:
+	if kind in DOORS:
 		return door_open.is_valid() and bool(door_open.call())
 	if str(use["event"]).is_empty():
 		return false
@@ -139,7 +151,7 @@ func _refresh() -> void:
 		for child in get_children():
 			if child is FireGlow:
 				child.visible = is_spent()
-	if kind == Kind.JOURNAL:
+	if kind in [Kind.JOURNAL, Kind.PERRYS_HAT]:
 		visible = not is_spent()
 	queue_redraw()
 
@@ -169,6 +181,8 @@ func _height() -> float:
 			return 40.0
 		Kind.CAVE_EXIT:
 			return 70.0
+		Kind.TOWN_GATE:
+			return 132.0
 	return 24.0
 
 
@@ -200,6 +214,10 @@ func _draw() -> void:
 			_draw_cave_exit()
 		Kind.SHRINE:
 			_draw_shrine()
+		Kind.PERRYS_HAT:
+			_draw_perrys_hat()
+		Kind.TOWN_GATE:
+			_draw_town_gate()
 
 
 func _draw_moonpetal() -> void:
@@ -302,3 +320,55 @@ func _draw_shrine() -> void:
 	if lit:
 		for flower: Vector2 in [Vector2(-22, -4), Vector2(-12, 2), Vector2(14, 1), Vector2(25, -3)]:
 			draw_circle(flower, 2.0, Color("#f6f3e6"), true, -1.0, true)
+
+
+func _draw_perrys_hat() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(30, 7))
+	# Knocked off at the pit's edge and lying crooked: a floppy brim, the dented crown, its patch and hole.
+	draw_set_transform(Vector2(0, -3), -0.18, Vector2(1.0, 0.45))
+	draw_circle(Vector2.ZERO, 14.0, OUTLINE, true, -1.0, true)
+	draw_circle(Vector2.ZERO, 13.0, FELT.darkened(0.12), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO)
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-8, -3), Vector2(-7, -12), Vector2(-2, -10), Vector2(1, -13), Vector2(7, -11), Vector2(8, -4),
+	]), FELT, OUTLINE, 1.0)
+	draw_line(Vector2(-8, -5), Vector2(8, -5.5), FELT.darkened(0.35), 1.8, true)
+	SmoothDraw.flat(self, Rect2(-6, -10, 4, 3.5), WOOD_LIGHT, 0.8)
+	draw_circle(Vector2(3.5, -10.5), 1.6, OUTLINE, true, -1.0, true)
+
+
+## Oblath's south gate: two lantern-hung gateposts under a lintel with the town's sign, and a pair of
+## iron-banded doors that swing in (open_amount) to the warm light of the town.
+func _draw_town_gate() -> void:
+	SmoothDraw.shadow(self, Vector2(-4, 2), Vector2(170, 18), 0.3)
+	draw_rect(Rect2(-57, -78, 114, 78), Color(0.1, 0.07, 0.05))
+	if open_amount > 0.0:
+		draw_rect(Rect2(-57, -78, 114, 78), Color(LAMPLIGHT, 0.55 * open_amount))
+	for side: float in [-1.0, 1.0]:
+		var leaf_width := 57.0 * (1.0 - 0.82 * open_amount)
+		var hinge := side * 57.0
+		var leaf := Rect2(minf(hinge, hinge - side * leaf_width), -76, leaf_width, 76)
+		SmoothDraw.box(self, leaf, WOOD.darkened(0.08), 1.5)
+		var planks := int(leaf_width / 9.0)
+		for plank in range(1, planks + 1):
+			var x := leaf.position.x + leaf_width * plank / float(planks + 1)
+			draw_line(Vector2(x, -74), Vector2(x, -2), Color(WOOD_DARK, 0.7), 1.0, true)
+		for band_y: float in [-62.0, -18.0]:
+			SmoothDraw.flat(self, Rect2(leaf.position.x + 1.0, band_y, leaf_width - 2.0, 4.0), IRON, 1.0)
+		if open_amount < 0.5:
+			draw_arc(Vector2(side * -8.0, -40.0), 3.5, 0.0, TAU, 14, IRON, 1.6, true)
+	for side: float in [-1.0, 1.0]:
+		SmoothDraw.box(self, Rect2(side * 66.0 - 10.0, -100, 20, 100), WOOD_DARK, 3.0)
+		draw_line(Vector2(side * 66.0 - 5.0, -96), Vector2(side * 66.0 - 5.0, -4), Color(WOOD_LIGHT, 0.4), 1.5, true)
+		SmoothDraw.polygon(self, PackedVector2Array([Vector2(side * 66.0 - 12.0, -98), Vector2(side * 66.0, -112), Vector2(side * 66.0 + 12.0, -98)]), WOOD, OUTLINE, 1.0)
+		# A lantern on the post's inner face.
+		var lantern := Vector2(side * 50.0, -82.0)
+		draw_line(Vector2(side * 56.0, -92.0), lantern + Vector2(0, -6), IRON, 1.5, true)
+		SmoothDraw.box(self, Rect2(lantern + Vector2(-4, -6), Vector2(8, 11)), IRON, 1.5)
+		var flicker := 0.8 + 0.2 * sin(time * 9.0 + phase + side)
+		SmoothDraw.flat(self, Rect2(lantern + Vector2(-2.5, -4), Vector2(5, 7)), Color(LAMPLIGHT, flicker), 1.0)
+	SmoothDraw.box(self, Rect2(-80, -104, 160, 10), WOOD, 2.0)
+	SmoothDraw.box(self, Rect2(-36, -124, 72, 19), WOOD_LIGHT, 3.0)
+	var font := ThemeDB.fallback_font
+	var text_width := font.get_string_size("OBLATH", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+	draw_string(font, Vector2(-text_width * 0.5, -110), "OBLATH", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, WOOD_DARK.darkened(0.3))

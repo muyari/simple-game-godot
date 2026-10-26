@@ -3,7 +3,12 @@ class_name QuestTracker
 ## A gold arrow at the edge of the screen pointing toward the nearest place an active quest wants the
 ## player to go in the forest (see ForestQuests.get_tracked_target), labelled with the quest. The forest
 ## is endless and much alike, so this is how a site three regions away is found. Hidden once the spot is
-## on screen; the quest's own "!" marker takes over from there.
+## on screen; the quest's own "!" marker takes over from there. In the StartingZone it shows the way to
+## Perry and on to Oblath.
+
+## Whatever steers the arrow joins this group, with a `player` and a get_tracked_target() returning
+## {position, label} or {}: ForestQuests, or the StartingZone.
+const GUIDES_GROUP := "quest_guides"
 
 ## How far in from each screen edge the arrow keeps, clear of the HUD: the labels top left and the
 ## globes and skill bar along the bottom.
@@ -32,9 +37,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	time += delta
 	target = {}
-	var forest_quests := get_tree().get_first_node_in_group(ForestQuests.GROUP) as ForestQuests
-	if forest_quests != null and is_instance_valid(forest_quests.player) and forest_quests.player.health > 0:
-		target = forest_quests.get_tracked_target()
+	var guide := get_tree().get_first_node_in_group(GUIDES_GROUP)
+	var guided_player := guide.get("player") as Player if guide != null else null
+	if is_instance_valid(guided_player) and guided_player.health > 0:
+		target = guide.call("get_tracked_target")
 	var screen := get_viewport_rect().size
 	var visible_target := false
 	if not target.is_empty():

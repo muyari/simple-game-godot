@@ -105,6 +105,8 @@ func _ready() -> void:
 	level_controller.boss_progress_changed.connect(_on_boss_progress_changed)
 	level_controller.chest_loot_opened.connect(_on_chest_loot_opened)
 	level_controller.cleared_map_entered.connect(_on_cleared_map_entered)
+	if level_controller.get("starting_zone") != null:
+		enemy_progress_label.text = "The trail to Oblath"
 	if _is_endgame() and not bool(level_controller.get("level_is_complete")):
 		_show_banner("%s Random Map" % _endgame_tier_name(), ENDGAME_BANNER_COLOR)
 

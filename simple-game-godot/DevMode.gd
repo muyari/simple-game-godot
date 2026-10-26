@@ -4,6 +4,7 @@ class_name DevMode
 ## While it's on, every launch makes sure the roster has a Dev Warrior, Dev Witch and Dev Ranger (recreating
 ## any that were lost) and tops each one up to the max level, with enough skill and passive points to max
 ## both trees, every region cleared (which opens random maps), spending gold and the best gear that drops.
+## They skip the starting zone.
 ## Points already spent and gear at least as good as the best are kept. Other characters are never touched.
 ##
 ## Switch it with the `developer/mode` project setting (Project Settings > Developer > Mode, or project.godot).
@@ -45,6 +46,8 @@ static func _prepare_character(character_id: String, display_name: String, chara
 	if not GameState.select_character(character_id):
 		push_error("Developer Mode could not load %s." % display_name)
 		return
+	if GameState.is_in_starting_zone():
+		GameState.finish_starting_zone()
 
 	GameState.player_level = GameState.MAX_PLAYER_LEVEL
 	GameState.experience = GameState.LEVEL_XP_THRESHOLDS[GameState.MAX_PLAYER_LEVEL - 1]

@@ -477,6 +477,8 @@ var map_seed := 0
 var treasure_chests: Array[TreasureChest] = []
 ## The campaign forest's quest sites and encounters; null everywhere else.
 var forest_quests: ForestQuests
+## Set while a new character walks the trail to Oblath in place of the forest.
+var starting_zone: StartingZone
 
 
 func _ready() -> void:
@@ -523,6 +525,10 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 
+	if level_id == 1 and GameState.is_in_starting_zone():
+		_enter_starting_zone()
+		return
+
 	var level_state: Dictionary = GameState.get_level_state(level_id)
 	if level_state.is_empty():
 		region_origin = player.global_position + player_camera.offset / player_camera.zoom
@@ -559,6 +565,20 @@ func _ready() -> void:
 	elif biome == 3:
 		get_parent().add_child.call_deferred(UnderworldAmbience.new())
 	call_deferred("_emit_initial_progress")
+
+
+## A new character's first visit to the forest is the StartingZone's trail to Oblath instead: no regions,
+## monsters or saved level state, just the trail, Perry and the town gate.
+func _enter_starting_zone() -> void:
+	starting_zone = StartingZone.new()
+	starting_zone.player = player
+	get_parent().add_child.call_deferred(starting_zone)
+	player.global_position = StartingZone.get_arrival()
+	player_camera.reset_smoothing.call_deferred()
+	last_player_position = player.global_position
+	get_parent().add_child.call_deferred(ForestAmbience.new())
+	Audio.play_region_music.call_deferred(biome)
+	set_physics_process(false)
 
 
 ## Takes this random map's layout, boss, seed and tier from the saved run. New maps are only ever rolled
@@ -657,6 +677,9 @@ func save_current_level_state() -> bool:
 	if level_id == 0:
 		push_error("Cannot save level state for an unsupported scene.")
 		return false
+	# The starting zone keeps nothing but its quest, and the forest proper hasn't been entered yet.
+	if starting_zone != null:
+		return true
 	# Cleared campaign levels start over next time. A cleared random map stays as it was left (its
 	# remaining drops and chest), so the player can come back for them.
 	if level_is_complete and not is_endgame():
