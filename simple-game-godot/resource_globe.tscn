@@ -1,7 +1,6 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://cjhoc32h6ws4d" path="res://ResourceGlobe.gd" id="1_globe"]
-[ext_resource type="Texture2D" uid="uid://ergxdr8syt7x" path="res://textures/globe_glass_empty.png" id="2_glass"]
 
 [node name="ResourceGlobe" type="Control"]
 layout_mode = 3
@@ -10,13 +9,12 @@ offset_right = 144.0
 offset_bottom = 144.0
 script = ExtResource("1_globe")
 
-[node name="Glass" type="Sprite2D" parent="."]
-texture = ExtResource("2_glass")
-centered = false
-
-[node name="Fill" type="Sprite2D" parent="."]
-centered = false
-region_enabled = true
+[node name="Vessel" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 144.0
+offset_bottom = 144.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
 
 [node name="ValueLabel" type="Label" parent="."]
 layout_mode = 1
@@ -25,10 +23,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.07, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.97, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.03, 0.01, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 18
 text = "100"
 horizontal_alignment = 1
 vertical_alignment = 1

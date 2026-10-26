@@ -62,8 +62,10 @@ var inventory: Array[ItemData] = []
 var equipment: Dictionary = {}
 var health_refill_timers: Array[float] = []
 var mana_refill_timers: Array[float] = []
-var health_potion_time := 0.0
-var mana_potion_time := 0.0
+## Health and mana a drunk potion still has to pour in: what was missing when it was drunk, so a
+## potion never fills past the maximum or tops up damage taken while it works.
+var health_potion_remaining := 0.0
+var mana_potion_remaining := 0.0
 var health_heal_accumulator := 0.0
 var mana_heal_accumulator := 0.0
 var potion_ui_timer := 0.0
@@ -1413,22 +1415,22 @@ func use_mana_potion() -> void:
 
 
 func _use_health_potion() -> void:
-	if health_potions <= 0 or health >= get_max_health() or health_potion_time > 0.0:
+	if health_potions <= 0 or health >= get_max_health() or health_potion_remaining > 0.0:
 		return
 
 	health_potions -= 1
 	health_refill_timers.append(POTION_REFILL_TIME)
-	health_potion_time = POTION_EFFECT_TIME
+	health_potion_remaining = float(get_max_health() - health)
 	_emit_potion_counts()
 
 
 func _use_mana_potion() -> void:
-	if mana_potions <= 0 or mana >= get_max_mana() or mana_potion_time > 0.0:
+	if mana_potions <= 0 or mana >= get_max_mana() or mana_potion_remaining > 0.0:
 		return
 
 	mana_potions -= 1
 	mana_refill_timers.append(POTION_REFILL_TIME)
-	mana_potion_time = POTION_EFFECT_TIME
+	mana_potion_remaining = float(get_max_mana() - mana)
 	_emit_potion_counts()
 
 
@@ -1454,26 +1456,34 @@ func _update_potion_refills(delta: float) -> void:
 		_emit_potion_counts()
 
 
+## Pours in what a potion has left, at a full globe per POTION_EFFECT_TIME, never past the current
+## maximum. The potion is done once its amount is used up or the globe is full.
 func _update_potion_effects(delta: float) -> void:
-	if health_potion_time > 0.0:
-		health_heal_accumulator += float(get_max_health()) / POTION_EFFECT_TIME * delta
+	if health_potion_remaining > 0.0:
+		var step := minf(float(get_max_health()) / POTION_EFFECT_TIME * delta, health_potion_remaining)
+		health_potion_remaining -= step
+		health_heal_accumulator += step
 		var health_to_restore := int(health_heal_accumulator)
 		health_heal_accumulator -= health_to_restore
+		if health_potion_remaining <= 0.0:
+			health_to_restore += roundi(health_heal_accumulator)
 		health = mini(health + health_to_restore, get_max_health())
-		health_potion_time = maxf(health_potion_time - delta, 0.0)
-		if health_potion_time == 0.0:
-			health = get_max_health()
+		if health_potion_remaining <= 0.0 or health >= get_max_health():
+			health_potion_remaining = 0.0
 			health_heal_accumulator = 0.0
 		health_changed.emit(health, get_max_health())
 
-	if mana_potion_time > 0.0:
-		mana_heal_accumulator += float(get_max_mana()) / POTION_EFFECT_TIME * delta
+	if mana_potion_remaining > 0.0:
+		var step := minf(float(get_max_mana()) / POTION_EFFECT_TIME * delta, mana_potion_remaining)
+		mana_potion_remaining -= step
+		mana_heal_accumulator += step
 		var mana_to_restore := int(mana_heal_accumulator)
 		mana_heal_accumulator -= mana_to_restore
+		if mana_potion_remaining <= 0.0:
+			mana_to_restore += roundi(mana_heal_accumulator)
 		mana = mini(mana + mana_to_restore, get_max_mana())
-		mana_potion_time = maxf(mana_potion_time - delta, 0.0)
-		if mana_potion_time == 0.0:
-			mana = get_max_mana()
+		if mana_potion_remaining <= 0.0 or mana >= get_max_mana():
+			mana_potion_remaining = 0.0
 			mana_heal_accumulator = 0.0
 		mana_changed.emit(mana, get_max_mana())
 

@@ -6,13 +6,13 @@
 layout_mode = 3
 anchors_preset = 0
 offset_right = 60.0
-offset_bottom = 90.0
+offset_bottom = 104.0
 mouse_filter = 2
 script = ExtResource("1_flask")
 
-[node name="EmptyBottle" type="Sprite2D" parent="."]
-centered = false
-
-[node name="Fill" type="Sprite2D" parent="."]
-centered = false
-region_enabled = true
+[node name="Vessel" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 60.0
+offset_bottom = 88.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
