@@ -62,6 +62,10 @@ var modifier_ids: Array[String] = []
 var modifier_stats := {}
 var aura_bonuses := {}
 var aura_refresh_remaining := 0.0
+## Endgame difficulty: multiplies max health and every hit this monster deals. Set before the monster
+## enters the tree.
+var health_scale := 1.0
+var damage_scale := 1.0
 ## Bosses hunt the player from anywhere. Set before the monster enters the tree.
 var always_alert := false
 ## While not alert the monster stands idle and its physics (chasing, attacking) is off.
@@ -79,6 +83,7 @@ var stagger_recovery := 0.0
 func _ready() -> void:
 	add_to_group("enemies")
 	sprite_base_position = sprite.position
+	max_health *= health_scale
 	_apply_modifiers()
 	health = max_health
 	health_bar.max_value = max_health
@@ -290,7 +295,7 @@ func deal_damage(base_amount: int) -> int:
 func get_outgoing_damage(base_amount: int) -> int:
 	var multiplier := 1.0 + get_stat(MonsterModifiers.STAT_DAMAGE) \
 			+ get_aura_bonus(MonsterModifiers.STAT_AURA_DAMAGE)
-	return roundi(base_amount * multiplier)
+	return roundi(base_amount * multiplier * damage_scale)
 
 
 ## Called whenever this monster, or a projectile it fired, damages the player.

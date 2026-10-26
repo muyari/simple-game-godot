@@ -16,12 +16,26 @@ const LEVEL_NAMES = {
 	2: "Sunscorch Sands",
 	3: "The Ice Caves",
 	4: "The Underworld",
+	5: "Random Map",
 }
 const LEVEL_SCENES = {
 	"res://main.tscn": 1,
 	"res://desert.tscn": 2,
 	"res://ice_caves.tscn": 3,
-	"res://underworld.tscn": 4
+	"res://underworld.tscn": 4,
+	"res://endgame_map.tscn": 5,
+}
+## The endgame: once the campaign is cleared, the waystones open random maps. Each run lays out one of
+## the four regions (picked at random), fills it with monsters from every region and ends with any of
+## their bosses. Its state saves under this level id like a campaign level's.
+const ENDGAME_LEVEL_ID := 5
+const ENDGAME_SCENE := "res://endgame_map.tscn"
+## Difficulty tiers for random maps. health and damage multiply every monster's stats, extra_monsters
+## are added to the layout's usual tally before the boss, and experience multiplies every XP reward.
+const ENDGAME_TIERS := {
+	1: {"name": "1x", "health": 1.5, "damage": 1.2, "extra_monsters": 4, "experience": 1.5},
+	2: {"name": "2x", "health": 2.25, "damage": 1.45, "extra_monsters": 8, "experience": 2.0},
+	3: {"name": "3x", "health": 3.0, "damage": 1.75, "extra_monsters": 12, "experience": 3.0},
 }
 ## Each region's staging hub, keyed by level id. Town portals and "Return to Town" lead to the hub of the
 ## level they're used in, and the waystones travel between hubs.
@@ -1080,7 +1094,18 @@ func is_level_unlocked(level_id: int) -> bool:
 			return completed_levels.has(2)
 		4:
 			return completed_levels.has(3)
+		ENDGAME_LEVEL_ID:
+			return is_campaign_complete()
 	return false
+
+
+## True once every campaign level (all of LEVEL_SCENE_PATHS) has been cleared; unlocks random maps.
+func is_campaign_complete() -> bool:
+	var completed_levels := get_completed_levels()
+	for level_id in LEVEL_SCENE_PATHS:
+		if not completed_levels.has(level_id):
+			return false
+	return true
 
 
 func get_level_id(scene_path: String) -> int:
@@ -1096,15 +1121,105 @@ func get_hub_level_id(scene_path: String) -> int:
 
 
 func get_hub_scene(level_id: int) -> String:
-	return str(HUBS.get(level_id, HUBS[1])["scene"])
+	return str(HUBS.get(_resolve_hub_id(level_id), HUBS[1])["scene"])
 
 
 func get_hub_name(level_id: int) -> String:
-	return str(HUBS.get(level_id, HUBS[1])["name"])
+	return str(HUBS.get(_resolve_hub_id(level_id), HUBS[1])["name"])
 
 
 func get_hub_arrival(level_id: int) -> Vector2:
-	return HUBS.get(level_id, HUBS[1])["arrival"]
+	return HUBS.get(_resolve_hub_id(level_id), HUBS[1])["arrival"]
+
+
+## Random maps lead home to the hub whose waystone started the run.
+func _resolve_hub_id(level_id: int) -> int:
+	if level_id == ENDGAME_LEVEL_ID:
+		return int(get_endgame_run().get("hub", 1))
+	return level_id
+
+
+## The active character's current random map: {tier, layout, boss, seed, hub, cleared}, or {} if they
+## have never started one. layout and boss are campaign level ids minus one (LevelController.biome).
+func get_endgame_run() -> Dictionary:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0:
+		return {}
+	return _validated_endgame_run(_characters[character_index].get("endgame_run", {}))
+
+
+## True while a random map has been started and not yet cleared, so the waystone can offer to resume it.
+func has_unfinished_endgame_run() -> bool:
+	var run := get_endgame_run()
+	return not run.is_empty() and not bool(run["cleared"])
+
+
+## Rolls a new random map at the given tier, replacing (abandoning) any unfinished one.
+## hub_level_id is the hub the run returns to.
+func start_endgame_run(tier: int, hub_level_id: int) -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0 or not ENDGAME_TIERS.has(tier) or not HUBS.has(hub_level_id):
+		push_error("Cannot start a random map at tier %d from hub %d." % [tier, hub_level_id])
+		return false
+
+	var random := RandomNumberGenerator.new()
+	random.randomize()
+	var layout_count := LEVEL_SCENE_PATHS.size()
+	var previous_character: Dictionary = _characters[character_index]
+	var character := previous_character.duplicate(true)
+	character["endgame_run"] = {
+		"tier": tier,
+		"layout": random.randi_range(0, layout_count - 1),
+		"boss": random.randi_range(0, layout_count - 1),
+		# Non-zero so the map's scenery never matches the campaign level it borrows its layout from.
+		"seed": random.randi_range(1, 0x7fffffff),
+		"hub": hub_level_id,
+		"cleared": false,
+	}
+	var level_states: Dictionary = character.get("level_states", {})
+	level_states.erase(str(ENDGAME_LEVEL_ID))
+	character["level_states"] = level_states
+	_characters[character_index] = character
+	if not _save_roster():
+		_characters[character_index] = previous_character
+		return false
+	return true
+
+
+## Marks the current random map cleared and counts it towards its tier. Its level state is kept so the
+## player can return to the cleared map until they start a new one at a waystone.
+func finish_endgame_run() -> bool:
+	var character_index := _find_character_index(_active_character_id)
+	var run := get_endgame_run()
+	if character_index < 0 or run.is_empty() or bool(run["cleared"]):
+		return false
+
+	var previous_character: Dictionary = _characters[character_index]
+	var character := previous_character.duplicate(true)
+	run["cleared"] = true
+	character["endgame_run"] = run
+	var clears := _validated_endgame_clears(character.get("endgame_clears", {}))
+	var tier_key := str(run["tier"])
+	clears[tier_key] = int(clears.get(tier_key, 0)) + 1
+	character["endgame_clears"] = clears
+	_characters[character_index] = character
+	if not _save_roster():
+		_characters[character_index] = previous_character
+		return false
+	return true
+
+
+## How many random maps the active character has cleared at a tier.
+func get_endgame_clears(tier: int) -> int:
+	var character_index := _find_character_index(_active_character_id)
+	if character_index < 0:
+		return 0
+	var clears := _validated_endgame_clears(_characters[character_index].get("endgame_clears", {}))
+	return int(clears.get(str(tier), 0))
+
+
+func get_endgame_tier_name(tier: int) -> String:
+	return str(ENDGAME_TIERS.get(tier, ENDGAME_TIERS[1])["name"])
 
 func get_witch_skill_definitions() -> Array[Dictionary]:
 	var definitions: Array[Dictionary] = []
@@ -2206,7 +2321,9 @@ func _load_roster() -> void:
 			"save_path": save_path,
 			"completed_levels": _validated_completed_levels(character.get("completed_levels", [])),
 			"level_states": _validated_level_states(character.get("level_states", {})),
-			"quest_states": _validated_quest_states(character.get("quest_states", {}))
+			"quest_states": _validated_quest_states(character.get("quest_states", {})),
+			"endgame_run": _validated_endgame_run(character.get("endgame_run", {})),
+			"endgame_clears": _validated_endgame_clears(character.get("endgame_clears", {}))
 		})
 
 
@@ -2374,6 +2491,41 @@ func _validated_completed_levels(raw_levels: Variant) -> Array[int]:
 		if level_id >= 1 and level_id <= LEVEL_SCENES.size() and not completed_levels.has(level_id):
 			completed_levels.append(level_id)
 	return completed_levels
+
+
+## A saved random map, or {} if it is missing or malformed.
+func _validated_endgame_run(raw_run: Variant) -> Dictionary:
+	if typeof(raw_run) != TYPE_DICTIONARY or raw_run.is_empty():
+		return {}
+	for field in ["tier", "layout", "boss", "seed", "hub"]:
+		if typeof(raw_run.get(field)) not in [TYPE_INT, TYPE_FLOAT]:
+			return {}
+	var run := {
+		"tier": int(raw_run["tier"]),
+		"layout": int(raw_run["layout"]),
+		"boss": int(raw_run["boss"]),
+		"seed": int(raw_run["seed"]),
+		"hub": int(raw_run["hub"]),
+		"cleared": bool(raw_run.get("cleared", false)),
+	}
+	var layout_count := LEVEL_SCENE_PATHS.size()
+	if not ENDGAME_TIERS.has(run["tier"]) or not HUBS.has(run["hub"]) \
+			or run["layout"] < 0 or run["layout"] >= layout_count \
+			or run["boss"] < 0 or run["boss"] >= layout_count:
+		return {}
+	return run
+
+
+## Random maps cleared per tier, keyed by the tier as a string.
+func _validated_endgame_clears(raw_clears: Variant) -> Dictionary:
+	var clears := {}
+	if typeof(raw_clears) != TYPE_DICTIONARY:
+		return clears
+	for tier in ENDGAME_TIERS:
+		var count: Variant = raw_clears.get(str(tier), 0)
+		if typeof(count) in [TYPE_INT, TYPE_FLOAT] and int(count) > 0:
+			clears[str(tier)] = int(count)
+	return clears
 
 
 func _validated_level_states(raw_states: Variant) -> Dictionary:
