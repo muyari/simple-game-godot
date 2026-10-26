@@ -21,6 +21,11 @@ config/icon="res://icon.svg"
 GameState="*res://GameState.gd"
 Audio="*res://Audio.gd"
 
+[developer]
+
+mode=true
+mode.release=false
+
 [display]
 
 window/stretch/mode="canvas_items"
