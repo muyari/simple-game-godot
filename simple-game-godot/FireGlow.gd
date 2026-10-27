@@ -6,6 +6,8 @@ class_name FireGlow
 const FLICKER_SPEED := 9.0
 
 static var _texture: GradientTexture2D
+## Shared by every glow, so the renderer can batch them.
+static var _material: CanvasItemMaterial
 
 var strength := 0.6
 var phase := 0.0
@@ -41,9 +43,10 @@ static func _get_texture() -> GradientTexture2D:
 
 
 func _ready() -> void:
-	var additive := CanvasItemMaterial.new()
-	additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	material = additive
+	if _material == null:
+		_material = CanvasItemMaterial.new()
+		_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	material = _material
 	# Lights the ground and whatever stands on it, without being y-sorted with them.
 	z_as_relative = false
 	z_index = -2

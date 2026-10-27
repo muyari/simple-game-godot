@@ -55,8 +55,8 @@ func _draw() -> void:
 					if random.randf() < 0.45:
 						_draw_pumpkin(spot, random)
 					else:
-						draw_circle(spot + Vector2(-3, 0), 3.0, LEAF_DARK, true, -1.0, true)
-						draw_circle(spot + Vector2(3, -1), 3.0, LEAF, true, -1.0, true)
+						SmoothDraw.disc(self, spot + Vector2(-3, 0), 3.0, LEAF_DARK)
+						SmoothDraw.disc(self, spot + Vector2(3, -1), 3.0, LEAF)
 			x += 12.0 if crop == Crop.WHEAT else 18.0
 		y += ROW_SPACING
 
@@ -69,7 +69,7 @@ func _draw_wheat(base: Vector2, random: RandomNumberGenerator) -> void:
 		var top := root + Vector2(sway + random.randf_range(-1, 1), -14.0 - random.randf_range(0, 4))
 		draw_line(root, top, WHEAT_DARK, 1.2, true)
 		draw_set_transform(top + Vector2(0, -2), (top - root).angle() + PI * 0.5, Vector2(1.0, 2.2))
-		draw_circle(Vector2.ZERO, 1.6, WHEAT, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 1.6, WHEAT)
 		draw_set_transform(Vector2.ZERO)
 
 

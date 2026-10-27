@@ -138,7 +138,7 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
 	for clearing in CLEARINGS:
-		draw_circle(ORIGIN + Vector2(clearing.x, clearing.y), clearing.z * 0.55, Color(PATH, 0.25), true, -1.0, true)
+		SmoothDraw.disc(self, ORIGIN + Vector2(clearing.x, clearing.y), clearing.z * 0.55, Color(PATH, 0.25))
 
 
 # --- Building ---------------------------------------------------------------------------------------------
@@ -609,7 +609,7 @@ class SpikePit extends Node2D:
 			for twig: Vector4 in [Vector4(-40, -6, 30, 8), Vector4(-30, 10, 36, -10), Vector4(-12, -18, 6, 18), Vector4(10, -16, 42, 4)]:
 				draw_line(Vector2(twig.x, twig.y), Vector2(twig.z, twig.w), Color("#5a3b22"), 2.0, true)
 			for leaf: Vector2 in [Vector2(-28, 2), Vector2(-6, -8), Vector2(16, 8), Vector2(30, -4), Vector2(2, 12), Vector2(-18, -14)]:
-				draw_circle(leaf, 3.0, Color("#9a7a36"), true, -1.0, true)
+				SmoothDraw.disc(self, leaf, 3.0, Color("#9a7a36"))
 			return
 		_ellipse(Vector2.ZERO, RADII + Vector2(6, 4), EARTH)
 		_ellipse(Vector2(0, 2), RADII, EARTH_DARK)
@@ -629,7 +629,7 @@ class SpikePit extends Node2D:
 			for index in 9:
 				var angle := TAU * index / 9.0
 				var center := Vector2(cos(angle) * RADII.x, sin(angle) * RADII.y) * (0.6 + spread * 0.9) + Vector2(0, -spread * 26.0)
-				draw_circle(center, 9.0 + spread * 10.0, Color(0.62, 0.52, 0.38, 0.45 * (1.0 - spread)), true, -1.0, true)
+				SmoothDraw.disc(self, center, 9.0 + spread * 10.0, Color(0.62, 0.52, 0.38, 0.45 * (1.0 - spread)))
 
 	func _ellipse(center: Vector2, radii: Vector2, color: Color) -> void:
 		var points := PackedVector2Array()
@@ -699,4 +699,4 @@ class OblathRoofs extends Node2D:
 			for puff in 5:
 				var rise := fmod(time * 0.25 + puff / 5.0 + x * 0.001, 1.0)
 				var center := Vector2(x + width * 0.18 + 8.0 + sin(rise * 5.0 + x) * 8.0 + rise * 30.0, base - 116.0 - rise * 120.0)
-				draw_circle(center, 6.0 + rise * 12.0, Color(0.85, 0.85, 0.82, 0.35 * (1.0 - rise)), true, -1.0, true)
+				SmoothDraw.disc(self, center, 6.0 + rise * 12.0, Color(0.85, 0.85, 0.82, 0.35 * (1.0 - rise)))

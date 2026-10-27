@@ -31,7 +31,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	animation_time += delta
-	queue_redraw()
+	# Only the chests in view need their glow redrawn.
+	if SmoothDraw.is_on_screen(self):
+		queue_redraw()
 
 
 func can_interact(_player: Player) -> bool:

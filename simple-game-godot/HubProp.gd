@@ -156,7 +156,7 @@ func _ellipse(center: Vector2, size: Vector2, color: Color, steps := 32) -> Pack
 func _scorch(rect: Rect2, count: int) -> void:
 	for index in count:
 		var spot := rect.position + Vector2(random.randf() * rect.size.x, random.randf() * rect.size.y)
-		draw_circle(spot, random.randf_range(3.0, 7.0), Color(CHAR, 0.55), true, -1.0, true)
+		SmoothDraw.disc(self, spot, random.randf_range(3.0, 7.0), Color(CHAR, 0.55))
 
 
 func _rope(from: Vector2, to: Vector2) -> void:
@@ -209,7 +209,7 @@ func _draw_stall() -> void:
 		SmoothDraw.dome(self, Vector2(-8 + index * 8, -26), 4.0, CLAY.lightened(index * 0.1))
 	SmoothDraw.box(self, Rect2(16, -29, 14, 7), Color("#7a5530"), 2.0)
 	for index in 4:
-		draw_circle(Vector2(18 + index * 3, -30), 1.8, Color("#5a2e1a"), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(18 + index * 3, -30), 1.8, Color("#5a2e1a"))
 	# Awning.
 	var stripes := 8
 	for index in stripes:
@@ -218,7 +218,7 @@ func _draw_stall() -> void:
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(x0 * 0.9, -62), Vector2(x1 * 0.9, -62), Vector2(x1, -50), Vector2(x0, -50),
 		]), tint if index % 2 == 0 else alt)
-		draw_circle(Vector2((x0 + x1) * 0.5, -50), (x1 - x0) * 0.5, tint if index % 2 == 0 else alt, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2((x0 + x1) * 0.5, -50), (x1 - x0) * 0.5, tint if index % 2 == 0 else alt)
 	draw_polyline(PackedVector2Array([Vector2(-41.4, -62), Vector2(41.4, -62), Vector2(46, -50)]), OUTLINE, 1.2, true)
 	draw_line(Vector2(-41.4, -62), Vector2(-46, -50), OUTLINE, 1.2, true)
 
@@ -226,8 +226,8 @@ func _draw_stall() -> void:
 func _draw_campfire() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 0), Vector2(40, 12), 0.25)
 	draw_set_transform(Vector2(0, -3), 0.0, Vector2(1.0, 0.42))
-	draw_circle(Vector2.ZERO, 13.0, Color("#2a1d16"), true, -1.0, true)
-	draw_circle(Vector2.ZERO, 9.0, Color("#ff8a3a", 0.5), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 13.0, Color("#2a1d16"))
+	SmoothDraw.disc(self, Vector2.ZERO, 9.0, Color("#ff8a3a", 0.5))
 	draw_set_transform(Vector2.ZERO)
 	for index in 9:
 		var angle := TAU * index / 9.0
@@ -258,7 +258,7 @@ func _draw_jars() -> void:
 			base + Vector2(9, -8) * s, base + Vector2(4, 0) * s,
 		]), color, OUTLINE, 1.2)
 		draw_line(base + Vector2(-8, -12) * s, base + Vector2(8, -12) * s, Color(alt, 0.7), 1.5, true)
-		draw_circle(base + Vector2(-4, -15) * s, 2.0 * s, Color(color.lightened(0.4), 0.6), true, -1.0, true)
+		SmoothDraw.disc(self, base + Vector2(-4, -15) * s, 2.0 * s, Color(color.lightened(0.4), 0.6))
 
 
 func _draw_rug() -> void:
@@ -442,7 +442,7 @@ func _draw_skull_pole() -> void:
 		draw_polyline(PackedVector2Array([Vector2(side * 5, -56), Vector2(side * 13, -60), Vector2(side * 17, -68)]), BONE.darkened(0.1), 2.4, true)
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-7, -60), Vector2(7, -60), Vector2(5, -50), Vector2(2.5, -44), Vector2(-2.5, -44), Vector2(-5, -50)]), BONE, OUTLINE, 1.2)
 	for side: float in [-1.0, 1.0]:
-		draw_circle(Vector2(side * 3, -55), 1.6, OUTLINE, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(side * 3, -55), 1.6, OUTLINE)
 	for index in 3:
 		draw_line(Vector2(-4 + index * 4, -38), Vector2(-4 + index * 4, -30), alt, 1.5, true)
 
@@ -498,7 +498,7 @@ func _draw_igloo() -> void:
 		for index in count:
 			var x := -half + (index + (0.5 if row % 2 else 0.0)) * half * 2.0 / count
 			draw_line(Vector2(x, y), Vector2(x, y + 9.0), Color("#9dbad1"), 1.0, true)
-	draw_circle(Vector2(-12, -26), 7.0, Color(1, 1, 1, 0.35), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(-12, -26), 7.0, Color(1, 1, 1, 0.35))
 	# Entrance tunnel.
 	var tunnel := PackedVector2Array()
 	for index in 13:
@@ -587,7 +587,7 @@ func _draw_totem() -> void:
 		var y := -46.0 + index * 16.0
 		SmoothDraw.box(self, Rect2(-8, y, 16, 12), WOOD.darkened(index * 0.08), 3.0)
 		for side: float in [-1.0, 1.0]:
-			draw_circle(Vector2(side * 3.0, y + 4.0), 1.5, Color("#c9e9f7") if index == 0 else OUTLINE, true, -1.0, true)
+			SmoothDraw.disc(self, Vector2(side * 3.0, y + 4.0), 1.5, Color("#c9e9f7") if index == 0 else OUTLINE)
 		draw_line(Vector2(-3, y + 8.5), Vector2(3, y + 8.5), OUTLINE, 1.2, true)
 	var glow := 0.75 + 0.25 * sin(time * 2.0 + phase)
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-5, -52), Vector2(0, -74), Vector2(5, -52)]), Color("#9fe3ff") * Color(1, 1, 1, glow), Color("#3b6c8c"), 1.2)
@@ -776,7 +776,7 @@ func _draw_cot() -> void:
 	SmoothDraw.box(self, Rect2(-24, -16, 10, 5), Color("#e7dfcc"), 2.5)
 	SmoothDraw.dome(self, Vector2(-17, -18), 5.0, Color("#c99a6e"))
 	draw_line(Vector2(-22, -20), Vector2(-12, -21), Color("#efe6d2"), 2.2, true)
-	draw_circle(Vector2(-15, -21), 1.2, Color("#a83226"), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(-15, -21), 1.2, Color("#a83226"))
 	# Blanket over him, rising and falling as he breathes.
 	var breath := sin(time * 1.8 + phase) * 0.6
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-12, -12), Vector2(-11, -19 - breath), Vector2(4, -18 - breath), Vector2(22, -15), Vector2(23, -11)]), tint, OUTLINE, 1.2)
@@ -806,7 +806,7 @@ func _draw_debris() -> void:
 	_log(Vector2(-24, -2), Vector2(18, -14), 4.0, WOOD.lerp(CHAR, 0.5))
 	_log(Vector2(22, -1), Vector2(-12, -18), 3.5, WOOD.lerp(CHAR, 0.35))
 	_log(Vector2(-6, 0), Vector2(6, -22), 3.0, CHAR)
-	draw_circle(Vector2(0, -6), 6.0, Color(1.0, 0.45, 0.1, 0.55), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -6), 6.0, Color(1.0, 0.45, 0.1, 0.55))
 	if variant != 1:
 		_flame(Vector2(-4, -8), 9.0, 22.0)
 		_flame(Vector2(9, -8), 5.0, 13.0, 1.9)

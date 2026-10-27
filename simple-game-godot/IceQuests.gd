@@ -381,8 +381,8 @@ class FrozenFalls extends StaticBody2D:
 			]), Color("#cfeaf7").darkened(ribbon % 2 * 0.08))
 			draw_line(Vector2(x - 4, -240), Vector2(x - 6, -10), Color(1, 1, 1, 0.55), 2.0, true)
 		draw_set_transform(Vector2(0, 20), 0.0, Vector2(1.0, 0.32))
-		draw_circle(Vector2.ZERO, 170.0, Color("#bfe3f4"), true, -1.0, true)
-		draw_circle(Vector2.ZERO, 120.0, Color("#e4f4fb"), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 170.0, Color("#bfe3f4"))
+		SmoothDraw.disc(self, Vector2.ZERO, 120.0, Color("#e4f4fb"))
 		draw_set_transform(Vector2.ZERO)
 
 
@@ -395,8 +395,8 @@ class Glacier extends Node2D:
 			var spot := Vector2(random.randf_range(-420, 420), random.randf_range(-220, 220))
 			var radius := random.randf_range(90.0, 180.0)
 			draw_set_transform(spot, 0.0, Vector2(1.0, 0.45))
-			draw_circle(Vector2.ZERO, radius, Color(0.62, 0.82, 0.95, 0.35), true, -1.0, true)
-			draw_circle(Vector2.ZERO, radius * 0.6, Color(0.75, 0.9, 1.0, 0.25), true, -1.0, true)
+			SmoothDraw.disc(self, Vector2.ZERO, radius, Color(0.62, 0.82, 0.95, 0.35))
+			SmoothDraw.disc(self, Vector2.ZERO, radius * 0.6, Color(0.75, 0.9, 1.0, 0.25))
 			draw_set_transform(Vector2.ZERO)
 		for _crack in 22:
 			var start := Vector2(random.randf_range(-380, 380), random.randf_range(-190, 190))

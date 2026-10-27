@@ -232,5 +232,5 @@ func _draw() -> void:
 		return
 	# Until he wakes, a shape of smouldering coals sits slumped on the throne.
 	var breath := 0.5 + 0.5 * sin(time * 0.9)
-	draw_circle(seat + Vector2(0, -80), 30.0, Color(LAVA, 0.15 + 0.15 * breath), true, -1.0, true)
-	draw_circle(seat + Vector2(0, -112), 14.0, Color(LAVA, 0.2 + 0.2 * breath), true, -1.0, true)
+	SmoothDraw.disc(self, seat + Vector2(0, -80), 30.0, Color(LAVA, 0.15 + 0.15 * breath))
+	SmoothDraw.disc(self, seat + Vector2(0, -112), 14.0, Color(LAVA, 0.2 + 0.2 * breath))

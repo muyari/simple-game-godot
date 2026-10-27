@@ -60,17 +60,17 @@ func _draw() -> void:
 			var head: Vector2 = burst["from"].lerp(burst["to"], 1.0 - pow(1.0 - t, 2.0))
 			var tail: Vector2 = burst["from"].lerp(burst["to"], maxf(1.0 - pow(1.0 - maxf(t - 0.12, 0.0), 2.0), 0.0))
 			draw_line(tail, head, Color(1.0, 0.9, 0.7, 0.6), 2.0, true)
-			draw_circle(head, 2.5, Color(1.0, 0.95, 0.8), true, -1.0, true)
+			SmoothDraw.disc(self, head, 2.5, Color(1.0, 0.95, 0.8))
 			continue
 		var t := (age - RISE_TIME) / BURST_TIME
 		var fade := 1.0 - t
 		var spread: float = burst["radius"] * (1.0 - pow(1.0 - t, 3.0))
 		var drop := GRAVITY * t * t
 		if t < 0.15:
-			draw_circle(burst["to"], 40.0 * (1.0 - t / 0.15), Color(1.0, 1.0, 0.9, 0.5), true, -1.0, true)
+			SmoothDraw.disc(self, burst["to"], 40.0 * (1.0 - t / 0.15), Color(1.0, 1.0, 0.9, 0.5))
 		for spark in SPARKS:
 			var direction := Vector2.from_angle(burst["spin"] + TAU * spark / SPARKS)
 			var tip: Vector2 = burst["to"] + direction * spread + Vector2(0, drop)
 			var trail: Vector2 = burst["to"] + direction * spread * 0.82 + Vector2(0, drop * 0.8)
 			draw_line(trail, tip, Color(color, 0.7 * fade), 2.0, true)
-			draw_circle(tip, 2.2, Color(color.lightened(0.3), fade), true, -1.0, true)
+			SmoothDraw.disc(self, tip, 2.2, Color(color.lightened(0.3), fade))

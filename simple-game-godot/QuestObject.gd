@@ -203,9 +203,15 @@ func _ready() -> void:
 	_refresh()
 
 
+## How far off screen a site still redraws, so its biggest art (cave mouths, gates) never pops in.
+const REDRAW_MARGIN := 400.0
+
+
 func _process(delta: float) -> void:
 	time += delta
-	queue_redraw()
+	# Each level scatters dozens of these over the map; redrawing the ones off screen was wasted work.
+	if SmoothDraw.is_on_screen(self, REDRAW_MARGIN):
+		queue_redraw()
 
 
 func is_wanted() -> bool:
@@ -465,11 +471,11 @@ func _draw_moonpetal() -> void:
 	for bloom: Vector3 in [Vector3(-5, -16, 4.5), Vector3(2, -21, 5.0), Vector3(7, -13, 4.0)]:
 		var center := Vector2(bloom.x, bloom.y)
 		draw_line(Vector2(bloom.x * 0.4, 0), center, MOSS.darkened(0.15), 1.5, true)
-		draw_circle(center, bloom.z * 2.2, Color(PETAL_GLOW, 0.18 * pulse), true, -1.0, true)
+		SmoothDraw.disc(self, center, bloom.z * 2.2, Color(PETAL_GLOW, 0.18 * pulse))
 		for petal in 5:
 			var angle := TAU * petal / 5.0 + phase
-			draw_circle(center + Vector2(cos(angle), sin(angle)) * bloom.z * 0.55, bloom.z * 0.55, PETAL, true, -1.0, true)
-		draw_circle(center, bloom.z * 0.35, Color("#fff4b8"), true, -1.0, true)
+			SmoothDraw.disc(self, center + Vector2(cos(angle), sin(angle)) * bloom.z * 0.55, bloom.z * 0.55, PETAL)
+		SmoothDraw.disc(self, center, bloom.z * 0.35, Color("#fff4b8"))
 
 
 func _draw_wayfire() -> void:
@@ -483,8 +489,8 @@ func _draw_wayfire() -> void:
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-15, -40), Vector2(15, -40), Vector2(10, -33), Vector2(-10, -33)]), Color("#3d3936"), OUTLINE, 1.5)
 	if not is_spent():
 		# Cold ash and a curl of nothing.
-		draw_circle(Vector2(-4, -41), 3.0, Color("#6a6460"), true, -1.0, true)
-		draw_circle(Vector2(3, -41), 3.5, Color("#57524d"), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(-4, -41), 3.0, Color("#6a6460"))
+		SmoothDraw.disc(self, Vector2(3, -41), 3.5, Color("#57524d"))
 		return
 	var flicker := sin(time * 11.0 + phase) * 1.5
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-11, -40), Vector2(-5, -54 - flicker), Vector2(0, -47), Vector2(4, -60 + flicker), Vector2(11, -40)]), FLAME, Color(FLAME.darkened(0.3), 0.8), 1.0)
@@ -496,8 +502,8 @@ func _draw_axe_stump() -> void:
 	# A broad felled stump with its rings showing, wood chips round its foot.
 	SmoothDraw.box(self, Rect2(-20, -18, 40, 18), WOOD, 5.0)
 	draw_set_transform(Vector2(0, -18), 0.0, Vector2(1.0, 0.38))
-	draw_circle(Vector2.ZERO, 21.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 20.0, WOOD_LIGHT, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 21.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 20.0, WOOD_LIGHT)
 	for ring: float in [15.0, 10.0, 5.0]:
 		draw_arc(Vector2.ZERO, ring, 0.0, TAU, 28, Color(WOOD, 0.8), 1.2, true)
 	draw_set_transform(Vector2.ZERO)
@@ -521,7 +527,7 @@ func _draw_journal() -> void:
 	SmoothDraw.flat(self, Rect2(-8.5, -14, 17, 2), Color("#e9dcc0"), 1.0)
 	draw_line(Vector2(2, -9), Vector2(5, -3), Color("#a8323a"), 1.5, true)
 	var pulse := 0.5 + 0.5 * sin(time * 3.0 + phase)
-	draw_circle(Vector2(0, -12), 14.0, Color(1.0, 0.86, 0.4, 0.08 + 0.08 * pulse), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -12), 14.0, Color(1.0, 0.86, 0.4, 0.08 + 0.08 * pulse))
 
 
 func _draw_cave_exit() -> void:
@@ -530,7 +536,7 @@ func _draw_cave_exit() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(-18 + sway, -120), Vector2(18 + sway, -120), Vector2(40, 6), Vector2(-40, 6)]), Color(1.0, 0.96, 0.8, 0.14))
 	draw_colored_polygon(PackedVector2Array([Vector2(-8 + sway, -120), Vector2(8 + sway, -120), Vector2(22, 4), Vector2(-22, 4)]), Color(1.0, 0.97, 0.85, 0.14))
 	draw_set_transform(Vector2(0, 0), 0.0, Vector2(1.0, 0.35))
-	draw_circle(Vector2.ZERO, 40.0, Color(1.0, 0.95, 0.75, 0.16), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 40.0, Color(1.0, 0.95, 0.75, 0.16))
 	draw_set_transform(Vector2.ZERO)
 
 
@@ -541,32 +547,32 @@ func _draw_shrine() -> void:
 	# Peaked cap and the carved torch-bearer.
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-25, -52), Vector2(0, -68), Vector2(25, -52)]), STONE_DARK, OUTLINE, 2.0)
 	draw_line(Vector2(0, -44), Vector2(0, -22), Color(STONE_DARK.darkened(0.3), 0.9), 2.0, true)
-	draw_circle(Vector2(0, -47), 3.0, Color(STONE_DARK.darkened(0.3), 0.9), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -47), 3.0, Color(STONE_DARK.darkened(0.3), 0.9))
 	draw_line(Vector2(0, -36), Vector2(7, -42), Color(STONE_DARK.darkened(0.3), 0.9), 1.5, true)
 	var lit := Quests.is_completed(Quests.WAYFIRES)
 	var warmth := 0.55 + 0.25 * sin(time * 3.0 + phase) if lit else 0.0
-	draw_circle(Vector2(7, -44), 2.5, Color(FLAME_CORE, warmth) if lit else Color(STONE_DARK.darkened(0.3), 0.9), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(7, -44), 2.5, Color(FLAME_CORE, warmth) if lit else Color(STONE_DARK.darkened(0.3), 0.9))
 	# Moss creeping over the stone, and white flowers once the fires burn.
 	for blob: Vector3 in [Vector3(-17, -50, 5), Vector3(-19, -18, 6), Vector3(16, -12, 5), Vector3(18, -42, 4), Vector3(-8, -60, 4)]:
-		draw_circle(Vector2(blob.x, blob.y), blob.z, Color(MOSS, 0.9), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(blob.x, blob.y), blob.z, Color(MOSS, 0.9))
 	if lit:
 		for flower: Vector2 in [Vector2(-22, -4), Vector2(-12, 2), Vector2(14, 1), Vector2(25, -3)]:
-			draw_circle(flower, 2.0, Color("#f6f3e6"), true, -1.0, true)
+			SmoothDraw.disc(self, flower, 2.0, Color("#f6f3e6"))
 
 
 func _draw_perrys_hat() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(30, 7))
 	# Knocked off at the pit's edge and lying crooked: a floppy brim, the dented crown, its patch and hole.
 	draw_set_transform(Vector2(0, -3), -0.18, Vector2(1.0, 0.45))
-	draw_circle(Vector2.ZERO, 14.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 13.0, FELT.darkened(0.12), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 14.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 13.0, FELT.darkened(0.12))
 	draw_set_transform(Vector2.ZERO)
 	SmoothDraw.polygon(self, PackedVector2Array([
 		Vector2(-8, -3), Vector2(-7, -12), Vector2(-2, -10), Vector2(1, -13), Vector2(7, -11), Vector2(8, -4),
 	]), FELT, OUTLINE, 1.0)
 	draw_line(Vector2(-8, -5), Vector2(8, -5.5), FELT.darkened(0.35), 1.8, true)
 	SmoothDraw.flat(self, Rect2(-6, -10, 4, 3.5), WOOD_LIGHT, 0.8)
-	draw_circle(Vector2(3.5, -10.5), 1.6, OUTLINE, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(3.5, -10.5), 1.6, OUTLINE)
 
 
 ## Oblath's south gate: two lantern-hung gateposts under a lintel with the town's sign, and a pair of
@@ -612,7 +618,7 @@ func _draw_town_gate() -> void:
 func _draw_strongbox() -> void:
 	SmoothDraw.shadow(self, Vector2(-2, 1), Vector2(40, 10))
 	draw_set_transform(Vector2(0, -1), 0.0, Vector2(1.0, 0.35))
-	draw_circle(Vector2.ZERO, 24.0, Color(SAND, 0.9), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 24.0, Color(SAND, 0.9))
 	draw_set_transform(Vector2.ZERO)
 	SmoothDraw.box(self, Rect2(-15, -16, 30, 16), WOOD_DARK, 2.0)
 	for band_x: float in [-9.0, 7.0]:
@@ -637,8 +643,8 @@ func _draw_grave() -> void:
 		SmoothDraw.polygon(self, PackedVector2Array([Vector2(18, -30), Vector2(30, -27), Vector2(18, -23)]), Color("#3f6fae"), OUTLINE, 0.8)
 		return
 	draw_set_transform(Vector2(0, -3), 0.0, Vector2(1.0, 0.32))
-	draw_circle(Vector2.ZERO, 26.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 25.0, SAND.darkened(0.06), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 26.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 25.0, SAND.darkened(0.06))
 	draw_set_transform(Vector2.ZERO)
 	for stone: Vector3 in [Vector3(-26, 2, 4), Vector3(24, 3, 5), Vector3(-18, 6, 3)]:
 		SmoothDraw.dome(self, Vector2(stone.x, stone.y), stone.z, SANDSTONE)
@@ -655,7 +661,7 @@ func _draw_spice_crate() -> void:
 		draw_line(Vector2(-14, plank_y), Vector2(14, plank_y), Color(WOOD_DARK, 0.7), 1.0, true)
 	draw_line(Vector2(-14, -23), Vector2(14, -1), Color(WOOD_DARK, 0.6), 1.5, true)
 	draw_set_transform(Vector2(6, -1), 0.0, Vector2(1.0, 0.3))
-	draw_circle(Vector2.ZERO, 14.0, SPICE, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 14.0, SPICE)
 	draw_set_transform(Vector2.ZERO)
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-26, 2), Vector2(-14, -8), Vector2(-4, -3), Vector2(-20, 4)]), SAND, Color(SANDSTONE_DARK, 0.5), 1.0)
 
@@ -702,15 +708,15 @@ func _draw_signal_rock() -> void:
 func _draw_old_well() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 2), Vector2(50, 12))
 	draw_set_transform(Vector2(0, -6), 0.0, Vector2(1.0, 0.42))
-	draw_circle(Vector2.ZERO, 26.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 25.0, SANDSTONE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 18.0, SANDSTONE_DARK, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 26.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 25.0, SANDSTONE)
+	SmoothDraw.disc(self, Vector2.ZERO, 18.0, SANDSTONE_DARK)
 	if is_spent():
-		draw_circle(Vector2.ZERO, 16.0, WATER, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 16.0, WATER)
 		var ripple := fmod(time * 0.6 + phase, 1.0)
 		draw_arc(Vector2.ZERO, 4.0 + ripple * 11.0, 0.0, TAU, 24, Color(1, 1, 1, 0.5 * (1.0 - ripple)), 1.5, true)
 	else:
-		draw_circle(Vector2(2, 2), 16.0, SAND, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(2, 2), 16.0, SAND)
 	draw_set_transform(Vector2.ZERO)
 	SmoothDraw.box(self, Rect2(-26, -8, 52, 8), SANDSTONE, 3.0)
 	for notch: float in [-14.0, 0.0, 14.0]:
@@ -732,9 +738,9 @@ func _draw_sunbloom() -> void:
 		return
 	var pulse := 0.85 + 0.15 * sin(time * 2.0 + phase)
 	for fruit: Vector2 in [Vector2(-6, -36), Vector2(4, -38), Vector2(0, -44)]:
-		draw_circle(fruit, 5.5, OUTLINE, true, -1.0, true)
-		draw_circle(fruit, 4.6, SPICE.lightened(0.1 * pulse), true, -1.0, true)
-		draw_circle(fruit + Vector2(-1.5, -1.5), 1.4, Color(1, 0.8, 0.6, 0.8), true, -1.0, true)
+		SmoothDraw.disc(self, fruit, 5.5, OUTLINE)
+		SmoothDraw.disc(self, fruit, 4.6, SPICE.lightened(0.1 * pulse))
+		SmoothDraw.disc(self, fruit + Vector2(-1.5, -1.5), 1.4, Color(1, 0.8, 0.6, 0.8))
 
 
 ## The broken stair down into the Sunken Vault, between two pillars under a cracked lintel.
@@ -759,7 +765,7 @@ func _draw_vault_stairs() -> void:
 ## A splinter of the cracked Sunstone, glowing faintly where it fell.
 func _draw_sun_shard() -> void:
 	var pulse := 0.6 + 0.4 * sin(time * 3.0 + phase)
-	draw_circle(Vector2(0, -8), 16.0, Color(SUN_GOLD, 0.12 * pulse), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -8), 16.0, Color(SUN_GOLD, 0.12 * pulse))
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-7, 0), Vector2(-4, -16), Vector2(3, -22), Vector2(8, -6), Vector2(4, 0)]), Color("#f3e3b0"), OUTLINE, 1.2)
 	draw_line(Vector2(-3, -14), Vector2(4, -4), Color(SUN_GOLD, 0.8 * pulse), 1.5, true)
 
@@ -769,9 +775,9 @@ func _draw_sun_shard() -> void:
 func _draw_sun_seal() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 2), Vector2(110, 22), 0.3)
 	draw_set_transform(Vector2(0, -8), 0.0, Vector2(1.0, 0.38))
-	draw_circle(Vector2.ZERO, 54.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 53.0, SANDSTONE_DARK, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 44.0, SANDSTONE, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 54.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 53.0, SANDSTONE_DARK)
+	SmoothDraw.disc(self, Vector2.ZERO, 44.0, SANDSTONE)
 	for ray in 12:
 		var direction := Vector2.from_angle(TAU * ray / 12.0)
 		draw_line(direction * 26.0, direction * 42.0, Color(SANDSTONE_DARK, 0.7), 2.0, true)
@@ -779,16 +785,16 @@ func _draw_sun_seal() -> void:
 	SmoothDraw.box(self, Rect2(-14, -36, 28, 22), SANDSTONE_DARK, 3.0)
 	if is_spent():
 		var blaze := 0.75 + 0.25 * sin(time * 2.5 + phase)
-		draw_circle(Vector2(0, -42), 22.0, Color(SUN_GOLD, 0.2 * blaze), true, -1.0, true)
-		draw_circle(Vector2(0, -42), 11.0, OUTLINE, true, -1.0, true)
-		draw_circle(Vector2(0, -42), 10.0, SUN_GOLD.lerp(Color.WHITE, 0.3 * blaze), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(0, -42), 22.0, Color(SUN_GOLD, 0.2 * blaze))
+		SmoothDraw.disc(self, Vector2(0, -42), 11.0, OUTLINE)
+		SmoothDraw.disc(self, Vector2(0, -42), 10.0, SUN_GOLD.lerp(Color.WHITE, 0.3 * blaze))
 		for ray in 8:
 			var direction := Vector2.from_angle(TAU * ray / 8.0 + time * 0.3)
 			draw_line(Vector2(0, -42) + direction * 13.0, Vector2(0, -42) + direction * (19.0 + 3.0 * blaze), Color(SUN_GOLD, 0.8), 2.0, true)
 		return
 	# The empty socket, and the crack Malik's pick left across the dais.
-	draw_circle(Vector2(0, -42), 10.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2(0, -42), 8.5, Color(0.12, 0.08, 0.05), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -42), 10.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2(0, -42), 8.5, Color(0.12, 0.08, 0.05))
 	draw_polyline(PackedVector2Array([Vector2(-36, -6), Vector2(-20, -12), Vector2(-12, -6), Vector2(4, -14)]), OUTLINE, 1.5, true)
 
 
@@ -841,7 +847,7 @@ func _draw_rimekey() -> void:
 	SmoothDraw.box(self, Rect2(-16, -16, 32, 16), FROST_STONE_DARK, 3.0)
 	SmoothDraw.box(self, Rect2(-19, -20, 38, 6), FROST_STONE, 2.0)
 	var pulse := 0.6 + 0.4 * sin(time * 2.6 + phase)
-	draw_circle(Vector2(0, -26), 16.0, Color(RIME_GLOW, 0.12 * pulse), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -26), 16.0, Color(RIME_GLOW, 0.12 * pulse))
 	draw_line(Vector2(-12, -23), Vector2(12, -29), OUTLINE, 5.0, true)
 	draw_line(Vector2(-12, -23), Vector2(12, -29), ICE.lightened(0.2), 3.0, true)
 	draw_line(Vector2(-6, -25), Vector2(6, -28), Color(RIME_GLOW, pulse), 1.0, true)
@@ -854,7 +860,7 @@ func _draw_kindling() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(70, 11))
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-34, -4), Vector2(-30, -14), Vector2(32, -10), Vector2(34, -1), Vector2(-30, 2)]), FROSTPINE, OUTLINE, 1.2)
 	draw_set_transform(Vector2(-32, -6), 0.0, Vector2(0.45, 1.0))
-	draw_circle(Vector2.ZERO, 9.0, WOOD_LIGHT, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 9.0, WOOD_LIGHT)
 	draw_arc(Vector2.ZERO, 5.0, 0.0, TAU, 16, Color(WOOD, 0.8), 1.0, true)
 	draw_set_transform(Vector2.ZERO)
 	# Snow along the top of the trunk.
@@ -864,7 +870,7 @@ func _draw_kindling() -> void:
 	for branch: Array in [[Vector2(-14, -13), Vector2(-20, -30)], [Vector2(2, -13), Vector2(8, -32)], [Vector2(18, -11), Vector2(14, -26)]]:
 		draw_line(branch[0], branch[1], OUTLINE, 3.5, true)
 		draw_line(branch[0], branch[1], FROSTPINE.lightened(0.15), 2.0, true)
-		draw_circle(branch[1], 2.5, SNOW, true, -1.0, true)
+		SmoothDraw.disc(self, branch[1], 2.5, SNOW)
 
 
 ## A shoulder of cave rock with a seam of hard blue rime-ice running through it; chipped out once cut.
@@ -936,7 +942,7 @@ func _draw_melt_rift() -> void:
 	# Steam curling up off it.
 	for puff in 3:
 		var rise := fmod(time * 0.5 + phase + puff * 0.33, 1.0)
-		draw_circle(Vector2(-16 + puff * 16 + sin(rise * 6.0) * 3.0, -8 - rise * 40.0), 4.0 + rise * 6.0, Color(1, 1, 1, 0.22 * (1.0 - rise)), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(-16 + puff * 16 + sin(rise * 6.0) * 3.0, -8 - rise * 40.0), 4.0 + rise * 6.0, Color(1, 1, 1, 0.22 * (1.0 - rise)))
 
 
 ## The Heartfrost: a frozen spring welling up from the floor of the Deep as great crystals of blue ice,
@@ -944,9 +950,9 @@ func _draw_melt_rift() -> void:
 func _draw_heartfrost() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 2), Vector2(130, 24), 0.3)
 	draw_set_transform(Vector2(0, -6), 0.0, Vector2(1.0, 0.38))
-	draw_circle(Vector2.ZERO, 62.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 61.0, ICE_DEEP, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 48.0, ICE, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 62.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 61.0, ICE_DEEP)
+	SmoothDraw.disc(self, Vector2.ZERO, 48.0, ICE)
 	draw_set_transform(Vector2.ZERO)
 	var whole := is_spent()
 	var crystal := ICE.lightened(0.15) if whole else ICE.darkened(0.12)
@@ -961,14 +967,14 @@ func _draw_heartfrost() -> void:
 		draw_line(base + Vector2(-half * 0.3, -4), base + Vector2(-half * 0.2, -height * 0.75), Color(1, 1, 1, 0.5), 1.5, true)
 	if whole:
 		var blaze := 0.75 + 0.25 * sin(time * 2.2 + phase)
-		draw_circle(Vector2(0, -44), 24.0, Color(RIME_GLOW, 0.25 * blaze), true, -1.0, true)
-		draw_circle(Vector2(0, -44), 9.0, Color.WHITE.lerp(RIME_GLOW, 0.4 * blaze), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(0, -44), 24.0, Color(RIME_GLOW, 0.25 * blaze))
+		SmoothDraw.disc(self, Vector2(0, -44), 9.0, Color.WHITE.lerp(RIME_GLOW, 0.4 * blaze))
 		return
 	# The cracks Hrimgar left, and the empty hollow where the Rimeward belongs.
 	draw_polyline(PackedVector2Array([Vector2(-6, -82), Vector2(2, -64), Vector2(-4, -50), Vector2(6, -30), Vector2(0, -12)]), OUTLINE, 1.5, true)
 	draw_polyline(PackedVector2Array([Vector2(-30, -50), Vector2(-22, -36), Vector2(-26, -20)]), OUTLINE, 1.2, true)
-	draw_circle(Vector2(0, -44), 8.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2(0, -44), 6.5, Color(0.05, 0.08, 0.12), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -44), 8.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2(0, -44), 6.5, Color(0.05, 0.08, 0.12))
 
 
 # --- The Underworld --------------------------------------------------------------------------------------
@@ -979,8 +985,8 @@ func _draw_kaels_standard() -> void:
 	SmoothDraw.shadow(self, Vector2(-2, 1), Vector2(48, 10))
 	for shield: Vector3 in [Vector3(-18, -4, 9), Vector3(16, -3, 8)]:
 		draw_set_transform(Vector2(shield.x, shield.y), 0.0, Vector2(1.0, 0.55))
-		draw_circle(Vector2.ZERO, shield.z + 1.0, OUTLINE, true, -1.0, true)
-		draw_circle(Vector2.ZERO, shield.z, ASHGATE_RED.darkened(0.2), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, shield.z + 1.0, OUTLINE)
+		SmoothDraw.disc(self, Vector2.ZERO, shield.z, ASHGATE_RED.darkened(0.2))
 		draw_set_transform(Vector2.ZERO)
 	draw_line(Vector2(0, 2), Vector2(-4, -92), OUTLINE, 4.0, true)
 	draw_line(Vector2(0, 2), Vector2(-4, -92), WOOD_DARK, 2.5, true)
@@ -990,7 +996,7 @@ func _draw_kaels_standard() -> void:
 	SmoothDraw.polygon(self, PackedVector2Array([
 		Vector2(-15, -87), Vector2(9, -89), Vector2(8 + sway, -58), Vector2(0 + sway, -64), Vector2(-6 + sway, -54), Vector2(-14 + sway, -60),
 	]), ASHGATE_RED, OUTLINE, 1.2)
-	draw_circle(Vector2(-3 + sway * 0.5, -76), 4.0, Color(SEAL_GOLD, 0.8), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(-3 + sway * 0.5, -76), 4.0, Color(SEAL_GOLD, 0.8))
 	if not is_spent():
 		SmoothDraw.box(self, Rect2(-1, -46, 9, 12), LEATHER, 1.0)
 		draw_line(Vector2(-3, -44), Vector2(8, -42), Color(OUTLINE, 0.8), 1.0, true)
@@ -1006,8 +1012,8 @@ func _draw_founders_brazier() -> void:
 	draw_line(Vector2(0, -34), Vector2(0, -26), Color(SEAL_GOLD, 0.6), 1.5, true)
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-17, -42), Vector2(17, -42), Vector2(11, -35), Vector2(-11, -35)]), IRON, OUTLINE, 1.5)
 	if not is_spent():
-		draw_circle(Vector2(-4, -43), 3.0, ASH, true, -1.0, true)
-		draw_circle(Vector2(4, -43), 3.5, ASH.darkened(0.2), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(-4, -43), 3.0, ASH)
+		SmoothDraw.disc(self, Vector2(4, -43), 3.5, ASH.darkened(0.2))
 		return
 	var flicker := sin(time * 10.0 + phase) * 1.8
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-13, -42), Vector2(-6, -57 - flicker), Vector2(0, -50), Vector2(5, -64 + flicker), Vector2(13, -42)]), FLAME, Color(FLAME.darkened(0.3), 0.8), 1.0)
@@ -1021,14 +1027,14 @@ func _draw_founders_brand() -> void:
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-10, 0), Vector2(-8, -14), Vector2(8, -14), Vector2(10, 0)]), OBSIDIAN, OUTLINE, 1.2)
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-22, -14), Vector2(18, -14), Vector2(24, -20), Vector2(-14, -22)]), IRON.lightened(0.15), OUTLINE, 1.2)
 	var pulse := 0.6 + 0.4 * sin(time * 2.8 + phase)
-	draw_circle(Vector2(0, -28), 18.0, Color(SEAL_GOLD, 0.1 * pulse), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(0, -28), 18.0, Color(SEAL_GOLD, 0.1 * pulse))
 	# The blade, the crossguard and the hilt, laid across the anvil's face.
 	draw_line(Vector2(-20, -24), Vector2(14, -32), OUTLINE, 5.0, true)
 	draw_line(Vector2(-20, -24), Vector2(14, -32), IRON, 3.0, true)
 	draw_line(Vector2(-16, -25), Vector2(10, -31), Color(SEAL_GOLD, pulse), 1.0, true)
 	draw_line(Vector2(15, -37), Vector2(17, -27), SEAL_GOLD.darkened(0.3), 3.0, true)
 	draw_line(Vector2(17, -33), Vector2(25, -35), LEATHER, 3.0, true)
-	draw_circle(Vector2(26, -35), 2.5, SEAL_GOLD, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(26, -35), 2.5, SEAL_GOLD)
 
 
 ## An Ashgate soldier fallen beyond the breach: a shield and helm in the ash, a spear driven in beside them,
@@ -1036,26 +1042,26 @@ func _draw_founders_brand() -> void:
 func _draw_fallen_soldier() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(46, 10))
 	draw_set_transform(Vector2(0, -2), 0.0, Vector2(1.0, 0.35))
-	draw_circle(Vector2.ZERO, 24.0, Color(ASH, 0.8), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 24.0, Color(ASH, 0.8))
 	draw_set_transform(Vector2.ZERO)
 	draw_set_transform(Vector2(-8, -5), -0.3, Vector2(1.0, 0.6))
-	draw_circle(Vector2.ZERO, 11.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 10.0, ASHGATE_RED.darkened(0.25), true, -1.0, true)
-	draw_circle(Vector2.ZERO, 3.0, SEAL_GOLD.darkened(0.3), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 11.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 10.0, ASHGATE_RED.darkened(0.25))
+	SmoothDraw.disc(self, Vector2.ZERO, 3.0, SEAL_GOLD.darkened(0.3))
 	draw_set_transform(Vector2.ZERO)
 	SmoothDraw.dome(self, Vector2(12, -5), 6.0, STEEL.darkened(0.25))
 	draw_line(Vector2(18, 2), Vector2(22, -32), WOOD_DARK, 2.0, true)
 	SmoothDraw.polygon(self, PackedVector2Array([Vector2(20, -32), Vector2(24, -32), Vector2(22, -40)]), STEEL, OUTLINE, 1.0)
 	if not is_spent():
 		draw_line(Vector2(21, -28), Vector2(25, -20), Color(OUTLINE, 0.8), 1.0, true)
-		draw_circle(Vector2(25, -18), 3.0, IRON.lightened(0.2), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(25, -18), 3.0, IRON.lightened(0.2))
 
 
 ## A cinderlily: pale flowers that bloom in cooled ash, glowing faintly; just the stems once gathered.
 func _draw_cinderlily() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(26, 7))
 	draw_set_transform(Vector2(0, 0), 0.0, Vector2(1.0, 0.35))
-	draw_circle(Vector2.ZERO, 16.0, Color(ASH.darkened(0.3), 0.8), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 16.0, Color(ASH.darkened(0.3), 0.8))
 	draw_set_transform(Vector2.ZERO)
 	if is_spent():
 		for stem_x: float in [-4.0, 1.0, 5.0]:
@@ -1065,11 +1071,11 @@ func _draw_cinderlily() -> void:
 	for bloom: Vector3 in [Vector3(-5, -15, 4.5), Vector3(2, -21, 5.0), Vector3(7, -12, 4.0)]:
 		var center := Vector2(bloom.x, bloom.y)
 		draw_line(Vector2(bloom.x * 0.4, 0), center, Color("#5a6a4a"), 1.5, true)
-		draw_circle(center, bloom.z * 2.0, Color(LILY, 0.15 * pulse), true, -1.0, true)
+		SmoothDraw.disc(self, center, bloom.z * 2.0, Color(LILY, 0.15 * pulse))
 		for petal in 6:
 			var angle := TAU * petal / 6.0 + phase
 			draw_line(center, center + Vector2(cos(angle), sin(angle) * 0.7) * bloom.z * 1.2, LILY, 2.0, true)
-		draw_circle(center, bloom.z * 0.35, Color("#ffcf8a"), true, -1.0, true)
+		SmoothDraw.disc(self, center, bloom.z * 0.35, Color("#ffcf8a"))
 
 
 ## A vent in the obsidian crusted with yellow brimstone and fuming; a bare, chipped vent once mined.
@@ -1080,17 +1086,17 @@ func _draw_brimstone() -> void:
 	]), OBSIDIAN, OUTLINE, 1.5)
 	draw_line(Vector2(-14, -34), Vector2(4, -38), Color(OBSIDIAN_LIGHT, 0.8), 3.0, true)
 	draw_set_transform(Vector2(2, -38), 0.0, Vector2(1.0, 0.45))
-	draw_circle(Vector2.ZERO, 7.0, Color(0.06, 0.03, 0.03), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 7.0, Color(0.06, 0.03, 0.03))
 	draw_set_transform(Vector2.ZERO)
 	if is_spent():
 		for chip: Vector2 in [Vector2(-14, -16), Vector2(10, -22), Vector2(-4, -10)]:
-			draw_circle(chip, 3.0, OBSIDIAN_LIGHT.darkened(0.2), true, -1.0, true)
+			SmoothDraw.disc(self, chip, 3.0, OBSIDIAN_LIGHT.darkened(0.2))
 		return
 	for crust: Vector3 in [Vector3(-14, -18, 7), Vector3(10, -24, 8), Vector3(-2, -10, 6), Vector3(14, -8, 5), Vector3(-6, -30, 5)]:
 		SmoothDraw.dome(self, Vector2(crust.x, crust.y), crust.z, BRIMSTONE_YELLOW.darkened(absf(crust.x) * 0.01))
 	for puff in 2:
 		var rise := fmod(time * 0.4 + phase + puff * 0.5, 1.0)
-		draw_circle(Vector2(2 + sin(rise * 5.0) * 4.0, -42 - rise * 36.0), 4.0 + rise * 7.0, Color(0.9, 0.86, 0.5, 0.25 * (1.0 - rise)), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(2 + sin(rise * 5.0) * 4.0, -42 - rise * 36.0), 4.0 + rise * 7.0, Color(0.9, 0.86, 0.5, 0.25 * (1.0 - rise)))
 
 
 ## A high obsidian outcrop at the edge of the Underworld; Ashgate's red-and-gold banner flies from it once raised.
@@ -1109,7 +1115,7 @@ func _draw_ashgate_banner() -> void:
 	SmoothDraw.polygon(self, PackedVector2Array([
 		Vector2(1, -123), Vector2(14, -120 + wave), Vector2(28, -118 - wave * 0.5), Vector2(14, -108 + wave), Vector2(1, -105),
 	]), ASHGATE_RED, OUTLINE, 1.0)
-	draw_circle(Vector2(12, -114 + wave * 0.5), 3.0, SEAL_GOLD, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(12, -114 + wave * 0.5), 3.0, SEAL_GOLD)
 
 
 ## The Black Gate: two horned obsidian pillars under a lintel carved with the founders' seal, barred with a
@@ -1158,10 +1164,10 @@ func _draw_soul_forge() -> void:
 	# Pale shapes twisting in the flames, and sparks rising from the chimney.
 	for wisp in 2:
 		var drift := sin(time * 2.0 + phase + wisp * 2.0) * 4.0
-		draw_circle(Vector2(-4 + wisp * 8 + drift, -18), 3.0, Color(1, 0.95, 0.9, 0.5 * heat), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(-4 + wisp * 8 + drift, -18), 3.0, Color(1, 0.95, 0.9, 0.5 * heat))
 	for spark in 3:
 		var rise := fmod(time * 0.7 + phase + spark * 0.33, 1.0)
-		draw_circle(Vector2(sin(rise * 7.0 + spark) * 6.0, -48 - rise * 44.0), 1.8, Color(FLAME_CORE, 1.0 - rise), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(sin(rise * 7.0 + spark) * 6.0, -48 - rise * 44.0), 1.8, Color(FLAME_CORE, 1.0 - rise))
 
 
 ## The Emberseal at the foot of the Cinder Throne: a great round seal of black stone inlaid with gold,
@@ -1169,8 +1175,8 @@ func _draw_soul_forge() -> void:
 func _draw_emberseal() -> void:
 	SmoothDraw.shadow(self, Vector2(0, 2), Vector2(130, 24), 0.35)
 	draw_set_transform(Vector2(0, -8), 0.0, Vector2(1.0, 0.4))
-	draw_circle(Vector2.ZERO, 62.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 61.0, OBSIDIAN, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 62.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 61.0, OBSIDIAN)
 	var set_whole := is_spent()
 	var gold := SEAL_GOLD if set_whole else SEAL_GOLD.darkened(0.55)
 	draw_arc(Vector2.ZERO, 50.0, 0.0, TAU, 48, gold, 3.0, true)
@@ -1181,18 +1187,18 @@ func _draw_emberseal() -> void:
 	draw_set_transform(Vector2.ZERO)
 	if set_whole:
 		var blaze := 0.75 + 0.25 * sin(time * 2.5 + phase)
-		draw_circle(Vector2(0, -30), 26.0, Color(SEAL_GOLD, 0.22 * blaze), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(0, -30), 26.0, Color(SEAL_GOLD, 0.22 * blaze))
 		# The Brand, driven point-down into the heart of the seal.
 		draw_line(Vector2(0, -8), Vector2(0, -52), OUTLINE, 5.0, true)
 		draw_line(Vector2(0, -8), Vector2(0, -52), IRON, 3.0, true)
 		draw_line(Vector2(0, -12), Vector2(0, -48), Color(SEAL_GOLD, blaze), 1.0, true)
 		draw_line(Vector2(-9, -52), Vector2(9, -52), SEAL_GOLD.darkened(0.2), 3.0, true)
 		draw_line(Vector2(0, -52), Vector2(0, -64), LEATHER, 3.0, true)
-		draw_circle(Vector2(0, -66), 2.5, SEAL_GOLD, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(0, -66), 2.5, SEAL_GOLD)
 		return
 	draw_polyline(PackedVector2Array([Vector2(-48, -10), Vector2(-24, -4), Vector2(-10, -12), Vector2(8, -2), Vector2(30, -14)]), Color(RIFT_FIRE, 0.8), 2.0, true)
 	draw_set_transform(Vector2(0, -8), 0.0, Vector2(1.0, 0.4))
-	draw_circle(Vector2.ZERO, 8.0, Color(0.04, 0.01, 0.01), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 8.0, Color(0.04, 0.01, 0.01))
 	draw_set_transform(Vector2.ZERO)
 
 
@@ -1219,4 +1225,4 @@ func _draw_victory_pyre() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(-22, -20), Vector2(-8, -50 - flicker), Vector2(4, -36), Vector2(14, -58 + flicker), Vector2(24, -20)]), FLAME_CORE)
 	for spark in 5:
 		var rise := fmod(time * 0.6 + phase + spark * 0.2, 1.0)
-		draw_circle(Vector2(sin(rise * 6.0 + spark * 1.7) * 24.0, -60 - rise * 90.0), 2.0, Color(FLAME_CORE, 1.0 - rise), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(sin(rise * 6.0 + spark * 1.7) * 24.0, -60 - rise * 90.0), 2.0, Color(FLAME_CORE, 1.0 - rise))

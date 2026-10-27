@@ -113,7 +113,7 @@ class HitSpark extends Node2D:
 		var t := time / LIFETIME
 		var reach := (26.0 if heavy else 18.0) * (0.35 + t)
 		var alpha := 1.0 - t
-		draw_circle(Vector2.ZERO, (9.0 if heavy else 6.0) * (1.0 - t), Color(1.0, 0.98, 0.9, alpha), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, (9.0 if heavy else 6.0) * (1.0 - t), Color(1.0, 0.98, 0.9, alpha))
 		for ray in rays:
 			var from := ray * reach * 0.35
 			var to := ray * reach
