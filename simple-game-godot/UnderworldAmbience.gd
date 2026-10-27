@@ -69,6 +69,8 @@ void fragment() {
 
 var player: Player
 var camera: Camera2D
+var canvas_tint: CanvasModulate
+var smoke_layer: CanvasLayer
 var smoke_material: ShaderMaterial
 var embers: CPUParticles2D
 var ash: CPUParticles2D
@@ -84,7 +86,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 
-	var canvas_tint := CanvasModulate.new()
+	canvas_tint = CanvasModulate.new()
 	canvas_tint.color = TINT
 	add_child(canvas_tint)
 	_build_smoke_layer()
@@ -111,6 +113,15 @@ func _process(delta: float) -> void:
 	smoke_material.set_shader_parameter("world_offset", (view_center - view_size * 0.5) / view_size)
 
 
+## Underground (in the Cinder Throne) there's no open sky: a deeper tint, and no rolling smoke, ash or embers.
+func set_underground(underground: bool, tint := TINT) -> void:
+	canvas_tint.color = tint if underground else TINT
+	smoke_layer.visible = not underground
+	for particles: CPUParticles2D in [embers, ash, sparks]:
+		particles.visible = not underground
+	set_process(not underground)
+
+
 func _make_noise_texture(seed_value: int, frequency: float, octaves: int) -> NoiseTexture2D:
 	var noise := FastNoiseLite.new()
 	noise.seed = seed_value
@@ -134,7 +145,7 @@ func _build_smoke_layer() -> void:
 	smoke_material.set_shader_parameter("aspect", Vector2(view_size.x / view_size.y, 1.0))
 
 	# Sits between the world and the HUD, so the HUD moves up a layer.
-	var smoke_layer := CanvasLayer.new()
+	smoke_layer = CanvasLayer.new()
 	smoke_layer.layer = 1
 	var ui := get_parent().get_node_or_null("UI") as CanvasLayer
 	if ui != null and ui.layer <= smoke_layer.layer:

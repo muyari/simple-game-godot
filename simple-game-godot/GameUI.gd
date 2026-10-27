@@ -923,6 +923,9 @@ func _on_level_completed() -> void:
 		# The last campaign level just fell: point the player at the endgame.
 		_show_banner("Random Maps Unlocked", ENDGAME_BANNER_COLOR)
 		portal_hint_label.text = "The waystones stir: random maps await at any hub's waystone."
+		# The story isn't over until the last watchfire is lit.
+		if GameState.get_quest_state(Quests.EMBER_KING) == "king_slain":
+			portal_hint_label.text = "The Ember King is dead. Return to Ashgate - Captain Aldric is waiting."
 	else:
 		_show_banner("Area Secured", QUEST_BANNER_COLOR)
 		# Point the way home to whoever offers the road on to the next region.

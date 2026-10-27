@@ -76,6 +76,10 @@ func _ready() -> void:
 	_build_shop()
 	_build_dialogue()
 	add_child(QuestToast.new())
+	# Plays the campaign's ending once its last quest is done, and hands over that quest's gear.
+	var epilogue := CampaignEpilogue.new()
+	epilogue.player = player
+	add_child(epilogue)
 	# Reaching this hub completes a level transition quest that was headed here (see Quests).
 	QuestToast.show_updates(get_tree(), Quests.record_event("arrive", "hub_%d" % hub_level_id))
 	_build_quest_dialogue()

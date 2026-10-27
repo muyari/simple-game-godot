@@ -7,8 +7,10 @@ class_name QuestObject
 ## cactus, the stair down into the Sunken Vault and its way out, the Sunstone's shards and its seal. In the
 ## Ice Caves: the ice-cutters' sledge, a frosted runestone, the Rimekey on its altar, a frostpine deadfall, a
 ## vein of rime-ice, a rime-beacon, the ward-gate down into the Heartfrost Deep and its way out, a melt-rift
-## and the Heartfrost itself. Drawn smooth and softly lit like the hub props, standing on its node origin so
-## it y-sorts.
+## and the Heartfrost itself. In the Underworld: Kael's fallen standard, a founders' brazier, the Founders'
+## Brand on Vharkul's anvil, a fallen soldier, a cinderlily, a brimstone vent, a spot for Ashgate's banner, the
+## Black Gate down into the Cinder Throne and its way out, a soul-forge and the Emberseal; and in Ashgate the
+## victory pyre. Drawn smooth and softly lit like the hub props, standing on its node origin so it y-sorts.
 ## Using it records a Quests event (see Quests.record_event); it is only usable while a quest wants it.
 
 signal used(quest_object: QuestObject)
@@ -17,7 +19,8 @@ enum Kind {
 	APPLES, MOONPETAL, WAYFIRE, AXE_STUMP, JOURNAL, CAVE_MOUTH, CAVE_EXIT, SHRINE, PERRYS_HAT, TOWN_GATE,
 	STRONGBOX, GRAVE, SPICE_CRATE, OBELISK, SIGNAL_ROCK, OLD_WELL, SUNBLOOM, VAULT_STAIRS, VAULT_EXIT,
 	SUN_SHARD, SUN_SEAL, CUTTERS_SLEDGE, RUNESTONE, RIMEKEY, KINDLING, RIME_VEIN, RIME_BEACON, WARD_GATE,
-	DEEP_EXIT, MELT_RIFT, HEARTFROST,
+	DEEP_EXIT, MELT_RIFT, HEARTFROST, KAELS_STANDARD, FOUNDERS_BRAZIER, FOUNDERS_BRAND, FALLEN_SOLDIER,
+	CINDERLILY, BRIMSTONE, ASHGATE_BANNER, BLACK_GATE, THRONE_EXIT, SOUL_FORGE, EMBERSEAL, VICTORY_PYRE,
 }
 
 const OUTLINE := Color(0.13, 0.08, 0.05)
@@ -67,10 +70,22 @@ const USES := {
 	Kind.DEEP_EXIT: {"event": "", "target": "", "action": "Climb out of the Deep"},
 	Kind.MELT_RIFT: {"event": "collect", "target": "melt_rift", "action": "Seal the rift"},
 	Kind.HEARTFROST: {"event": "collect", "target": "heartfrost", "action": "Set the Rimeward"},
+	Kind.KAELS_STANDARD: {"event": "collect", "target": "kaels_dispatch", "action": "Search the standard", "item": "Kael's Dispatch-Case"},
+	Kind.FOUNDERS_BRAZIER: {"event": "collect", "target": "founders_brazier", "action": "Rekindle the brazier"},
+	Kind.FOUNDERS_BRAND: {"event": "collect", "target": "founders_brand", "action": "Take the Founders' Brand", "item": "Founders' Brand"},
+	Kind.FALLEN_SOLDIER: {"event": "collect", "target": "soldier_token", "action": "Take the token", "item": "Soldier's Token"},
+	Kind.CINDERLILY: {"event": "collect", "target": "cinderlily", "action": "Gather", "item": "Cinderlily"},
+	Kind.BRIMSTONE: {"event": "collect", "target": "brimstone", "action": "Mine the brimstone", "item": "Brimstone"},
+	Kind.ASHGATE_BANNER: {"event": "collect", "target": "ashgate_banner", "action": "Raise Ashgate's banner"},
+	Kind.BLACK_GATE: {"event": "", "target": "", "action": "Open the Black Gate"},
+	Kind.THRONE_EXIT: {"event": "", "target": "", "action": "Climb out of the throne room"},
+	Kind.SOUL_FORGE: {"event": "collect", "target": "soul_forge", "action": "Quench the forge"},
+	Kind.EMBERSEAL: {"event": "collect", "target": "emberseal", "action": "Set the Founders' Brand"},
+	Kind.VICTORY_PYRE: {"event": "collect", "target": "victory_pyre", "action": "Light the pyre"},
 }
-const DOORS: Array[Kind] = [Kind.CAVE_MOUTH, Kind.CAVE_EXIT, Kind.TOWN_GATE, Kind.VAULT_STAIRS, Kind.VAULT_EXIT, Kind.WARD_GATE, Kind.DEEP_EXIT]
+const DOORS: Array[Kind] = [Kind.CAVE_MOUTH, Kind.CAVE_EXIT, Kind.TOWN_GATE, Kind.VAULT_STAIRS, Kind.VAULT_EXIT, Kind.WARD_GATE, Kind.DEEP_EXIT, Kind.BLACK_GATE, Kind.THRONE_EXIT]
 ## Kinds that vanish once their quest has used them (picked up and carried off).
-const TAKEN: Array[Kind] = [Kind.JOURNAL, Kind.PERRYS_HAT, Kind.SPICE_CRATE, Kind.SUN_SHARD, Kind.RIMEKEY]
+const TAKEN: Array[Kind] = [Kind.JOURNAL, Kind.PERRYS_HAT, Kind.SPICE_CRATE, Kind.SUN_SHARD, Kind.RIMEKEY, Kind.FOUNDERS_BRAND]
 const SANDSTONE := Color("#d7b07a")
 const SANDSTONE_DARK := Color("#a37a4c")
 const SAND := Color("#e2c48e")
@@ -90,6 +105,15 @@ const FROST_STONE := Color("#7d8a96")
 const FROST_STONE_DARK := Color("#525d69")
 const FROSTPINE := Color("#6e5a48")
 const RIFT_FIRE := Color("#ff5a1f")
+const OBSIDIAN := Color("#2a2228")
+const OBSIDIAN_LIGHT := Color("#4a3c44")
+const ASH := Color("#6a5e5a")
+const BRIMSTONE_YELLOW := Color("#e8d04a")
+const LILY := Color("#f4efe6")
+const ASHGATE_RED := Color("#7a1f1f")
+const SEAL_GOLD := Color("#ffb347")
+## Kinds that glow until their quest uses them (an open melt-rift, a burning soul-forge), rather than after.
+const GLOW_UNTIL_SPENT: Array[Kind] = [Kind.MELT_RIFT, Kind.SOUL_FORGE]
 
 var kind := Kind.MOONPETAL
 ## Stable id for per-object quest flags, e.g. "moonpetal_2".
@@ -112,7 +136,7 @@ func _ready() -> void:
 	phase = randf() * TAU
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
-	circle.radius = 72.0 if kind == Kind.TOWN_GATE else 56.0 if kind in [Kind.CAVE_MOUTH, Kind.APPLES, Kind.OBELISK, Kind.SIGNAL_ROCK, Kind.VAULT_STAIRS, Kind.SUN_SEAL, Kind.RUNESTONE, Kind.WARD_GATE, Kind.HEARTFROST] else 34.0
+	circle.radius = 72.0 if kind == Kind.TOWN_GATE else 56.0 if kind in [Kind.CAVE_MOUTH, Kind.APPLES, Kind.OBELISK, Kind.SIGNAL_ROCK, Kind.VAULT_STAIRS, Kind.SUN_SEAL, Kind.RUNESTONE, Kind.WARD_GATE, Kind.HEARTFROST, Kind.BLACK_GATE, Kind.EMBERSEAL, Kind.VICTORY_PYRE, Kind.ASHGATE_BANNER] else 34.0
 	shape.shape = circle
 	shape.position = Vector2(0, -10)
 	add_child(shape)
@@ -160,6 +184,18 @@ func _ready() -> void:
 		FireGlow.attach(self, Vector2(0, -6), 110.0, RIFT_FIRE, 0.5)
 	elif kind == Kind.RIMEKEY:
 		FireGlow.attach(self, Vector2(0, -24), 80.0, RIME_GLOW, 0.4)
+	elif kind == Kind.FOUNDERS_BRAZIER:
+		FireGlow.attach(self, Vector2(0, -44), 120.0, Color("#ff9a3c"), 0.5).visible = false
+	elif kind == Kind.VICTORY_PYRE:
+		FireGlow.attach(self, Vector2(0, -60), 320.0, Color("#ffb14a"), 0.7).visible = false
+	elif kind == Kind.EMBERSEAL:
+		FireGlow.attach(self, Vector2(0, -30), 240.0, SEAL_GOLD, 0.6).visible = false
+	elif kind == Kind.SOUL_FORGE:
+		FireGlow.attach(self, Vector2(0, -30), 140.0, RIFT_FIRE, 0.55)
+	elif kind == Kind.FOUNDERS_BRAND:
+		FireGlow.attach(self, Vector2(0, -28), 90.0, SEAL_GOLD, 0.45)
+	elif kind == Kind.CINDERLILY:
+		FireGlow.attach(self, Vector2(0, -8), 60.0, LILY, 0.3)
 	add_to_group("interactables")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -206,14 +242,15 @@ func interact(_player: Player) -> void:
 
 func _refresh() -> void:
 	var wanted := is_wanted()
-	sparkle.mode = QuestMarker.Mode.AVAILABLE if wanted and kind not in [Kind.CAVE_EXIT, Kind.VAULT_EXIT, Kind.DEEP_EXIT, Kind.SHRINE] else QuestMarker.Mode.HIDDEN
+	sparkle.mode = QuestMarker.Mode.AVAILABLE if wanted and kind not in [Kind.CAVE_EXIT, Kind.VAULT_EXIT, Kind.DEEP_EXIT, Kind.THRONE_EXIT, Kind.SHRINE] else QuestMarker.Mode.HIDDEN
 	prompt.visible = player_nearby and wanted
-	# A lit wayfire or rime-beacon, a set Sunstone and a mended Heartfrost give off light; a sealed melt-rift
-	# stops glowing.
-	if kind in [Kind.WAYFIRE, Kind.SUN_SEAL, Kind.RIME_BEACON, Kind.HEARTFROST, Kind.MELT_RIFT]:
+	# A lit wayfire, rime-beacon, brazier or pyre, a set Sunstone or Emberseal and a mended Heartfrost give
+	# off light; a sealed melt-rift or quenched soul-forge stops glowing.
+	if kind in [Kind.WAYFIRE, Kind.SUN_SEAL, Kind.RIME_BEACON, Kind.HEARTFROST, Kind.FOUNDERS_BRAZIER, Kind.VICTORY_PYRE, Kind.EMBERSEAL] \
+			or kind in GLOW_UNTIL_SPENT:
 		for child in get_children():
 			if child is FireGlow:
-				child.visible = is_spent() != (kind == Kind.MELT_RIFT)
+				child.visible = is_spent() != (kind in GLOW_UNTIL_SPENT)
 	if kind in TAKEN:
 		visible = not is_spent()
 	queue_redraw()
@@ -235,8 +272,16 @@ func _burst_color() -> Color:
 			return SANDSTONE
 		Kind.KINDLING, Kind.CUTTERS_SLEDGE:
 			return WOOD_LIGHT
-		Kind.RUNESTONE, Kind.RIMEKEY, Kind.RIME_VEIN, Kind.RIME_BEACON, Kind.MELT_RIFT, Kind.HEARTFROST:
+		Kind.RUNESTONE, Kind.RIMEKEY, Kind.RIME_VEIN, Kind.RIME_BEACON, Kind.MELT_RIFT, Kind.HEARTFROST, Kind.SOUL_FORGE:
 			return RIME_GLOW
+		Kind.CINDERLILY:
+			return LILY
+		Kind.BRIMSTONE:
+			return BRIMSTONE_YELLOW
+		Kind.ASHGATE_BANNER, Kind.KAELS_STANDARD, Kind.FALLEN_SOLDIER:
+			return ASHGATE_RED
+		Kind.FOUNDERS_BRAZIER, Kind.FOUNDERS_BRAND, Kind.EMBERSEAL, Kind.VICTORY_PYRE:
+			return SEAL_GOLD
 	return Color("#ffd34d")
 
 
@@ -286,6 +331,24 @@ func _height() -> float:
 			return 96.0
 		Kind.WARD_GATE:
 			return 110.0
+		Kind.FALLEN_SOLDIER, Kind.CINDERLILY:
+			return 30.0
+		Kind.BRIMSTONE, Kind.SOUL_FORGE:
+			return 52.0
+		Kind.FOUNDERS_BRAZIER, Kind.FOUNDERS_BRAND:
+			return 60.0
+		Kind.THRONE_EXIT:
+			return 70.0
+		Kind.EMBERSEAL:
+			return 76.0
+		Kind.KAELS_STANDARD:
+			return 96.0
+		Kind.VICTORY_PYRE:
+			return 100.0
+		Kind.ASHGATE_BANNER:
+			return 104.0
+		Kind.BLACK_GATE:
+			return 130.0
 	return 24.0
 
 
@@ -363,6 +426,30 @@ func _draw() -> void:
 			_draw_melt_rift()
 		Kind.HEARTFROST:
 			_draw_heartfrost()
+		Kind.KAELS_STANDARD:
+			_draw_kaels_standard()
+		Kind.FOUNDERS_BRAZIER:
+			_draw_founders_brazier()
+		Kind.FOUNDERS_BRAND:
+			_draw_founders_brand()
+		Kind.FALLEN_SOLDIER:
+			_draw_fallen_soldier()
+		Kind.CINDERLILY:
+			_draw_cinderlily()
+		Kind.BRIMSTONE:
+			_draw_brimstone()
+		Kind.ASHGATE_BANNER:
+			_draw_ashgate_banner()
+		Kind.BLACK_GATE:
+			_draw_black_gate()
+		Kind.THRONE_EXIT:
+			_draw_cave_exit()
+		Kind.SOUL_FORGE:
+			_draw_soul_forge()
+		Kind.EMBERSEAL:
+			_draw_emberseal()
+		Kind.VICTORY_PYRE:
+			_draw_victory_pyre()
 
 
 func _draw_moonpetal() -> void:
@@ -882,3 +969,254 @@ func _draw_heartfrost() -> void:
 	draw_polyline(PackedVector2Array([Vector2(-30, -50), Vector2(-22, -36), Vector2(-26, -20)]), OUTLINE, 1.2, true)
 	draw_circle(Vector2(0, -44), 8.0, OUTLINE, true, -1.0, true)
 	draw_circle(Vector2(0, -44), 6.5, Color(0.05, 0.08, 0.12), true, -1.0, true)
+
+
+# --- The Underworld --------------------------------------------------------------------------------------
+
+## Ashgate's patrol standard, driven into the ash where Kael's soldiers made their stand, the dispatch-case
+## tied to its pole until it's taken.
+func _draw_kaels_standard() -> void:
+	SmoothDraw.shadow(self, Vector2(-2, 1), Vector2(48, 10))
+	for shield: Vector3 in [Vector3(-18, -4, 9), Vector3(16, -3, 8)]:
+		draw_set_transform(Vector2(shield.x, shield.y), 0.0, Vector2(1.0, 0.55))
+		draw_circle(Vector2.ZERO, shield.z + 1.0, OUTLINE, true, -1.0, true)
+		draw_circle(Vector2.ZERO, shield.z, ASHGATE_RED.darkened(0.2), true, -1.0, true)
+		draw_set_transform(Vector2.ZERO)
+	draw_line(Vector2(0, 2), Vector2(-4, -92), OUTLINE, 4.0, true)
+	draw_line(Vector2(0, 2), Vector2(-4, -92), WOOD_DARK, 2.5, true)
+	# A torn, scorched banner hanging limp from the crossbar.
+	draw_line(Vector2(-16, -88), Vector2(10, -90), WOOD_DARK, 2.0, true)
+	var sway := sin(time * 1.5 + phase) * 1.5
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-15, -87), Vector2(9, -89), Vector2(8 + sway, -58), Vector2(0 + sway, -64), Vector2(-6 + sway, -54), Vector2(-14 + sway, -60),
+	]), ASHGATE_RED, OUTLINE, 1.2)
+	draw_circle(Vector2(-3 + sway * 0.5, -76), 4.0, Color(SEAL_GOLD, 0.8), true, -1.0, true)
+	if not is_spent():
+		SmoothDraw.box(self, Rect2(-1, -46, 9, 12), LEATHER, 1.0)
+		draw_line(Vector2(-3, -44), Vector2(8, -42), Color(OUTLINE, 0.8), 1.0, true)
+
+
+## One of the three braziers the founders lit round their chapel: a black iron bowl on an obsidian plinth,
+## cold until rekindled.
+func _draw_founders_brazier() -> void:
+	SmoothDraw.shadow(self, Vector2(-2, 1), Vector2(44, 11))
+	SmoothDraw.box(self, Rect2(-14, -10, 28, 10), OBSIDIAN, 3.0)
+	SmoothDraw.box(self, Rect2(-8, -36, 16, 27), OBSIDIAN_LIGHT, 3.0)
+	draw_line(Vector2(-4, -30), Vector2(4, -30), Color(SEAL_GOLD, 0.6), 1.5, true)
+	draw_line(Vector2(0, -34), Vector2(0, -26), Color(SEAL_GOLD, 0.6), 1.5, true)
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-17, -42), Vector2(17, -42), Vector2(11, -35), Vector2(-11, -35)]), IRON, OUTLINE, 1.5)
+	if not is_spent():
+		draw_circle(Vector2(-4, -43), 3.0, ASH, true, -1.0, true)
+		draw_circle(Vector2(4, -43), 3.5, ASH.darkened(0.2), true, -1.0, true)
+		return
+	var flicker := sin(time * 10.0 + phase) * 1.8
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-13, -42), Vector2(-6, -57 - flicker), Vector2(0, -50), Vector2(5, -64 + flicker), Vector2(13, -42)]), FLAME, Color(FLAME.darkened(0.3), 0.8), 1.0)
+	draw_colored_polygon(PackedVector2Array([Vector2(-6, -42), Vector2(0, -54 - flicker * 0.5), Vector2(6, -42)]), FLAME_CORE)
+
+
+## Vharkul's anvil by the burning bridge, with the Founders' Brand laid across it: a black iron blade that
+## glows like a forge.
+func _draw_founders_brand() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(46, 10))
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-10, 0), Vector2(-8, -14), Vector2(8, -14), Vector2(10, 0)]), OBSIDIAN, OUTLINE, 1.2)
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-22, -14), Vector2(18, -14), Vector2(24, -20), Vector2(-14, -22)]), IRON.lightened(0.15), OUTLINE, 1.2)
+	var pulse := 0.6 + 0.4 * sin(time * 2.8 + phase)
+	draw_circle(Vector2(0, -28), 18.0, Color(SEAL_GOLD, 0.1 * pulse), true, -1.0, true)
+	# The blade, the crossguard and the hilt, laid across the anvil's face.
+	draw_line(Vector2(-20, -24), Vector2(14, -32), OUTLINE, 5.0, true)
+	draw_line(Vector2(-20, -24), Vector2(14, -32), IRON, 3.0, true)
+	draw_line(Vector2(-16, -25), Vector2(10, -31), Color(SEAL_GOLD, pulse), 1.0, true)
+	draw_line(Vector2(15, -37), Vector2(17, -27), SEAL_GOLD.darkened(0.3), 3.0, true)
+	draw_line(Vector2(17, -33), Vector2(25, -35), LEATHER, 3.0, true)
+	draw_circle(Vector2(26, -35), 2.5, SEAL_GOLD, true, -1.0, true)
+
+
+## An Ashgate soldier fallen beyond the breach: a shield and helm in the ash, a spear driven in beside them,
+## the iron token hanging from it until taken.
+func _draw_fallen_soldier() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(46, 10))
+	draw_set_transform(Vector2(0, -2), 0.0, Vector2(1.0, 0.35))
+	draw_circle(Vector2.ZERO, 24.0, Color(ASH, 0.8), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO)
+	draw_set_transform(Vector2(-8, -5), -0.3, Vector2(1.0, 0.6))
+	draw_circle(Vector2.ZERO, 11.0, OUTLINE, true, -1.0, true)
+	draw_circle(Vector2.ZERO, 10.0, ASHGATE_RED.darkened(0.25), true, -1.0, true)
+	draw_circle(Vector2.ZERO, 3.0, SEAL_GOLD.darkened(0.3), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO)
+	SmoothDraw.dome(self, Vector2(12, -5), 6.0, STEEL.darkened(0.25))
+	draw_line(Vector2(18, 2), Vector2(22, -32), WOOD_DARK, 2.0, true)
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(20, -32), Vector2(24, -32), Vector2(22, -40)]), STEEL, OUTLINE, 1.0)
+	if not is_spent():
+		draw_line(Vector2(21, -28), Vector2(25, -20), Color(OUTLINE, 0.8), 1.0, true)
+		draw_circle(Vector2(25, -18), 3.0, IRON.lightened(0.2), true, -1.0, true)
+
+
+## A cinderlily: pale flowers that bloom in cooled ash, glowing faintly; just the stems once gathered.
+func _draw_cinderlily() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(26, 7))
+	draw_set_transform(Vector2(0, 0), 0.0, Vector2(1.0, 0.35))
+	draw_circle(Vector2.ZERO, 16.0, Color(ASH.darkened(0.3), 0.8), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO)
+	if is_spent():
+		for stem_x: float in [-4.0, 1.0, 5.0]:
+			draw_line(Vector2(stem_x * 0.5, 0), Vector2(stem_x, -8), ASH.darkened(0.1), 1.5, true)
+		return
+	var pulse := 0.75 + 0.25 * sin(time * 2.0 + phase)
+	for bloom: Vector3 in [Vector3(-5, -15, 4.5), Vector3(2, -21, 5.0), Vector3(7, -12, 4.0)]:
+		var center := Vector2(bloom.x, bloom.y)
+		draw_line(Vector2(bloom.x * 0.4, 0), center, Color("#5a6a4a"), 1.5, true)
+		draw_circle(center, bloom.z * 2.0, Color(LILY, 0.15 * pulse), true, -1.0, true)
+		for petal in 6:
+			var angle := TAU * petal / 6.0 + phase
+			draw_line(center, center + Vector2(cos(angle), sin(angle) * 0.7) * bloom.z * 1.2, LILY, 2.0, true)
+		draw_circle(center, bloom.z * 0.35, Color("#ffcf8a"), true, -1.0, true)
+
+
+## A vent in the obsidian crusted with yellow brimstone and fuming; a bare, chipped vent once mined.
+func _draw_brimstone() -> void:
+	SmoothDraw.shadow(self, Vector2(-2, 2), Vector2(56, 12))
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-26, 0), Vector2(-22, -24), Vector2(-8, -40), Vector2(10, -38), Vector2(24, -20), Vector2(26, 0),
+	]), OBSIDIAN, OUTLINE, 1.5)
+	draw_line(Vector2(-14, -34), Vector2(4, -38), Color(OBSIDIAN_LIGHT, 0.8), 3.0, true)
+	draw_set_transform(Vector2(2, -38), 0.0, Vector2(1.0, 0.45))
+	draw_circle(Vector2.ZERO, 7.0, Color(0.06, 0.03, 0.03), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO)
+	if is_spent():
+		for chip: Vector2 in [Vector2(-14, -16), Vector2(10, -22), Vector2(-4, -10)]:
+			draw_circle(chip, 3.0, OBSIDIAN_LIGHT.darkened(0.2), true, -1.0, true)
+		return
+	for crust: Vector3 in [Vector3(-14, -18, 7), Vector3(10, -24, 8), Vector3(-2, -10, 6), Vector3(14, -8, 5), Vector3(-6, -30, 5)]:
+		SmoothDraw.dome(self, Vector2(crust.x, crust.y), crust.z, BRIMSTONE_YELLOW.darkened(absf(crust.x) * 0.01))
+	for puff in 2:
+		var rise := fmod(time * 0.4 + phase + puff * 0.5, 1.0)
+		draw_circle(Vector2(2 + sin(rise * 5.0) * 4.0, -42 - rise * 36.0), 4.0 + rise * 7.0, Color(0.9, 0.86, 0.5, 0.25 * (1.0 - rise)), true, -1.0, true)
+
+
+## A high obsidian outcrop at the edge of the Underworld; Ashgate's red-and-gold banner flies from it once raised.
+func _draw_ashgate_banner() -> void:
+	SmoothDraw.shadow(self, Vector2(-4, 2), Vector2(76, 15))
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-32, 0), Vector2(-28, -36), Vector2(-16, -70), Vector2(-2, -82), Vector2(14, -74), Vector2(24, -46),
+		Vector2(30, -18), Vector2(32, 0),
+	]), OBSIDIAN, OUTLINE, 1.5)
+	draw_line(Vector2(-22, -40), Vector2(20, -44), Color(OBSIDIAN_LIGHT, 0.7), 2.0, true)
+	draw_line(Vector2(4, -80), Vector2(-12, -66), Color(RIFT_FIRE, 0.35), 2.0, true)
+	if not is_spent():
+		return
+	draw_line(Vector2(0, -80), Vector2(0, -124), WOOD_DARK, 2.5, true)
+	var wave := sin(time * 4.0 + phase) * 3.0
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(1, -123), Vector2(14, -120 + wave), Vector2(28, -118 - wave * 0.5), Vector2(14, -108 + wave), Vector2(1, -105),
+	]), ASHGATE_RED, OUTLINE, 1.0)
+	draw_circle(Vector2(12, -114 + wave * 0.5), 3.0, SEAL_GOLD, true, -1.0, true)
+
+
+## The Black Gate: two horned obsidian pillars under a lintel carved with the founders' seal, barred with a
+## sheet of smouldering iron until the Founders' Brand opens it.
+func _draw_black_gate() -> void:
+	SmoothDraw.shadow(self, Vector2(-4, 2), Vector2(150, 20), 0.35)
+	draw_rect(Rect2(-46, -84, 92, 84), Color(0.04, 0.01, 0.01))
+	for step in 4:
+		var inset := step * 4.0
+		SmoothDraw.flat(self, Rect2(-44 + inset, -10.0 - step * 13.0, 88 - inset * 2.0, 5), OBSIDIAN.darkened(0.2 + step * 0.15), 1.0)
+	var open := is_wanted()
+	if not open:
+		SmoothDraw.box(self, Rect2(-46, -84, 92, 84), IRON.darkened(0.2), 1.0)
+		for bar: float in [-30.0, -10.0, 10.0, 30.0]:
+			draw_line(Vector2(bar, -82), Vector2(bar, -2), Color(RIFT_FIRE, 0.25), 2.0, true)
+	for side: float in [-1.0, 1.0]:
+		SmoothDraw.box(self, Rect2(side * 58.0 - 12.0, -112, 24, 112), OBSIDIAN, 2.0)
+		draw_line(Vector2(side * 58.0 - 5.0, -108), Vector2(side * 58.0 - 5.0, -4), Color(OBSIDIAN_LIGHT, 0.6), 2.0, true)
+		# A horn curling up off each pillar.
+		SmoothDraw.polygon(self, PackedVector2Array([
+			Vector2(side * 50.0, -112), Vector2(side * 66.0, -112), Vector2(side * 78.0, -136), Vector2(side * 70.0, -146), Vector2(side * 68.0, -128),
+		]), OBSIDIAN_LIGHT, OUTLINE, 1.2)
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-74, -110), Vector2(74, -114), Vector2(72, -128), Vector2(-72, -124)]), OBSIDIAN, OUTLINE, 1.5)
+	var seal := Color(SEAL_GOLD, 0.5 + 0.4 * sin(time * 1.8 + phase)) if open else Color(RIFT_FIRE, 0.5)
+	draw_arc(Vector2(0, -119), 5.0, 0.0, TAU, 16, seal, 2.0, true)
+	draw_line(Vector2(-20, -119), Vector2(-10, -119), seal, 1.5, true)
+	draw_line(Vector2(10, -119), Vector2(20, -119), seal, 1.5, true)
+	if open:
+		draw_rect(Rect2(-42, -80, 84, 76), Color(SEAL_GOLD, 0.05 + 0.04 * sin(time * 1.5 + phase)))
+
+
+## A soul-forge in the Cinder Throne: a squat obsidian furnace roaring with red fire, and cold, cracked and
+## grey once quenched with founders' oil.
+func _draw_soul_forge() -> void:
+	SmoothDraw.shadow(self, Vector2(-2, 2), Vector2(60, 13))
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-26, 0), Vector2(-24, -30), Vector2(-14, -46), Vector2(14, -46), Vector2(24, -30), Vector2(26, 0),
+	]), OBSIDIAN, OUTLINE, 1.5)
+	draw_rect(Rect2(-12, -26, 24, 18), Color(0.05, 0.02, 0.02))
+	if is_spent():
+		draw_rect(Rect2(-12, -26, 24, 18), Color(ASH, 0.8))
+		draw_polyline(PackedVector2Array([Vector2(-20, -40), Vector2(-8, -32), Vector2(-14, -18)]), OUTLINE, 1.2, true)
+		return
+	var heat := 0.7 + 0.3 * sin(time * 5.0 + phase)
+	draw_rect(Rect2(-11, -25, 22, 16), RIFT_FIRE.lerp(FLAME_CORE, 0.4 * heat))
+	# Pale shapes twisting in the flames, and sparks rising from the chimney.
+	for wisp in 2:
+		var drift := sin(time * 2.0 + phase + wisp * 2.0) * 4.0
+		draw_circle(Vector2(-4 + wisp * 8 + drift, -18), 3.0, Color(1, 0.95, 0.9, 0.5 * heat), true, -1.0, true)
+	for spark in 3:
+		var rise := fmod(time * 0.7 + phase + spark * 0.33, 1.0)
+		draw_circle(Vector2(sin(rise * 7.0 + spark) * 6.0, -48 - rise * 44.0), 1.8, Color(FLAME_CORE, 1.0 - rise), true, -1.0, true)
+
+
+## The Emberseal at the foot of the Cinder Throne: a great round seal of black stone inlaid with gold,
+## cracked and empty until the Founders' Brand is set in it and the gold blazes.
+func _draw_emberseal() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 2), Vector2(130, 24), 0.35)
+	draw_set_transform(Vector2(0, -8), 0.0, Vector2(1.0, 0.4))
+	draw_circle(Vector2.ZERO, 62.0, OUTLINE, true, -1.0, true)
+	draw_circle(Vector2.ZERO, 61.0, OBSIDIAN, true, -1.0, true)
+	var set_whole := is_spent()
+	var gold := SEAL_GOLD if set_whole else SEAL_GOLD.darkened(0.55)
+	draw_arc(Vector2.ZERO, 50.0, 0.0, TAU, 48, gold, 3.0, true)
+	draw_arc(Vector2.ZERO, 34.0, 0.0, TAU, 40, gold, 2.0, true)
+	for ray in 12:
+		var direction := Vector2.from_angle(TAU * ray / 12.0)
+		draw_line(direction * 36.0, direction * 48.0, gold, 2.0, true)
+	draw_set_transform(Vector2.ZERO)
+	if set_whole:
+		var blaze := 0.75 + 0.25 * sin(time * 2.5 + phase)
+		draw_circle(Vector2(0, -30), 26.0, Color(SEAL_GOLD, 0.22 * blaze), true, -1.0, true)
+		# The Brand, driven point-down into the heart of the seal.
+		draw_line(Vector2(0, -8), Vector2(0, -52), OUTLINE, 5.0, true)
+		draw_line(Vector2(0, -8), Vector2(0, -52), IRON, 3.0, true)
+		draw_line(Vector2(0, -12), Vector2(0, -48), Color(SEAL_GOLD, blaze), 1.0, true)
+		draw_line(Vector2(-9, -52), Vector2(9, -52), SEAL_GOLD.darkened(0.2), 3.0, true)
+		draw_line(Vector2(0, -52), Vector2(0, -64), LEATHER, 3.0, true)
+		draw_circle(Vector2(0, -66), 2.5, SEAL_GOLD, true, -1.0, true)
+		return
+	draw_polyline(PackedVector2Array([Vector2(-48, -10), Vector2(-24, -4), Vector2(-10, -12), Vector2(8, -2), Vector2(30, -14)]), Color(RIFT_FIRE, 0.8), 2.0, true)
+	draw_set_transform(Vector2(0, -8), 0.0, Vector2(1.0, 0.4))
+	draw_circle(Vector2.ZERO, 8.0, Color(0.04, 0.01, 0.01), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO)
+
+
+## Ashgate's victory pyre at the breach: a great stack of timber from the broken palisade under the founders'
+## colours, waiting for a torch - then roaring.
+func _draw_victory_pyre() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 2), Vector2(120, 20), 0.3)
+	for beam: Array in [[Vector2(-44, -6), Vector2(42, -12)], [Vector2(-40, -14), Vector2(46, -4)], [Vector2(-34, -24), Vector2(36, -20)], [Vector2(-30, -28), Vector2(28, -34)], [Vector2(-22, -40), Vector2(24, -38)]]:
+		draw_line(beam[0], beam[1], OUTLINE, 9.0, true)
+		draw_line(beam[0], beam[1], WOOD.darkened(0.1), 7.0, true)
+	for side: float in [-1.0, 1.0]:
+		draw_line(Vector2(side * 30.0, 0), Vector2(side * 6.0, -64), OUTLINE, 6.0, true)
+		draw_line(Vector2(side * 30.0, 0), Vector2(side * 6.0, -64), WOOD_LIGHT, 4.0, true)
+	draw_line(Vector2(0, -60), Vector2(0, -100), WOOD_DARK, 2.5, true)
+	var wave := sin(time * 3.0 + phase) * 2.5
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(1, -100), Vector2(20, -97 + wave), Vector2(1, -84)]), ASHGATE_RED, OUTLINE, 1.0)
+	if not is_spent():
+		return
+	var flicker := sin(time * 9.0 + phase) * 3.0
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-40, -18), Vector2(-28, -54 - flicker), Vector2(-14, -40), Vector2(-4, -86 + flicker), Vector2(8, -50),
+		Vector2(20, -72 - flicker), Vector2(30, -40), Vector2(42, -18),
+	]), FLAME, Color(FLAME.darkened(0.3), 0.8), 1.2)
+	draw_colored_polygon(PackedVector2Array([Vector2(-22, -20), Vector2(-8, -50 - flicker), Vector2(4, -36), Vector2(14, -58 + flicker), Vector2(24, -20)]), FLAME_CORE)
+	for spark in 5:
+		var rise := fmod(time * 0.6 + phase + spark * 0.2, 1.0)
+		draw_circle(Vector2(sin(rise * 6.0 + spark * 1.7) * 24.0, -60 - rise * 90.0), 2.0, Color(FLAME_CORE, 1.0 - rise), true, -1.0, true)

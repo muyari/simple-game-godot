@@ -475,7 +475,8 @@ var endgame_tier := 0
 ## Mixed into the scenery seed so random maps don't repeat the campaign's layout. 0 on campaign levels.
 var map_seed := 0
 var treasure_chests: Array[TreasureChest] = []
-## The campaign level's quest sites and encounters (ForestQuests, DesertQuests, IceQuests); null everywhere else.
+## The campaign level's quest sites and encounters (ForestQuests, DesertQuests, IceQuests, UnderworldQuests);
+## null everywhere else.
 var level_quests: LevelQuests
 ## Set while a new character walks the trail to Oblath in place of the forest.
 var starting_zone: StartingZone
@@ -955,7 +956,8 @@ func _get_level_id() -> int:
 
 
 func _physics_process(delta: float) -> void:
-	# Underground (the Gloomhollow, the Sunken Vault, the Heartfrost Deep) there are no regions to explore and no stragglers to call in.
+	# Underground (the Gloomhollow, the Sunken Vault, the Heartfrost Deep, the Cinder Throne) there are no
+	# regions to explore and no stragglers to call in.
 	if level_quests != null and level_quests.in_cave:
 		return
 	# Scenery keeps growing round the player even once every monster is out or the level is cleared, so
@@ -1052,7 +1054,7 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 		_generate_ice_scenery(random, region, region_center)
 		return
 	if biome == 3:
-		_generate_underworld_scenery(random, region_center)
+		_generate_underworld_scenery(random, region, region_center)
 		return
 	_generate_forest_scenery(random, region, region_center)
 
@@ -1617,7 +1619,7 @@ func _make_stump_grove(random: RandomNumberGenerator) -> Array[Dictionary]:
 	return pieces
 
 
-func _generate_underworld_scenery(random: RandomNumberGenerator, region_center: Vector2) -> void:
+func _generate_underworld_scenery(random: RandomNumberGenerator, region: Vector2i, region_center: Vector2) -> void:
 	# Regions tile edge to edge, so underworld props may use the whole region.
 	var spread := region_size * 0.48
 	var floor_detail := UnderworldFloor.new()
@@ -1626,6 +1628,10 @@ func _generate_underworld_scenery(random: RandomNumberGenerator, region_center: 
 	floor_detail.position = region_center
 	floor_detail.z_index = -8
 	get_parent().call_deferred("add_child", floor_detail)
+
+	# Quest sites first, so the region's crags and ruins stand round them.
+	if level_quests != null:
+		level_quests.populate_region(region, region_center)
 
 	for _decal_index in random.randi_range(1, 3):
 		var decal: Dictionary = UNDERWORLD_DECALS[random.randi() % UNDERWORLD_DECALS.size()]
@@ -2054,7 +2060,8 @@ func _on_boss_wolf_died(wolf: Wolf) -> void:
 	_complete_current_level()
 
 
-## Counts a slain monster toward any hunting quest (Corwin's wolf cull, Samir's scorpions, Orm's yetis).
+## Counts a slain monster toward any hunting quest (Corwin's wolf cull, Samir's scorpions, Orm's yetis,
+## Holt's hellhounds).
 func _record_kill(enemy: Wolf) -> void:
 	if level_quests != null:
 		QuestToast.show_updates(get_tree(), Quests.record_event("kill", LevelQuests.monster_kind(enemy)))
@@ -2070,6 +2077,8 @@ func _create_level_quests() -> LevelQuests:
 		return DesertQuests.new()
 	if biome == 2 and level_id == 3:
 		return IceQuests.new()
+	if biome == 3 and level_id == 4:
+		return UnderworldQuests.new()
 	return null
 
 

@@ -4,7 +4,8 @@ class_name OutpostDecor
 ## smashed open where the demons broke through, barricades and soldiers holding the gap, a watchtower
 ## burning, tents collapsed, the wounded laid out on cots, fresh graves, a captured imp in a cage and the
 ## quartermaster's forge still going. Hellfire falls beyond the walls; through the breach lies the
-## Underworld.
+## Underworld. Once the Ember King is dead (Quests.EMBER_KING) the hellfire stops, friends from every region
+## gather for the victory pyre (Quests.LAST_WATCHFIRE), and once it's lit fireworks go up over the walls.
 
 const SOOT_SHADOW := Color(0.08, 0.02, 0.02, 0.45)
 const WALL_TOP := 40.0
@@ -44,6 +45,14 @@ const ASHGATE_RED := Color("#7a1f1f")
 const ASHGATE_GOLD := Color("#d9b46a")
 const TABARD := Color("#6e2424")
 const MAIL_PANTS := Color("#4a4a52")
+## Residents with quests to give or take (see Quests), by display name, and their quest npc ids.
+const TALKERS := {
+	"Captain Aldric": "aldric", "Sergeant Holt": "holt", "Pikeman Wren": "wren", "Sister Maren": "maren",
+	"Tomas": "tomas", "Interrogator Vey": "vey", "Quartermaster Bruna": "bruna", "Recruit Pell": "pell",
+	"Rider Bryn": "bryn", "Lieutenant Kael": "kael",
+}
+## Where the victory pyre stands, in the yard below the breach.
+const PYRE_SPOT := Vector2(580, 340)
 
 
 func build() -> void:
@@ -57,6 +66,11 @@ func build() -> void:
 	_build_forge()
 	_build_folk()
 	_build_surroundings()
+	# The hellfire stops falling the moment the Ember King dies.
+	if Quests.is_completed(Quests.EMBER_KING) or GameState.get_quest_state(Quests.EMBER_KING) == "king_slain":
+		if Quests.is_completed(Quests.EMBER_KING):
+			_build_celebration()
+		return
 	var siege := SiegeFire.new()
 	siege.target_area = Rect2(bounds.position.x - 320, bounds.position.y - 420, bounds.size.x + 640, 330)
 	siege.safe_area = Rect2(BREACH - Vector2(110, 140), Vector2(220, 200))
@@ -140,6 +154,8 @@ func _build_camp() -> void:
 	_circle_shape(body, 18.0)
 	level.add_child.call_deferred(body)
 	level.add_child.call_deferred(cage)
+	# Snivvel will talk, about some things, to some people (Quests.WHAT_THE_IMP_KNOWS).
+	QuestTalker.attach(cage, "snivvel", 60.0)
 
 
 func _build_infirmary_and_graves() -> void:
@@ -179,15 +195,31 @@ func _soldier(base: Vector2, settings: Dictionary) -> HubFolk:
 	return folk(base, gear)
 
 
+## A resident (see HubDecor.folk), who can be talked to about quests if TALKERS names them.
+func folk(base: Vector2, settings := {}, parent: Node = null) -> HubFolk:
+	var person := super(base, settings, parent)
+	var npc_id: String = TALKERS.get(settings.get("display_name", ""), "")
+	if not npc_id.is_empty():
+		var head := 74.0 * person.body_scale / 1.15 * (0.75 if person.pose == HubFolk.Pose.SIT else 1.0)
+		QuestTalker.attach(person, npc_id, head)
+	return person
+
+
 func _build_folk() -> void:
 	# Rider Bryn, back from Rimehollow with the player (Quests.ROAD_TO_ASHGATE). She rides in with them, so
 	# she's here as soon as the quest is under way: arriving completes it (TownUI).
 	if GameState.get_quest_state(Quests.ROAD_TO_ASHGATE) != Quests.STATE_AVAILABLE:
-		var bryn := _soldier(HEARTH + Vector2(150, 70), {
+		_soldier(HEARTH + Vector2(150, 70), {
 			"display_name": "Rider Bryn", "held": HubFolk.Held.TORCH, "skin": SKINS[1], "rest_facing": -1.0,
 			"lines": ["Home. Such as it is.", "Captain Aldric's at the breach. Follow the shouting."],
 		})
-		QuestTalker.attach(bryn, "bryn", 74.0)
+	# Lieutenant Kael, home from the Cinder Pens with his survivors (Quests.CINDER_PENS).
+	if GameState.get_quest_state(Quests.CINDER_PENS) in ["kael_home", Quests.STATE_COMPLETED]:
+		_soldier(Vector2(240, 790), {
+			"display_name": "Lieutenant Kael", "held": HubFolk.Held.SWORD, "bandaged": true, "headwear": HubFolk.Headwear.HAIR,
+			"hair": Color("#3a2a20"), "rest_facing": 1.0,
+			"lines": ["Seven came home. I count them every morning.", "The pens are empty now. I made sure."],
+		})
 	_soldier(BREACH + Vector2(0, 250), {
 		"display_name": "Captain Aldric", "held": HubFolk.Held.SWORD, "beard": true, "hair": Color("#5a4630"), "rest_facing": 1.0,
 		"lines": [
@@ -242,3 +274,55 @@ func _build_surroundings() -> void:
 		place(LAVA_RING, spot, 1.2, false, false).z_index = -7
 	var busy: Array[Rect2] = [Rect2(380, 160, 420, 520), Rect2(60, 680, 340, 260), Rect2(860, 820, 300, 160), Rect2(HEARTH - Vector2(100, 60), Vector2(200, 100))]
 	scatter(BONES, 10, busy)
+
+
+## After the Ember King: the victory pyre in the yard, the founders' colours hung along the walls, friends
+## from every region round the fire, and fireworks over the walls once the pyre is lit.
+func _build_celebration() -> void:
+	var pyre := QuestObject.new()
+	pyre.kind = QuestObject.Kind.VICTORY_PYRE
+	pyre.object_id = "victory_pyre"
+	pyre.quest_id = Quests.LAST_WATCHFIRE
+	var pyre_body := _body(PYRE_SPOT)
+	_circle_shape(pyre_body, 30.0)
+	pyre_body.add_child(pyre)
+	level.add_child.call_deferred(pyre_body)
+	taken.append(Rect2(PYRE_SPOT - Vector2(70, 50), Vector2(140, 70)))
+	for x: float in [200.0, 380.0, 780.0, 960.0]:
+		prop(HubProp.Kind.BANNER, Vector2(x, 90), {"tint": ASHGATE_RED, "alt": ASHGATE_GOLD, "height": 80.0}, 4.0)
+	var guests := [
+		[PYRE_SPOT + Vector2(-150, 70), {
+			"display_name": "Beth", "headwear": HubFolk.Headwear.HOOD, "clothes": Color("#6b5a44"), "skin": SKINS[3], "rest_facing": 1.0,
+			"lines": ["Rendel would have liked this. He always liked a big fire.", "All this way, from Oblath. I wouldn't have missed it."],
+		}],
+		[PYRE_SPOT + Vector2(150, 80), {
+			"display_name": "Rashid the Camel-Driver", "headwear": HubFolk.Headwear.TURBAN, "beard": true, "clothes": Color("#c9a13f"),
+			"trim": Color("#8a3b2c"), "skin": SKINS[2], "rest_facing": -1.0,
+			"lines": ["The grey one bit three soldiers on the way in. She's very proud.", "From Oblath to Ashgate! What a road we've had."],
+		}],
+		[PYRE_SPOT + Vector2(-230, 10), {
+			"display_name": "Scholar Imani", "robe": true, "headwear": HubFolk.Headwear.HOOD, "held": HubFolk.Held.SCROLL,
+			"clothes": Color("#3a4f6e"), "trim": Color("#e0c27a"), "skin": SKINS[2], "rest_facing": 1.0,
+			"lines": ["Chapter forty-one. 'The Last Watchfire.' Hold still, I'm describing you.", "Hamid sends his love. He says he's too old for travel. He's sulking."],
+		}],
+		[PYRE_SPOT + Vector2(230, 20), {
+			"display_name": "Torsten", "headwear": HubFolk.Headwear.FUR_HOOD, "beard": true, "body_scale": 1.25,
+			"clothes": Color("#7a5a3e"), "trim": Color("#e8e0d0"), "hair": Color("#d0a060"), "skin": SKINS[3], "rest_facing": -1.0,
+			"lines": ["Too hot again! You only go to hot places!", "Sigrun sent a barrel of Rimehollow mead. I may have opened it."],
+		}],
+		[PYRE_SPOT + Vector2(60, 130), {
+			"display_name": "Runa the Runecarver", "headwear": HubFolk.Headwear.FUR_HOOD, "held": HubFolk.Held.HAMMER, "body_scale": 1.2,
+			"clothes": Color("#6b4f3a"), "trim": Color("#9fd3ee"), "hair": Color("#b8743a"), "skin": SKINS[0], "rest_facing": -1.0,
+			"lines": ["I'm carving the founders' oath into the new gate. Your name goes underneath. Big letters.", "Ysolde and I have been arguing about runes for an hour. She's winning."],
+		}],
+		[PYRE_SPOT + Vector2(-60, 140), {
+			"display_name": "Mother Ysolde", "robe": true, "headwear": HubFolk.Headwear.HOOD, "held": HubFolk.Held.STAFF, "body_scale": 0.95,
+			"clothes": Color("#5e5652"), "trim": ASHGATE_GOLD, "skin": SKINS[0], "rest_facing": 1.0,
+			"lines": ["Daylight. I'd forgotten how rude it is.", "Forty years I kept a fire lit down there. This one, I get to just watch."],
+		}],
+	]
+	for guest: Array in guests:
+		folk(guest[0], guest[1])
+	var fireworks := Fireworks.new()
+	fireworks.sky = Rect2(bounds.position.x + 60, -260, bounds.size.x - 120, 420)
+	level.add_child.call_deferred(fireworks)

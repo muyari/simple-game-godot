@@ -78,6 +78,28 @@ const LIGHTS_IN_THE_DEEP := "lights_in_the_deep"
 ## The Ice Caves' transition quest: once the Rime Mother is dead, ride south with Bryn to Ashgate Outpost.
 const ROAD_TO_ASHGATE := "road_to_ashgate"
 
+## The Underworld (see UnderworldQuests), the campaign's finale. The story: Ashgate's founders bound Azkareth,
+## the Ember King, beneath the Black Gate with the Emberseal. For forty years he has whispered to the world's
+## other sleepers - Gloomfang, the First Sting, Hrimgar - to wear its wards thin, and now the breach is open.
+## The main line runs from Ashgate's lost patrol to the Ember King's death:
+const LOST_PATROL := "lost_patrol"
+const CINDER_PENS := "cinder_pens"
+const WHAT_THE_IMP_KNOWS := "what_the_imp_knows"
+const FOUNDERS_EMBERS := "founders_embers"
+const EMBER_HERALD := "ember_herald"
+const BLACK_GATE := "black_gate"
+const EMBER_KING := "ember_king"
+## Ashgate's side quests.
+const BALM_FOR_THE_BURNED := "balm_for_the_burned"
+const HOUNDS_AT_THE_WALL := "hounds_at_the_wall"
+const NAMES_IN_THE_ASH := "names_in_the_ash"
+const BRIMSTONE_FOR_THE_FORGE := "brimstone_for_the_forge"
+const SMOULDER_BOUNTY := "smoulder_bounty"
+const ASHGATE_BANNERS := "ashgate_banners"
+## The campaign's last quest: light the victory pyre at the breach. Completing it plays its "epilogue" and
+## grants its "item_reward" (see CampaignEpilogue), and marks the campaign's story finished.
+const LAST_WATCHFIRE := "last_watchfire"
+
 ## Areas shown as tabs in the quest menu, keyed by GameState level id.
 const AREAS := [
 	{"level_id": 1, "name": "Forest Outskirts"},
@@ -123,6 +145,17 @@ const NPCS := {
 	"sven": {"name": "Sven", "idle": ["My fingers still don't bend right. Ma says they will. Ma says a lot of things."]},
 	"runa": {"name": "Runa the Runecarver", "idle": ["Every rune is a promise somebody made. Most of them meant it."]},
 	"bryn": {"name": "Rider Bryn", "idle": ["Ashgate's walls won't hold forever. Neither will I."]},
+	"aldric": {"name": "Captain Aldric", "idle": ["Hold the line. There's always a line, and someone always has to hold it."]},
+	"holt": {"name": "Sergeant Holt", "idle": ["They come with the ash storms. Watch the sky."]},
+	"wren": {"name": "Pikeman Wren", "idle": ["Every time the fire falls, I count. Never past nine."]},
+	"maren": {"name": "Sister Maren", "idle": ["Mind the wounded. Burns from fiend-fire don't close."]},
+	"tomas": {"name": "Tomas", "idle": ["Dig deep, they say. The things below don't stay buried."]},
+	"vey": {"name": "Interrogator Vey", "idle": ["The imp talks, if you can stand to listen."]},
+	"bruna": {"name": "Quartermaster Bruna", "idle": ["If it's broken, bring it here. If it's on fire, put it out first."]},
+	"pell": {"name": "Recruit Pell", "idle": ["They told me Ashgate was a quiet posting."]},
+	"snivvel": {"name": "Snivvel the Imp", "idle": ["*The imp presses its face to the bars and grins with too many teeth.* Snivvel knows things. Snivvel knows EVERYTHING."]},
+	"kael": {"name": "Lieutenant Kael", "idle": ["I count the men every morning. The number is better than it was."]},
+	"ysolde": {"name": "Mother Ysolde", "idle": ["Forty years down here. The heat stopped bothering me after the first ten."]},
 }
 
 const DEFINITIONS := {
@@ -2593,6 +2626,914 @@ const DEFINITIONS := {
 			],
 		},
 	},
+	# --- The Underworld: the main line ----------------------------------------------------------------
+	LOST_PATROL: {
+		"title": "The Lost Patrol",
+		"type": "Search",
+		"giver": "Captain Aldric",
+		"giver_id": "aldric",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"summary": "Four nights ago Captain Aldric sent a patrol through the breach under Lieutenant Kael, to learn what was coming through it. Twenty soldiers went in. None came back, and Aldric needs to know what they found.",
+		"objectives": [
+			"Find where Kael's patrol made its stand, in the south-east of the Underworld",
+			"Recover Kael's dispatch-case from the fallen standard",
+			"Bring the dispatch-case to Captain Aldric",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Search the south-east of the Underworld for Kael's patrol."},
+			"stand_found": {"objectives_done": 1, "status": "You found where the patrol fought. Search the fallen standard for Kael's dispatch-case."},
+			"dispatch_found": {"objectives_done": 2, "status": "You have Kael's dispatch-case. Bring it to Captain Aldric at the breach."},
+			STATE_COMPLETED: {"objectives_done": 3, "status": "Completed. Kael's patrol was overrun, but some of them were taken alive."},
+		},
+		"events": [
+			{"type": "find", "target": "last_stand", "requires_state": STATE_ACCEPTED, "sets_state": "stand_found"},
+			{"type": "collect", "target": "kaels_dispatch", "requires_state": "stand_found", "sets_state": "dispatch_found"},
+		],
+		"talks": [
+			{
+				"npc": "aldric",
+				"requires_state": "dispatch_found",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Aldric breaks the seal with his thumb and reads in silence. His jaw works.* Kael's hand. Shaky, but his.",
+					"'Night two. Hounds on three sides. We made our stand at the black rocks and held till dawn. There is no dawn here. We held anyway.'",
+					"'Night three. They aren't killing the wounded. They're chaining them and dragging them west, to the pens. I'm going after them.' That's the last line.",
+					"Taken alive. *He folds the letter very small.* Then some of them may still be breathing. Rest an hour. Then I'll need you again.",
+				],
+			},
+		],
+		"gold": 70,
+		"experience": 360,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*A grey-bearded captain in a scorched tabard looks you over without lowering his sword.* So you're Bryn's miracle. You've the look of someone who's walked through worse than smoke.",
+				"Ashgate was built to keep that doorway shut. Three nights ago it tore open, and they've come through it every night since.",
+				"I sent a patrol in after them. Twenty good soldiers under Lieutenant Kael, to see what we're facing. That was four nights ago. Nobody's come back.",
+				"Go through the breach. Find out what happened to them. Will you?",
+			],
+			"accepted_reply": [
+				"Kael would have made for high ground. There are black rocks to the south-east, the only cover for a mile. Look there.",
+			],
+			"declined_reply": [
+				"Then hold a spear on the wall tonight. Everyone in Ashgate holds something.",
+			],
+			STATE_ACCEPTED: [
+				"The black rocks, south-east of the breach. Find my patrol.",
+			],
+			"stand_found": [
+				"You found where they fought? Then look for the standard. Kael kept his dispatches tied to it. He was proud of that standard.",
+			],
+			STATE_COMPLETED: [
+				"Twenty went in. I'll know how many come out before I sleep again.",
+			],
+		},
+	},
+	CINDER_PENS: {
+		"title": "The Cinder Pens",
+		"type": "Rescue",
+		"giver": "Captain Aldric",
+		"giver_id": "aldric",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"requires": [LOST_PATROL],
+		"summary": "Kael's last dispatch says the demons chained his wounded and dragged them west, to the pens. Kael went after them. If he's alive, he's somewhere in the Cinder Pens.",
+		"objectives": [
+			"Search the Cinder Pens in the west of the Underworld for Lieutenant Kael",
+			"Kill the hellhounds guarding the pens",
+			"Talk to Kael",
+			"Return to Sister Maren in Ashgate",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Search the Cinder Pens in the west of the Underworld for Kael."},
+			"kael_found": {"objectives_done": 1, "status": "Hellhounds are guarding the pens! Kill them."},
+			"kael_safe": {"objectives_done": 2, "status": "The hounds are dead. Talk to Kael."},
+			"kael_home": {"objectives_done": 3, "status": "Kael is leading the survivors back to Ashgate. Find Sister Maren in the infirmary."},
+			STATE_COMPLETED: {"objectives_done": 4, "status": "Completed. Kael and six of his soldiers are home, and they know the Ember King's name."},
+		},
+		"events": [
+			{"type": "find", "target": "kael", "requires_state": STATE_ACCEPTED, "sets_state": "kael_found"},
+			{"type": "rescue", "target": "kael", "requires_state": "kael_found", "sets_state": "kael_safe"},
+		],
+		"talks": [
+			{
+				"npc": "kael",
+				"requires_state": "kael_safe",
+				"sets_state": "kael_home",
+				"pages": [
+					"*A gaunt officer in a blackened breastplate hauls himself up the bars of a cage, a broken sword still in his fist.* Ashgate's colours. You're from Ashgate. Gods. Gods, it's real.",
+					"Kael. Lieutenant. I came after my people and walked straight into the hounds. They didn't kill me. They don't kill anyone. They keep us for something.",
+					"The imps talk while they work. 'For the King. For the Ember King, when he wakes beneath the Black Gate.' Every chain, every cage, every one of us. For him.",
+					"Six of mine are still alive in here. I'll get them home - I know the way now. Tell Sister Maren to ready her cots. All of them.",
+				],
+			},
+			{
+				"npc": "maren",
+				"requires_state": "kael_home",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Sister Maren's sleeves are red to the elbow. Behind her, seven new cots are full.* They walked in an hour ago, holding each other up. Seven. I'd prayed for one.",
+					"Kael won't lie down. He keeps counting them. I've told him the number won't change if he stops. He doesn't believe me.",
+					"He told me what the imps said. The Ember King. *She touches the charm at her throat.* Interrogator Vey will want to hear that name. So will the thing in her cage.",
+					"Here. It's the infirmary's last good salve-tin. You'll need it more than we will, now.\n\nYou received Maren's Salve-Tin.",
+				],
+			},
+		],
+		"npc_lines": {
+			"kael": {
+				"kael_found": ["Behind you! The hounds - they're coming round!"],
+			},
+		},
+		"reward": {
+			"name": "Maren's Salve-Tin",
+			"description": "A dented tin of greasy grey salve that smells of honey and lye. Sister Maren used the rest of it on Kael's survivors, and gave you the last of it with the lid scratched 'FOR THE NEXT ONE'.",
+		},
+		"gold": 80,
+		"experience": 400,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Taken alive. Dragged west. *Aldric stares at the breach.* I can't send another patrol in after the first. I'd only be feeding the pens.",
+				"But one blade who knows what they're doing might get in where twenty couldn't. The pens are in the west - iron cages in the ash, Kael wrote. Hounds round them.",
+				"Bring Kael home. Bring anyone you can. Will you go?",
+			],
+			"accepted_reply": [
+				"West, to the pens. And if Kael's dead... bring me his sword, so I can give it to his mother.",
+			],
+			"declined_reply": [
+				"Then I'll go myself. *He picks up a helm.* I should have gone the first time.",
+			],
+			STATE_ACCEPTED: [
+				"The Cinder Pens, in the west. Bring my people home.",
+			],
+			"kael_found": [
+				"Hounds at the pens? Why are you telling me? Go!",
+			],
+			"kael_safe": [
+				"He's alive? Then get him moving!",
+			],
+			STATE_COMPLETED: [
+				"Seven came home. Seven. I'll take seven.",
+			],
+		},
+	},
+	WHAT_THE_IMP_KNOWS: {
+		"title": "What the Imp Knows",
+		"type": "Lore",
+		"giver": "Interrogator Vey",
+		"giver_id": "vey",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"requires": [CINDER_PENS],
+		"summary": "Interrogator Vey has kept a captured imp, Snivvel, caged in the yard since the breach opened. It won't talk to her about the Ember King. It might talk to whoever freed the pens - and Vey has heard rumours of someone who has lived in the Underworld for forty years.",
+		"objectives": [
+			"Talk to Snivvel, the caged imp in Ashgate",
+			"Find the Founders' Chapel in the far north-west of the Underworld",
+			"Talk to whoever keeps the chapel",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Talk to Snivvel, the imp in the cage by the eastern tents."},
+			"imp_talked": {"objectives_done": 1, "status": "Snivvel says an old woman tends a chapel in the far north-west of the Underworld. Find it."},
+			"chapel_found": {"objectives_done": 2, "status": "You've found the Founders' Chapel. Find whoever keeps it."},
+			STATE_COMPLETED: {"objectives_done": 3, "status": "Completed. Mother Ysolde has kept the founders' chapel for forty years, and she knows the Ember King."},
+		},
+		"events": [
+			{"type": "find", "target": "founders_chapel", "requires_state": "imp_talked", "sets_state": "chapel_found"},
+		],
+		"talks": [
+			{
+				"npc": "snivvel",
+				"requires_state": STATE_ACCEPTED,
+				"sets_state": "imp_talked",
+				"pages": [
+					"*The imp hangs upside down from the top of its cage, tail curled round a bar.* Ohhh. It's YOU. The one who emptied Snivvel's pens. Snivvel is very cross. Snivvel is also very impressed.",
+					"The Ember King? Snivvel doesn't know any Ember King. *It grins.* Snivvel might know him better if Snivvel had a nice warm coal to hold. The cage is so COLD.",
+					"*Vey sighs and drops a coal through the bars. The imp cradles it like a kitten.* Fine. Fine! There's an old woman. A human. Lives in the founders' ruin, far north-west, past the lava. Forty years. She won't die. We've TRIED.",
+					"She knows the King's true name. She knows everything the old Ashgate people knew. Go and bother HER. Snivvel is busy. Snivvel has a coal.",
+				],
+			},
+			{
+				"npc": "ysolde",
+				"requires_state": "chapel_found",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*A tiny woman in a robe gone grey with ash stands in the chapel door, a long iron poker held like a spear.* You're not a demon. You smell of soap. Nobody down here smells of soap.",
+					"I'm Ysolde. I was Ashgate's chaplain, forty years ago, when I came down here to keep the founders' chapel lit. Someone had to. The demons have been trying to put me out ever since.",
+					"So it's begun. The breach. *She looks north, toward a dark shape on the horizon.* I felt the ground turn over three nights ago, and I knew. He's waking.",
+					"Come in. Sit. You'll want to be sitting for this, and I'll want to be sitting to say it.",
+				],
+			},
+		],
+		"gold": 60,
+		"experience": 360,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*A thin woman in a dark hood doesn't look up from her notes.* The Ember King. Kael's imps said that name. Mine never has. Not once, in three nights.",
+				"Snivvel talks constantly. About the cold. About its teeth. About how it will eat my eyes. Never about its master.",
+				"But you emptied its pens. It's been talking about you all morning, with something I think is respect. Speak to it. Will you?",
+			],
+			"accepted_reply": [
+				"It's in the cage by the eastern tents. Don't put your fingers through the bars. That's not a warning about its teeth; it's a warning about its manners.",
+			],
+			"declined_reply": [
+				"Then I'll keep asking it nicely. I've been asking it nicely for three days.",
+			],
+			STATE_ACCEPTED: [
+				"Snivvel. The cage by the eastern tents.",
+			],
+			"imp_talked": [
+				"An old woman, alive in the Underworld for forty years? Then go and find her. Quickly, before Snivvel changes its story.",
+			],
+			STATE_COMPLETED: [
+				"Ysolde. The old chaplain. Her name is still on the roll. We marked her dead in my grandmother's time.",
+			],
+		},
+	},
+	FOUNDERS_EMBERS: {
+		"title": "The Founders' Embers",
+		"type": "Exploration",
+		"giver": "Mother Ysolde",
+		"giver_id": "ysolde",
+		"giver_location": "the Founders' Chapel",
+		"area": 4,
+		"requires": [WHAT_THE_IMP_KNOWS],
+		"summary": "Three braziers stand around the Founders' Chapel, lit by Ashgate's founders when they bound the Ember King. Ysolde has kept them burning for forty years - until the breach opened and the imps snuffed them out, one by one.",
+		"objectives": [
+			"Rekindle the 3 founders' braziers around the chapel",
+			"Return to Mother Ysolde",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Rekindle the founders' braziers north, west and east of the chapel.", "counter": {"label": "Braziers lit", "count": 3}},
+			"embers_lit": {"objectives_done": 1, "status": "All three braziers burn again. Return to Mother Ysolde."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Ysolde has told you everything: the Ember King, the Emberseal, and the Founders' Brand."},
+		},
+		"events": [
+			{"type": "collect", "target": "founders_brazier", "requires_state": STATE_ACCEPTED, "sets_state": "embers_lit", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "ysolde",
+				"requires_state": "embers_lit",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*In the light of the three braziers, the chapel's walls come alive with carvings: soldiers, a gate, a crowned figure of fire bowed under a great seal.* There. Now you can see what I see.",
+					"Azkareth. The Ember King. He ruled down here before there was an Ashgate, and he meant to rule up there too. The founders built the Black Gate over his throne and set the Emberseal on him. Ashgate was built to watch the gate.",
+					"But a seal is only as strong as the world around it. For forty years he's been whispering up through the cracks - to a black wolf in a forest, to a scorpion under the sand, to a frozen Warden in the ice. Every sleeper he woke wore the world's wards a little thinner.",
+					"You've been cleaning up after him, haven't you? All this way. *She smiles, ash in every wrinkle.* Then let's finish it. Take this. It's the founders' oath, copied in my own hand. You've earned the right to read it.\n\nYou received the Founders' Oath.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Founders' Oath",
+			"description": "A roll of fire-proof vellum in Mother Ysolde's careful hand: the oath Ashgate's founders swore over the Emberseal. 'We will watch the gate so that no one else need fear it.' Ysolde says you are the first in forty years to keep it.",
+		},
+		"gold": 70,
+		"experience": 400,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Before I tell you anything, I need light. The founders' story is carved on these walls, and it can only be read by founders' fire.",
+				"Three braziers stand around the chapel - north, west and east. I've kept them burning for forty years. The imps snuffed them all in three nights.",
+				"Rekindle them. Then come back, and I'll tell you who you're fighting. Will you?",
+			],
+			"accepted_reply": [
+				"Here, a pot of founders' oil. A drop is enough. The imps hate the smell of it. So do I, frankly.",
+			],
+			"declined_reply": [
+				"Then we'll sit in the dark together. I'm used to it. You won't be.",
+			],
+			STATE_ACCEPTED: [
+				"North, west and east of the chapel. Three braziers.",
+			],
+			"embers_lit": [
+				"I can see them from the door. Come in, quickly - the carvings won't wait.",
+			],
+			STATE_COMPLETED: [
+				"I sweep the ash off the founders' carvings every morning. Today, for the first time, I think they look pleased.",
+			],
+		},
+	},
+	EMBER_HERALD: {
+		"title": "The Ember Herald",
+		"type": "Hunt",
+		"giver": "Mother Ysolde",
+		"giver_id": "ysolde",
+		"giver_location": "the Founders' Chapel",
+		"area": 4,
+		"requires": [FOUNDERS_EMBERS],
+		"summary": "The Black Gate opens only to the Founders' Brand, the sword Ashgate's first captain used to set the Emberseal. Vharkul, the Ember King's herald, stole it from the chapel the night the breach opened and carried it to the burning bridge in the far east of the Underworld.",
+		"objectives": [
+			"Track Vharkul the Herald to the burning bridge in the far east of the Underworld",
+			"Defeat Vharkul, the Ember Herald",
+			"Take the Founders' Brand from his anvil",
+			"Bring the Brand to Mother Ysolde",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Track Vharkul to the burning bridge in the far east of the Underworld, and defeat him."},
+			"herald_slain": {"objectives_done": 2, "status": "Vharkul is dead. Take the Founders' Brand from his anvil by the bridge."},
+			"brand_taken": {"objectives_done": 3, "status": "You hold the Founders' Brand. Bring it to Mother Ysolde at the chapel."},
+			STATE_COMPLETED: {"objectives_done": 4, "status": "Completed. The Founders' Brand is back in a founder's hands - yours."},
+		},
+		"events": [
+			{"type": "kill", "target": "vharkul", "requires_state": STATE_ACCEPTED, "sets_state": "herald_slain"},
+			{"type": "collect", "target": "founders_brand", "requires_state": "herald_slain", "sets_state": "brand_taken"},
+		],
+		"talks": [
+			{
+				"npc": "ysolde",
+				"requires_state": "brand_taken",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Ysolde takes the sword in both hands. The blade is black iron, but where her fingers touch it, it glows like a forge.* Forty years I polished this. He took it in a night.",
+					"Vharkul meant to melt it down on his anvil, you know. Without the Brand, nobody can ever open the Black Gate - or close the Emberseal again. It was the cleverest thing the King ever ordered.",
+					"*She turns the hilt toward you.* I'm too old to carry it where it needs to go. The founders would want it carried by someone who keeps their oath. You've been keeping it all along.",
+					"Take this too. It's the herald's horn - he blew it to call the hounds. Now the hounds will hear it and remember what happened to him.\n\nYou received Vharkul's Horn.",
+				],
+			},
+		],
+		"npc_lines": {
+			"ysolde": {
+				"herald_slain": ["He's dead? Then the Brand! It'll be on his anvil by the bridge. Don't touch the blade - hold it by the hilt!"],
+			},
+		},
+		"reward": {
+			"name": "Vharkul's Horn",
+			"description": "A twisted black horn, still warm, that the Ember King's herald blew to call the hounds to heel. When you blow it now, every hellhound in earshot flattens its ears and remembers the burning bridge.",
+		},
+		"gold": 130,
+		"experience": 550,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"The Emberseal can only be set by the Founders' Brand - the sword Ashgate's first captain carried. It hung over this altar for three hundred years.",
+				"The night the breach opened, the King's herald came for it. Vharkul. A fiend twice the size of the others, with a voice like a bellows. He carried it east, to the burning bridge, to melt it down.",
+				"If he's done it, we're finished. If he hasn't yet... Kill him. Bring the Brand home. Will you?",
+			],
+			"accepted_reply": [
+				"Far east, where the bridge burns over the lava river. He won't be alone - the hounds follow his horn. Strike hard and keep moving.",
+			],
+			"declined_reply": [
+				"Then we wait, and he melts it, and that's the end of Ashgate. Don't wait long.",
+			],
+			STATE_ACCEPTED: [
+				"The burning bridge, far east. Bring the Brand home.",
+			],
+			"brand_taken": [
+				"You have it? Let me see it. Gently!",
+			],
+			STATE_COMPLETED: [
+				"The altar looks bare without the Brand. That's how it should look. The Brand belongs at the gate.",
+			],
+		},
+	},
+	BLACK_GATE: {
+		"title": "Beneath the Black Gate",
+		"type": "Dungeon",
+		"giver": "Mother Ysolde",
+		"giver_id": "ysolde",
+		"giver_location": "the Founders' Chapel",
+		"area": 4,
+		"requires": [EMBER_HERALD],
+		"summary": "Beneath the Black Gate in the north of the Underworld lies the Cinder Throne, where the Ember King sleeps under the Emberseal. Ysolde can feel the throne room's soul-forges roaring - the King's servants are feeding him with every soul they've taken.",
+		"objectives": [
+			"Open the Black Gate in the north of the Underworld with the Founders' Brand",
+			"Destroy the forge-wardens in the Cinder Throne",
+			"Quench the 3 soul-forges feeding the Ember King",
+			"Report to Captain Aldric in Ashgate",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Open the Black Gate in the north of the Underworld with the Founders' Brand, and go down."},
+			"entered": {"objectives_done": 1, "status": "The forge-wardens have seen you! Destroy them."},
+			"wardens_slain": {"objectives_done": 2, "status": "The wardens are dead. Quench the soul-forges.", "counter": {"label": "Forges quenched", "count": 3}},
+			"forges_quenched": {"objectives_done": 3, "status": "The soul-forges are cold. Report to Captain Aldric in Ashgate."},
+			STATE_COMPLETED: {"objectives_done": 4, "status": "Completed. The Ember King is starved of souls - but he still sleeps beneath the Emberseal, and it's failing."},
+		},
+		"events": [
+			{"type": "enter", "target": "cinder_throne", "requires_state": STATE_ACCEPTED, "sets_state": "entered"},
+			{"type": "clear", "target": "forge_wardens", "requires_state": "entered", "sets_state": "wardens_slain"},
+			{"type": "collect", "target": "soul_forge", "requires_state": "wardens_slain", "sets_state": "forges_quenched", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "aldric",
+				"requires_state": "forges_quenched",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Aldric has the founders' map spread on a barrel, weighted with daggers.* Ysolde sent word with a hound that had your horn's smell on it. Never thought I'd take a message from a hellhound.",
+					"Soul-forges. *His knuckles whiten on the map.* That's where they were taking my soldiers. To feed him.",
+					"You've starved him. Good. But Ysolde says the Emberseal is cracked through, and that the next time the King stirs, it'll break - unless someone sets the Brand in it while he's still weak.",
+					"Here. Your pay, and a soldier's thanks, and an hour by the fire. After that, I'm going to ask you to do something I'd never ask anyone else.",
+				],
+			},
+		],
+		"npc_lines": {
+			"ysolde": {
+				"entered": ["You've been down? And the forges? No - go back. Quench them, then tell Aldric. He needs to know what we're facing."],
+				"forges_quenched": ["The forges are cold - I felt it from here, like a fever breaking. Go and tell Aldric."],
+			},
+		},
+		"reward": {
+			"name": "Soul-Forge Cinder",
+			"description": "A cinder from a quenched soul-forge, black and light as pumice. Hold it to your ear and you can hear, very faintly, the sound of a crowd of people sighing with relief.",
+		},
+		"gold": 120,
+		"experience": 550,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"The Black Gate stands in the north of the Underworld - you'll have seen it, black against the fire. Beneath it is the Cinder Throne.",
+				"I can feel the throne room from here. There are forges down there, soul-forges, burning the people his servants dragged down. Every soul they burn, he wakes a little more.",
+				"Take the Brand to the Gate. It'll open for a founder's sword. Go down, kill the wardens, and quench those forges. Will you?",
+			],
+			"accepted_reply": [
+				"Founders' oil quenches anything the King lit. Pour it in the forge-mouths and stand well back.",
+			],
+			"declined_reply": [
+				"Then every hour, another soul. Rest if you must. But count the hours.",
+			],
+			STATE_ACCEPTED: [
+				"The Black Gate, in the north. The Brand will open it.",
+			],
+			"wardens_slain": [
+				"The wardens are dead? Then quench the forges, all three!",
+			],
+			STATE_COMPLETED: [
+				"Aldric sent a hound back with a message. It says 'thank you' and something rude about my handwriting.",
+			],
+		},
+	},
+	EMBER_KING: {
+		"title": "The Ember King",
+		"type": "Climax",
+		"giver": "Captain Aldric",
+		"giver_id": "aldric",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"requires": [BLACK_GATE],
+		"summary": "The Emberseal is cracked through. Set in the seal at the foot of the Cinder Throne, the Founders' Brand will close it for good - but the moment it does, Azkareth the Ember King will wake, starved and furious, and fight to stop it. If he dies, the Underworld's fire goes out.",
+		"objectives": [
+			"Return to the Cinder Throne beneath the Black Gate",
+			"Set the Founders' Brand in the Emberseal",
+			"Slay Azkareth, the Ember King",
+			"Return to Captain Aldric in Ashgate",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Take the Founders' Brand back down into the Cinder Throne beneath the Black Gate."},
+			"in_the_throne": {"objectives_done": 1, "status": "The Emberseal waits at the foot of the throne. Set the Founders' Brand in it."},
+			"seal_set": {"objectives_done": 2, "status": "The Ember King has woken! Slay Azkareth before he breaks the Emberseal."},
+			"king_slain": {"objectives_done": 3, "status": "Azkareth is dead and the Emberseal holds. Return to Captain Aldric in Ashgate."},
+			STATE_COMPLETED: {"objectives_done": 4, "status": "Completed. The Ember King is dead, and the fires of the Underworld are going out."},
+		},
+		"events": [
+			{"type": "enter", "target": "cinder_throne", "requires_state": STATE_ACCEPTED, "sets_state": "in_the_throne"},
+			{"type": "collect", "target": "emberseal", "requires_state": "in_the_throne", "sets_state": "seal_set"},
+			{"type": "kill", "target": "azkareth", "requires_state": "seal_set", "sets_state": "king_slain"},
+		],
+		"talks": [
+			{
+				"npc": "aldric",
+				"requires_state": "king_slain",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Every soldier in Ashgate is on the north wall. Nobody is holding a weapon. They're all looking up.* Look. LOOK. The sky.",
+					"The hellfire stopped falling an hour ago. Then the red went out of the clouds. And then - stars. I'd forgotten there were stars over Ashgate.",
+					"*Aldric grips your forearm, soldier to soldier.* Three hundred years Ashgate has watched that gate, waiting for the day the King woke. And on that day, you were standing in front of him.",
+					"There's one thing left. The founders lit a watchfire at the gate when they set the first seal. Tonight, we light the last one. And you're going to light it.\n\nYou received the Ember King's Crown-Shard.",
+				],
+			},
+		],
+		"npc_lines": {
+			"ysolde": {
+				"in_the_throne": ["Set the Brand in the seal, and he'll wake. Don't hesitate. He won't."],
+				"king_slain": ["*Ysolde is sitting on the chapel step, laughing and crying at once.* The fires are going out. Forty years. Go to Aldric. Go!"],
+			},
+			"kael": {
+				"seal_set": ["The ground's shaking - it's you, isn't it? Down there with him. Come back. That's an order."],
+			},
+		},
+		"reward": {
+			"name": "Ember King's Crown-Shard",
+			"description": "A jagged spike of the Ember King's crown, black glass with a dying coal at its heart. It was hot enough to melt iron when you pried it free. Now it is only warm, and getting colder.",
+		},
+		"gold": 220,
+		"experience": 1000,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*Aldric is alone at the breach, staring north.* Ysolde says the seal won't hold another waking. It has to be closed now, with the Brand, at the foot of his throne.",
+				"And when it closes, he'll wake. Starved, but awake. Somebody has to be standing there when he does.",
+				"I've asked a lot of people to do a lot of things. I've never asked anyone to do this. But I'm asking. Will you go down and kill the Ember King?",
+			],
+			"accepted_reply": [
+				"*He salutes - the full salute, fist to heart, that Ashgate gives its dead.* Not for you. For the King. So he knows who's coming.",
+			],
+			"declined_reply": [
+				"No. I understand. Take a night. But only one.",
+			],
+			STATE_ACCEPTED: [
+				"The Cinder Throne. Set the Brand, then kill him.",
+			],
+			"seal_set": [
+				"The whole fort felt that. He's awake. Go!",
+			],
+			STATE_COMPLETED: [
+				"Stars over Ashgate. I keep checking they're still there.",
+			],
+		},
+	},
+	# --- The Underworld: Ashgate's side quests --------------------------------------------------------
+	BALM_FOR_THE_BURNED: {
+		"title": "Balm for the Burned",
+		"type": "Gathering",
+		"giver": "Sister Maren",
+		"giver_id": "maren",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"summary": "Fiend-fire burns don't close, and Sister Maren has run out of everything that helps. The only thing that does grows beyond the breach: cinderlilies, pale flowers that bloom in the ash where the lava cools.",
+		"objectives": [
+			"Gather 5 cinderlilies in the Underworld",
+			"Bring them to Sister Maren",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Gather cinderlilies from the ash fields of the Underworld.", "counter": {"label": "Cinderlilies", "count": 5}},
+			"lilies_gathered": {"objectives_done": 1, "status": "You have enough cinderlilies. Bring them to Sister Maren in the infirmary."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. The burns are closing at last."},
+		},
+		"events": [
+			{"type": "collect", "target": "cinderlily", "requires_state": STATE_ACCEPTED, "sets_state": "lilies_gathered", "count": 5},
+		],
+		"talks": [
+			{
+				"npc": "maren",
+				"requires_state": "lilies_gathered",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Cinderlilies! And not one wilted. *Maren crushes a petal between her fingers, and the smell of cool rain fills the tent.* That's the smell. That's the smell of a burn closing.",
+					"Corporal Fenn's arm. Recruit Pell's hands. Twelve soldiers who've been lying here biting on leather. Tonight they'll sleep.",
+					"I've nothing to pay you with but coin and gratitude, and I've been told the coin is more useful. Take both.",
+				],
+			},
+		],
+		"gold": 60,
+		"experience": 360,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Mind the wounded. Burns from fiend-fire don't close. They just... stay. Open, and hot, for weeks.",
+				"There's one thing that helps. Cinderlilies. They grow beyond the breach, in the ash where the lava's gone cold. Pale little things, like candle flames turned white.",
+				"I need five. Will you gather them for me?",
+			],
+			"accepted_reply": [
+				"Pick them at the root, and don't let them touch the hot ash again or they'll wilt. Thank you. Truly.",
+			],
+			"declined_reply": [
+				"Then I'll keep boiling bandages. It's something.",
+			],
+			STATE_ACCEPTED: [
+				"Five cinderlilies. White flowers in the cooled ash.",
+			],
+			STATE_COMPLETED: [
+				"Fenn asked me to marry him this morning. It's the lilies. Everyone gets sentimental when the pain stops.",
+			],
+		},
+	},
+	HOUNDS_AT_THE_WALL: {
+		"title": "Hounds at the Wall",
+		"type": "Hunt",
+		"giver": "Sergeant Holt",
+		"giver_id": "holt",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"summary": "Every night the hellhounds circle Ashgate's walls, testing the stakes, waiting for a gap. Sergeant Holt wants the packs thinned before they find one.",
+		"objectives": [
+			"Slay 8 hellhounds in the Underworld",
+			"Report back to Sergeant Holt",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Slay hellhounds in the Underworld.", "counter": {"label": "Hellhounds slain", "count": 8}},
+			"hounds_slain": {"objectives_done": 1, "status": "That's eight hounds. Report back to Sergeant Holt at the breach."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. The night watch is quieter."},
+		},
+		"events": [
+			{"type": "kill", "target": "hellhound", "requires_state": STATE_ACCEPTED, "sets_state": "hounds_slain", "count": 8},
+		],
+		"talks": [
+			{
+				"npc": "holt",
+				"requires_state": "hounds_slain",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Eight? *Holt whistles through a gap in his teeth.* The night watch only counted three howls last night. Usually it's thirty.",
+					"I've been on this wall nine years. Never once slept through a night. Last night I slept four hours. Four!",
+					"Here. It's my old wall-badge, from my first year. Every soldier who holds the wall a full winter gets one. You held it from the other side, which I reckon counts double.\n\nYou received Holt's Wall-Badge.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Holt's Wall-Badge",
+			"description": "A pewter badge stamped with Ashgate's gate-and-flame, given to soldiers who hold the wall through a full winter. Sergeant Holt's is worn smooth with nine years of thumb-rubbing.",
+		},
+		"gold": 60,
+		"experience": 380,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"They come with the ash storms. Watch the sky. And when the sky goes dark, watch the stakes, because that's when the hounds come.",
+				"Every night they circle the walls, looking for a gap. They'll find one eventually. Hounds are patient. More patient than men.",
+				"Thin the packs. Eight hounds ought to break the boldest of them. Will you?",
+			],
+			"accepted_reply": [
+				"Aim for the legs. A hound that can't run is a hound that can't reach you.",
+			],
+			"declined_reply": [
+				"Then I'll keep watching the stakes. I'm good at watching.",
+			],
+			STATE_ACCEPTED: [
+				"Eight hellhounds. Legs first.",
+			],
+			STATE_COMPLETED: [
+				"Quiet nights used to be the bad ones. Now they're just quiet.",
+			],
+		},
+	},
+	NAMES_IN_THE_ASH: {
+		"title": "Names in the Ash",
+		"type": "Remembrance",
+		"giver": "Tomas",
+		"giver_id": "tomas",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"summary": "Tomas buries Ashgate's dead. But the soldiers who fell beyond the breach are still lying out there, and without their tokens - the iron discs every Ashgate soldier wears - he can't even carve their names.",
+		"objectives": [
+			"Recover the tokens of 4 fallen soldiers in the Underworld",
+			"Bring the tokens to Tomas",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Find fallen Ashgate soldiers in the Underworld and recover their tokens.", "counter": {"label": "Tokens recovered", "count": 4}},
+			"tokens_recovered": {"objectives_done": 1, "status": "You have four soldiers' tokens. Bring them to Tomas by the graves."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Four more names are carved in Ashgate's stone."},
+		},
+		"events": [
+			{"type": "collect", "target": "soldier_token", "requires_state": STATE_ACCEPTED, "sets_state": "tokens_recovered", "count": 4},
+		],
+		"talks": [
+			{
+				"npc": "tomas",
+				"requires_state": "tokens_recovered",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Tomas lays the four tokens on the grave-slab and reads each one aloud, slowly.* Dunmore. Aiken. Vosk. Little Hesper - she was barely sixteen.",
+					"I'd stopped carving names. I told myself I'd just remember them. But you don't, you know. You think you will, and you don't.",
+					"I'll carve these four tonight. And then I think I'll go back and carve the others too. Thank you. They'd thank you too, if they could.",
+				],
+			},
+		],
+		"gold": 70,
+		"experience": 380,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Twelve this week. I've stopped carving names. I just remember them.",
+				"But the ones who fell out there, beyond the breach - I can't even do that. I don't know who they are. Every Ashgate soldier wears an iron token with their name on it.",
+				"Bring me four tokens. Four names, so I can carve them. Will you?",
+			],
+			"accepted_reply": [
+				"They'll be lying where they fell, with their shields. The tokens are on a cord round the neck. Be gentle with them.",
+			],
+			"declined_reply": [
+				"Aye. It's a grim errand. I'll keep digging.",
+			],
+			STATE_ACCEPTED: [
+				"Four tokens. Four names.",
+			],
+			STATE_COMPLETED: [
+				"I've carved forty-one names now. I'm going to carve every one.",
+			],
+		},
+	},
+	BRIMSTONE_FOR_THE_FORGE: {
+		"title": "Brimstone for the Forge",
+		"type": "Gathering",
+		"giver": "Quartermaster Bruna",
+		"giver_id": "bruna",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"summary": "Ashgate's forge has been running day and night since the breach, and it's burned through its last sack of fuel. Bruna knows where to get more: the yellow brimstone that crusts the vents beyond the breach burns hotter than any coal.",
+		"objectives": [
+			"Mine 4 brimstone deposits in the Underworld",
+			"Bring the brimstone to Quartermaster Bruna",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Find yellow brimstone deposits round the Underworld's vents and mine them.", "counter": {"label": "Deposits mined", "count": 4}},
+			"brimstone_mined": {"objectives_done": 1, "status": "Your pack stinks of brimstone. Bring it to Quartermaster Bruna at the forge."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Ashgate's forge roars again."},
+		},
+		"events": [
+			{"type": "collect", "target": "brimstone", "requires_state": STATE_ACCEPTED, "sets_state": "brimstone_mined", "count": 4},
+		],
+		"talks": [
+			{
+				"npc": "bruna",
+				"requires_state": "brimstone_mined",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Bruna sniffs the sack and recoils, beaming.* Gods, that's foul. That's PERFECT. One shovel of that and the forge'll melt anything.",
+					"I'll have the spear-heads re-tempered by morning. Every soldier on the wall will have an edge again.",
+					"Your share. And if you need anything sharpened, bring it here. No charge. Ever.",
+				],
+			},
+		],
+		"gold": 80,
+		"experience": 380,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"If it's broken, bring it here. If it's on fire, put it out first. And if you're going through the breach, do me a favour.",
+				"The forge has burned through every scrap of coal in Ashgate. Out there, the vents are crusted with brimstone - yellow stuff, stinks like rotten eggs, burns like the sun.",
+				"Four deposits' worth would keep the forge going a month. Will you dig some for me?",
+			],
+			"accepted_reply": [
+				"Hold your breath while you dig. And don't lick your fingers after. Pell did.",
+			],
+			"declined_reply": [
+				"Then I'll burn the tent-poles. We'll sleep standing up.",
+			],
+			STATE_ACCEPTED: [
+				"Four deposits of brimstone. Follow your nose.",
+			],
+			STATE_COMPLETED: [
+				"Every blade in Ashgate is sharp enough to shave with. Holt tried. He regrets it.",
+			],
+		},
+	},
+	SMOULDER_BOUNTY: {
+		"title": "Bounty: Old Smoulder",
+		"type": "Bounty",
+		"giver": "Pikeman Wren",
+		"giver_id": "wren",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"summary": "A hellhound the size of a warhorse, its hide cracked and glowing like a coal, leads the packs in the south-west ash fields. The soldiers call it Old Smoulder. It has taken eleven of Ashgate's sentries, and Wren has a purse on it.",
+		"objectives": [
+			"Hunt down Old Smoulder in the ash fields in the far south-west of the Underworld",
+			"Claim the bounty from Pikeman Wren",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Track Old Smoulder in the ash fields in the far south-west of the Underworld."},
+			"smoulder_slain": {"objectives_done": 1, "status": "Old Smoulder is dead. Claim the bounty from Pikeman Wren in Ashgate."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. The south-west packs have lost their leader."},
+		},
+		"events": [
+			{"type": "kill", "target": "smoulder", "requires_state": STATE_ACCEPTED, "sets_state": "smoulder_slain"},
+		],
+		"talks": [
+			{
+				"npc": "wren",
+				"requires_state": "smoulder_slain",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Smoulder? Dead? *Wren drops his pike. Picks it up. Drops it again.* Sorry. Sorry. I've been counting the fire every night, and I think I just stopped.",
+					"Eleven sentries. It took eleven, and it always took them from my post. I thought it was saving me for last.",
+					"The purse. The whole company put in. And - here. Have my lucky coin. I don't think I'll need luck so much any more.",
+				],
+			},
+		],
+		"gold": 160,
+		"experience": 450,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Every time the fire falls, I count. Never past nine. Then the hounds come, and I stop counting.",
+				"There's one of them bigger than the rest. Big as a warhorse, hide all cracked and glowing like a coal that won't go out. We call it Old Smoulder.",
+				"It leads the packs in the south-west ash fields. Eleven sentries, it's taken. The company's put up a purse: 160 gold. Will you take the bounty?",
+			],
+			"accepted_reply": [
+				"Far south-west, in the ash. It'll be the one that doesn't run when the others do.",
+			],
+			"declined_reply": [
+				"No. Course not. I'll keep counting.",
+			],
+			STATE_ACCEPTED: [
+				"The south-west ash fields. Old Smoulder.",
+			],
+			STATE_COMPLETED: [
+				"I counted to forty last night. Forty! The fire stopped before I did.",
+			],
+		},
+	},
+	ASHGATE_BANNERS: {
+		"title": "Colours of Ashgate",
+		"type": "Exploration",
+		"giver": "Recruit Pell",
+		"giver_id": "pell",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"summary": "Recruit Pell has been ordered to map the Underworld beyond the breach, which would be easier if he could ever go out there without being chased back by hounds. He wants Ashgate's banners raised on three far landmarks, so the watch can take bearings from the walls.",
+		"objectives": [
+			"Raise Ashgate's banner at 3 far landmarks in the Underworld",
+			"Report back to Recruit Pell",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Raise Ashgate's banner at the far north-east, far south and far west of the Underworld.", "counter": {"label": "Banners raised", "count": 3}},
+			"banners_raised": {"objectives_done": 1, "status": "All three banners are flying. Report back to Recruit Pell."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Ashgate's map of the Underworld is finally finished."},
+		},
+		"events": [
+			{"type": "collect", "target": "ashgate_banner", "requires_state": STATE_ACCEPTED, "sets_state": "banners_raised", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "pell",
+				"requires_state": "banners_raised",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"I saw them! From the top of the tower! Three little red flags at the edge of the world! *Pell waves a smudged map.* Look - bearings! Real ones!",
+					"Captain Aldric looked at my map this morning and said 'adequate'. ADEQUATE. That's the nicest thing he's ever said to anyone.",
+					"Here, I made you a copy. It's got your name on it. I spelled it right this time. I think.\n\nYou received Pell's Map of the Underworld.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Pell's Map of the Underworld",
+			"description": "A hand-inked map of the Underworld beyond Ashgate's breach, every landmark carefully labelled in Recruit Pell's round, earnest hand. Three red flags mark the banners you raised. Captain Aldric called it 'adequate'.",
+		},
+		"gold": 70,
+		"experience": 400,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"They told me Ashgate was a quiet posting. Then they told me to map the Underworld. On my own. With hounds.",
+				"If someone raised Ashgate's colours on the far landmarks - north-east, south, west - I could take bearings from the tower and draw the whole thing without leaving the walls.",
+				"Would you? I'd owe you. I'd owe you a lot. I'd owe you my map.",
+			],
+			"accepted_reply": [
+				"Here, three banners. Red and gold. Plant them high so I can see them from the tower!",
+			],
+			"declined_reply": [
+				"That's all right. I'll just... go out there. Myself. Eventually.",
+			],
+			STATE_ACCEPTED: [
+				"North-east, south and west. Plant them high!",
+			],
+			STATE_COMPLETED: [
+				"I'm drawing a second map now. Of the forest. Bryn says there's a town called Oblath with very good pies.",
+			],
+		},
+	},
+	# --- The Underworld: the finale -------------------------------------------------------------------
+	LAST_WATCHFIRE: {
+		"title": "The Last Watchfire",
+		"type": "Finale",
+		"giver": "Captain Aldric",
+		"giver_id": "aldric",
+		"giver_location": "Ashgate Outpost",
+		"area": 4,
+		"requires": [EMBER_KING],
+		"summary": "When the founders set the first Emberseal, they lit a watchfire at the gate so all the world could see that the King was bound. With the Ember King dead, Ashgate has built one last pyre at the breach - and every friend you've made on the long road here has come to see it lit.",
+		"objectives": [
+			"Light the victory pyre at the breach in Ashgate",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Light the victory pyre at the breach, in front of everyone."},
+			STATE_COMPLETED: {"objectives_done": 1, "status": "Completed. The last watchfire burns over Ashgate, and your journey is at an end - for now."},
+		},
+		"events": [
+			{"type": "collect", "target": "victory_pyre", "requires_state": STATE_ACCEPTED, "sets_state": STATE_COMPLETED},
+		],
+		"reward": {
+			"name": "The Exile's Laurel",
+			"description": "A wreath woven from forest ivy, a sunbloom, a sprig of frostpine and a white cinderlily - one from every land you saved, gathered by the friends who came to Ashgate to see the last watchfire lit. It will never wilt. Nobody quite knows why.",
+		},
+		# Granted to the inventory on completion (see CampaignEpilogue), on top of the keepsake.
+		"item_reward": {
+			"display_name": "Brand of Ashgate",
+			"equipment_slot": "Weapon",
+			"icon_color": "#ffb347",
+			"damage_bonus": 7,
+			"price": 250,
+		},
+		"gold": 500,
+		"experience": 1500,
+		# Shown page by page once the quest is completed (see CampaignEpilogue).
+		"epilogue": [
+			{"title": "The Embers Fall Quiet", "text": "When the last watchfire caught, a cheer went up from Ashgate's walls that the founders must have heard in their graves. Far below, the fires of the Underworld sank to a dull red glow, and for the first time in three hundred years the sky over the gate was black, and full of stars."},
+			{"title": "The Forest Outskirts", "text": "The wolves keep to the deep woods now, and the forest road is safe after dark. In Oblath, the harvest pies are cooling on every sill, and the children still play at being the stranger who walked out of the trees and set things right."},
+			{"title": "The Sunscorch Sands", "text": "Saltwind's caravans cross the Sands again, and the Sunstone holds beneath Qasr Anuhm. Old Hamid sleeps through the night for the first time in forty years. Imani is writing a book about all of it. It is very long, and she says you are in most of it."},
+			{"title": "The Ice Caves", "text": "In Rimehollow the Sleeper dreams on behind dry, clear ice, and the great hearth burns high. Sven is learning to quarry. Runa has carved your name on the Wardhall's last runestone, beneath Hrimgar's, where every Warden after you will read it."},
+			{"title": "Ashgate", "text": "The breach is being rebuilt, in stone this time. Kael's survivors stand the first watch on the new gate. Mother Ysolde has come up into the daylight, and complains about it constantly. Over the gate, Captain Aldric has had the founders' oath carved - and beneath it, your name."},
+			{"title": "The Road Goes On", "text": "But Ysolde says the Ember King was not the only thing that slept beneath the world. Since the night of the last watchfire, the waystones in every hub have begun to hum, and to show roads to places nobody has ever mapped. The world is wide, and it is still waking."},
+			{"title": "The End", "text": "Thank you for playing Exiles Reach.\n\nYour story is done - for now. Random maps await at every hub's waystone."},
+		],
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*Ashgate's yard is full: soldiers, the wounded on their cots, and faces you never expected to see again - travellers from the forest, the Sands and the ice, who followed the stories here.*",
+				"They came from everywhere. Rashid's camels brought half of them. Bryn rode north and south for a week, telling anyone who'd listen what you'd done.",
+				"The founders lit a watchfire at the gate when they set the first seal, so the whole world would know the King was bound. We've built the last one at the breach.",
+				"It's yours to light. Go on. Everyone's waiting.",
+			],
+			"accepted_reply": [
+				"*He hands you a torch. Every eye in Ashgate follows it.* At the breach. Light it, and let the whole world see.",
+			],
+			"declined_reply": [
+				"Not yet? *He laughs.* Then we'll wait. We've waited three hundred years. A little longer won't hurt.",
+			],
+			STATE_ACCEPTED: [
+				"The pyre's at the breach. Everyone's waiting.",
+			],
+			STATE_COMPLETED: [
+				"Stars over Ashgate, and a fire that keeps nothing out. I could get used to this.",
+			],
+		},
+	},
 }
 
 
@@ -2865,6 +3806,23 @@ static func _get_waiting_event(quest_id: String, event_type: String, target: Str
 				return {}
 			return event
 	return {}
+
+
+# --- Item rewards ----------------------------------------------------------------------------------------
+
+## The piece of gear a quest's "item_reward" gives on completion, or null if it gives none.
+static func create_item_reward(quest_id: String) -> ItemData:
+	var reward: Dictionary = get_definition(quest_id).get("item_reward", {})
+	if reward.is_empty():
+		return null
+	var item := ItemData.new()
+	item.display_name = reward["display_name"]
+	item.equipment_slot = reward["equipment_slot"]
+	item.icon_color = Color(reward["icon_color"])
+	item.damage_bonus = int(reward.get("damage_bonus", 0))
+	item.damage_reduction = int(reward.get("damage_reduction", 0))
+	item.price = int(reward.get("price", 0))
+	return item
 
 
 # --- Boss chest quest items ------------------------------------------------------------------------------
