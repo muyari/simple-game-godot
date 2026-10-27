@@ -197,6 +197,16 @@ func _build_tunnel() -> void:
 
 
 func _build_folk() -> void:
+	# Torsten, home from Saltwind with the player (Quests.NORTH_TO_RIMEHOLLOW). He rides in with them, so
+	# he's here as soon as the quest is under way: arriving completes it (TownUI).
+	if GameState.get_quest_state(Quests.NORTH_TO_RIMEHOLLOW) != Quests.STATE_AVAILABLE:
+		var torsten := folk(HEARTH + Vector2(160, 96), {
+			"display_name": "Torsten", "headwear": HubFolk.Headwear.FUR_HOOD, "beard": true, "body_scale": 1.25,
+			"clothes": Color("#7a5a3e"), "trim": Color("#e8e0d0"), "hair": Color("#d0a060"), "skin": SKINS[3],
+			"rest_facing": -1.0,
+			"lines": ["Ahh. Cold at last.", "Warm your hands at the hearth. Then go and see Elder Sigrun."],
+		})
+		QuestTalker.attach(torsten, "torsten", 80.0)
 	folk(SLEEPER + Vector2(0, 80), {
 		"display_name": "Elder Sigrun", "headwear": HubFolk.Headwear.FUR_HOOD, "robe": true, "held": HubFolk.Held.STAFF,
 		"clothes": FURS[2], "trim": Color("#9fd3ee"), "skin": SKINS[3],

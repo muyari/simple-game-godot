@@ -54,6 +54,14 @@ const CAMPFIRE := Vector2(600, 350)
 const OASIS := Vector2(230, 80)
 const EXIT := Vector2(1270, 470)
 const SKINS := [Color("#c99a6e"), Color("#a7744c"), Color("#8a5a3a"), Color("#e0b48c")]
+## Residents with quests to give or take (see Quests), by display name, and their quest npc ids.
+const TALKERS := {
+	"Caravan Master Idris": "idris", "Old Hamid": "hamid", "Farah": "farah", "Nadja": "nadja",
+	"Scout Tarek": "tarek", "Leila": "leila", "Jamal": "jamal", "Samir": "samir", "Camp Guard": "saltwind_guard",
+	"Yusuf": "yusuf", "Torsten": "torsten",
+}
+## Where Torsten's sledge waits for the road north (Quests.NORTH_TO_RIMEHOLLOW).
+const TORSTEN_SPOT := Vector2(700, 560)
 
 
 func build() -> void:
@@ -166,7 +174,34 @@ func _build_wreck_and_cairns() -> void:
 		prop(HubProp.Kind.CAIRN, entry[0], {"tint": entry[1], "scale": 1.3}, 9.0)
 
 
+## A resident (see HubDecor.folk), who can be talked to about quests if TALKERS names them.
+func folk(base: Vector2, settings := {}, parent: Node = null) -> HubFolk:
+	var person := super(base, settings, parent)
+	var npc_id: String = TALKERS.get(settings.get("display_name", ""), "")
+	if not npc_id.is_empty():
+		var head := 74.0 * person.body_scale / 1.15 * (0.75 if person.pose == HubFolk.Pose.SIT else 1.0)
+		QuestTalker.attach(person, npc_id, head)
+	return person
+
+
 func _build_folk() -> void:
+	# Yusuf, safe in camp once he's walked back from the red rocks (Quests.VOICE_IN_THE_DUNES).
+	if GameState.get_quest_state(Quests.VOICE_IN_THE_DUNES) in ["yusuf_home", Quests.STATE_COMPLETED]:
+		folk(CAMPFIRE + Vector2(150, 96), {
+			"display_name": "Yusuf", "body_scale": 0.92, "headwear": HubFolk.Headwear.BANDANA,
+			"clothes": Color("#c9a13f"), "trim": Color("#8a3b2c"), "pants": Color("#6e5032"), "skin": SKINS[1],
+			"area": Rect2(720, 430, 140, 60), "speed": 30.0,
+			"lines": ["I check the camels twice a night now.", "Malik said there was gold. There's never gold."],
+		})
+	# Torsten and his sledge, from the First Sting's fall until he's taken the player north.
+	if Quests.is_unlocked(Quests.NORTH_TO_RIMEHOLLOW) and not Quests.is_completed(Quests.NORTH_TO_RIMEHOLLOW):
+		prop(HubProp.Kind.SLED, TORSTEN_SPOT + Vector2(70, 0), {"tint": Color("#8c6a4a"), "scale": 1.2}, 16.0)
+		folk(TORSTEN_SPOT, {
+			"display_name": "Torsten", "headwear": HubFolk.Headwear.FUR_HOOD, "beard": true, "body_scale": 1.25,
+			"clothes": Color("#7a5a3e"), "trim": Color("#e8e0d0"), "hair": Color("#d0a060"), "skin": SKINS[3],
+			"rest_facing": -1.0,
+			"lines": ["How do you people LIVE here?", "In Rimehollow, we'd call this weather a fever."],
+		})
 	folk(CAMPFIRE + Vector2(0, 74), {
 		"display_name": "Caravan Master Idris", "robe": true, "beard": true, "headwear": HubFolk.Headwear.TURBAN,
 		"held": HubFolk.Held.STAFF, "clothes": Color("#6e3b2a"), "trim": Color("#e8d6a8"), "hair": Color("#3a2a20"), "skin": SKINS[0],
