@@ -69,6 +69,8 @@ const CHICKEN_PECK: Array[Texture2D] = [
 const ANIMAL_SCRIPT = preload("res://AnimalWander.gd")
 ## Where the reeve's notice board stands: on the verge of the main street, just east of the plaza.
 const NOTICE_BOARD_SPOT := Vector2(812, 500)
+## Where Rashid stands with his goods from Saltwind Camp, east of the plaza by the waystone.
+const RASHID_SPOT := Vector2(720, 400)
 const FOLK := {
 	"mary": {"side_right": true},
 	"gertrude": {"side_right": false},
@@ -542,6 +544,41 @@ func _build_folk() -> void:
 		pip.speed = 44.0
 		pip.position = Vector2(1240, 490)
 		level.add_child.call_deferred(pip)
+	# Rashid's caravan from Saltwind Camp waits on the plaza once the forest is secured, until he's
+	# taken the player south (Quests.ROAD_TO_SALTWIND).
+	if Quests.is_unlocked(Quests.ROAD_TO_SALTWIND) and not Quests.is_completed(Quests.ROAD_TO_SALTWIND):
+		_build_rashid()
+
+
+func _build_rashid() -> void:
+	var rug := HubProp.new()
+	rug.kind = HubProp.Kind.RUG
+	rug.length = 70.0
+	rug.tint = Color("#8f2f24")
+	rug.alt = Color("#e0b85a")
+	# Over the paved street (TownStreets is at -5), under everyone standing on it.
+	rug.z_index = -4
+	rug.position = RASHID_SPOT + Vector2(46, 4)
+	level.add_child.call_deferred(rug)
+	var jars := HubProp.new()
+	jars.kind = HubProp.Kind.JARS
+	jars.position = RASHID_SPOT + Vector2(58, -2)
+	level.add_child.call_deferred(jars)
+	var rashid := HubFolk.new()
+	rashid.display_name = "Rashid"
+	rashid.robe = true
+	rashid.beard = true
+	rashid.headwear = HubFolk.Headwear.TURBAN
+	rashid.held = HubFolk.Held.STAFF
+	rashid.clothes = Color("#b0703a")
+	rashid.trim = Color("#e8d6a8")
+	rashid.hair = Color("#2a1c12")
+	rashid.skin = Color("#a8754a")
+	rashid.rest_facing = -1.0
+	rashid.lines.assign(["Sand in my boots, sand in my bread.", "Your forest is so... green. It hurts the eyes."])
+	rashid.position = RASHID_SPOT
+	QuestTalker.attach(rashid, "rashid", 74.0)
+	level.add_child.call_deferred(rashid)
 
 
 func _folk(name_id: String, spot: Vector2, area: Rect2, speed: float) -> void:

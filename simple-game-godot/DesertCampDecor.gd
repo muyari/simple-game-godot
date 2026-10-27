@@ -176,6 +176,16 @@ func _build_folk() -> void:
 			"Three caravans set out this season. One came back, and that one was empty.",
 		],
 	})
+	# Rashid, home from fetching the player out of Oblath (Quests.ROAD_TO_SALTWIND). He rides in with the
+	# player, so he's here as soon as the quest is under way: arriving completes it (TownUI).
+	if GameState.get_quest_state(Quests.ROAD_TO_SALTWIND) != Quests.STATE_AVAILABLE:
+		var rashid := folk(CAMPFIRE + Vector2(-120, 96), {
+			"display_name": "Rashid", "robe": true, "beard": true, "headwear": HubFolk.Headwear.TURBAN,
+			"held": HubFolk.Held.STAFF, "clothes": Color("#b0703a"), "trim": Color("#e8d6a8"), "skin": SKINS[1],
+			"rest_facing": 1.0,
+			"lines": ["Water first, friend. Then scorpions.", "The grey one still bites. She likes you, though."],
+		})
+		QuestTalker.attach(rashid, "rashid", 74.0)
 	folk(CAMPFIRE + Vector2(-74, 26), {
 		"display_name": "Old Hamid", "pose": HubFolk.Pose.SIT, "robe": true, "beard": true,
 		"clothes": Color("#8a7a5a"), "trim": Color("#c9a76a"), "hair": Color("#d8d2c4"), "skin": SKINS[2], "rest_facing": 1.0,

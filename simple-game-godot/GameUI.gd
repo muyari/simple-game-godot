@@ -925,6 +925,12 @@ func _on_level_completed() -> void:
 		portal_hint_label.text = "The waystones stir: random maps await at any hub's waystone."
 	else:
 		_show_banner("Area Secured", QUEST_BANNER_COLOR)
+		# Point the way home to whoever offers the road on to the next region.
+		var transition := Quests.get_definition(Quests.get_open_transition(level_id))
+		if not transition.is_empty():
+			portal_hint_label.text = "%s is waiting in %s with word of the road ahead." % [
+				Quests.get_npc_name(transition["giver_id"]), transition["giver_location"]
+			]
 	_show_corner_return_button()
 
 
