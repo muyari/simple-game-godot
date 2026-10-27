@@ -7,7 +7,8 @@ class_name QuestTracker
 ## Perry and on to Oblath.
 
 ## Whatever steers the arrow joins this group, with a `player` and a get_tracked_target() returning
-## {position, label} or {}: a LevelQuests (ForestQuests, DesertQuests, IceQuests), or the StartingZone.
+## {position, label} or {}: a LevelQuests (ForestQuests, DesertQuests, IceQuests,
+## UnderworldQuests), or the StartingZone.
 const GUIDES_GROUP := "quest_guides"
 
 ## How far in from each screen edge the arrow keeps, clear of the HUD: the labels top left and the
