@@ -475,8 +475,8 @@ var endgame_tier := 0
 ## Mixed into the scenery seed so random maps don't repeat the campaign's layout. 0 on campaign levels.
 var map_seed := 0
 var treasure_chests: Array[TreasureChest] = []
-## The campaign forest's quest sites and encounters; null everywhere else.
-var forest_quests: ForestQuests
+## The campaign level's quest sites and encounters (ForestQuests, DesertQuests); null everywhere else.
+var level_quests: LevelQuests
 ## Set while a new character walks the trail to Oblath in place of the forest.
 var starting_zone: StartingZone
 
@@ -546,10 +546,10 @@ func _ready() -> void:
 	_build_map_wall()
 	# Saves from before the map had an edge may have left the player out beyond it.
 	player.global_position = _clamp_to_map(player.global_position)
-	if biome == 0 and level_id == 1:
-		forest_quests = ForestQuests.new()
-		forest_quests.setup(self, get_parent(), player)
-		get_parent().add_child.call_deferred(forest_quests)
+	level_quests = _create_level_quests()
+	if level_quests != null:
+		level_quests.setup(self, get_parent(), player)
+		get_parent().add_child.call_deferred(level_quests)
 	_generate_nearby_scenery(current_region)
 	if not level_state.is_empty():
 		call_deferred("_restore_active_enemies", level_state.get("enemies", []))
@@ -691,7 +691,7 @@ func save_current_level_state() -> bool:
 		# Imps an Archdemon summons are part of its fight, not the level's tally, and quest monsters come
 		# back by themselves while their quest needs them.
 		if enemy == null or enemy.health <= 0.0 or enemy.scene_file_path.is_empty() \
-				or enemy.has_meta(Archdemon.SUMMONED_META) or enemy.has_meta(ForestQuests.QUEST_MONSTER_META):
+				or enemy.has_meta(Archdemon.SUMMONED_META) or enemy.has_meta(LevelQuests.QUEST_MONSTER_META):
 			continue
 		enemy_records.append({
 			"scene_path": enemy.scene_file_path,
@@ -748,9 +748,9 @@ func save_current_level_state() -> bool:
 	return true
 
 
-## Where the player is remembered: outside the Gloomhollow while they're down in it.
+## Where the player is remembered: outside the way underground while they're down there.
 func get_player_save_position() -> Vector2:
-	return forest_quests.get_save_position() if forest_quests != null else player.global_position
+	return level_quests.get_save_position() if level_quests != null else player.global_position
 
 
 func _save_level_state() -> void:
@@ -955,8 +955,8 @@ func _get_level_id() -> int:
 
 
 func _physics_process(delta: float) -> void:
-	# Underground in the Gloomhollow there are no regions to explore and no stragglers to call in.
-	if forest_quests != null and forest_quests.in_cave:
+	# Underground (the Gloomhollow, the Sunken Vault) there are no regions to explore and no stragglers to call in.
+	if level_quests != null and level_quests.in_cave:
 		return
 	# Scenery keeps growing round the player even once every monster is out or the level is cleared, so
 	# the rest of the map (and the quest sites in it) is still there to explore.
@@ -987,7 +987,7 @@ func _call_in_straggler(delta: float) -> void:
 	straggler_timer = STRAGGLER_INTERVAL
 	for node in get_tree().get_nodes_in_group("enemies"):
 		var enemy := node as Wolf
-		if enemy == null or enemy.health <= 0.0 or enemy.is_alert or enemy.has_meta(ForestQuests.QUEST_MONSTER_META):
+		if enemy == null or enemy.health <= 0.0 or enemy.is_alert or enemy.has_meta(LevelQuests.QUEST_MONSTER_META):
 			continue
 		var direction := Vector2.RIGHT.rotated(randf() * TAU)
 		enemy.global_position = _clamp_to_map(player.global_position + direction * _get_spawn_distance(direction))
@@ -1046,7 +1046,7 @@ func _generate_scenery_for_region(region: Vector2i) -> void:
 		_generate_border_scenery(random, region_center)
 		return
 	if biome == 1:
-		_generate_desert_scenery(random, region_center)
+		_generate_desert_scenery(random, region, region_center)
 		return
 	if biome == 2:
 		_generate_ice_scenery(random, region_center)
@@ -1142,8 +1142,8 @@ func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, r
 	get_parent().call_deferred("add_child", floor_detail)
 
 	# Quest sites first, so the region's trees grow round them.
-	if forest_quests != null:
-		forest_quests.populate_region(region, region_center)
+	if level_quests != null:
+		level_quests.populate_region(region, region_center)
 	# The apple trees belong to the forest's quests, so random maps leave them out.
 	var apple_index := FOREST_APPLE_TREE_REGIONS.find(region)
 	if apple_index >= 0 and not is_endgame():
@@ -1188,8 +1188,8 @@ func _add_forest_apple_tree(random: RandomNumberGenerator, apple_index: int, reg
 		apple_tree.tree_index = apple_index
 		apple_tree.position = base_position
 		apple_tree.get_node("Sprite2D").scale = Vector2.ONE * FOREST_APPLE_TREE_SCALE
-		if forest_quests != null:
-			forest_quests.decorate_apple_tree(apple_tree)
+		if level_quests is ForestQuests:
+			(level_quests as ForestQuests).decorate_apple_tree(apple_tree)
 		get_parent().call_deferred("add_child", apple_tree)
 		return
 	push_warning("No room for forest apple tree %d." % apple_index)
@@ -1269,7 +1269,7 @@ func _claim_prop_spot(base_position: Vector2, footprint: Vector2, solid := true)
 	return true
 
 
-func _generate_desert_scenery(random: RandomNumberGenerator, region_center: Vector2) -> void:
+func _generate_desert_scenery(random: RandomNumberGenerator, region: Vector2i, region_center: Vector2) -> void:
 	# Regions tile edge to edge, so desert props may use the whole region.
 	var spread := region_size * 0.48
 	var floor_detail := DesertFloor.new()
@@ -1278,6 +1278,10 @@ func _generate_desert_scenery(random: RandomNumberGenerator, region_center: Vect
 	floor_detail.position = region_center
 	floor_detail.z_index = -8
 	get_parent().call_deferred("add_child", floor_detail)
+
+	# Quest sites first, so the region's rocks and cacti stand round them.
+	if level_quests != null:
+		level_quests.populate_region(region, region_center)
 
 	for _decal_index in random.randi_range(4, 6):
 		var decal: Dictionary = DESERT_GROUND_DECALS[random.randi() % DESERT_GROUND_DECALS.size()]
@@ -1956,10 +1960,13 @@ func _on_enemy_died(enemy: Wolf) -> void:
 			enemy.name
 		])
 	_drop_enemy_loot(enemy)
-	_record_wolf_kill()
+	_record_kill(enemy)
 
 	var max_enemies := _get_max_enemies()
-	if boss_kind == 0 and enemies_defeated == max_enemies and not boss_spawned:
+	# A level already secured some other way (the First Sting's fall) raises no boss.
+	if level_is_complete:
+		_save_level_state()
+	elif boss_kind == 0 and enemies_defeated == max_enemies and not boss_spawned:
 		_spawn_wolf_boss_pack()
 		_save_level_state()
 	elif _has_level_boss() and enemies_defeated == max_enemies and not boss_spawned:
@@ -1977,7 +1984,10 @@ func _on_level_boss_died(boss: Wolf) -> void:
 	if boss_kind in [2, 3] or is_endgame():
 		# The Cryohydra and the Archdemon guard a hoard as well, as does every random map's boss.
 		_spawn_treasure_chest(boss.global_position + Vector2(0.0, 40.0))
-	_complete_current_level()
+	_record_kill(boss)
+	# The boss may have risen before the level was secured some other way.
+	if not level_is_complete:
+		_complete_current_level()
 
 
 func _spawn_wolf_boss_pack() -> void:
@@ -2029,7 +2039,7 @@ func _on_boss_wolf_died(wolf: Wolf) -> void:
 	if not player.gain_experience(experience_reward):
 		push_error("Could not award %d XP for defeating %s." % [experience_reward, wolf.name])
 	_drop_enemy_loot(wolf)
-	_record_wolf_kill()
+	_record_kill(wolf)
 	boss_wolves_defeated = mini(boss_wolves_defeated + 1, FOREST_BOSS_PACK_SIZE)
 	boss_progress_changed.emit(boss_wolves_defeated, FOREST_BOSS_PACK_SIZE)
 	if boss_wolves_defeated < FOREST_BOSS_PACK_SIZE:
@@ -2040,10 +2050,21 @@ func _on_boss_wolf_died(wolf: Wolf) -> void:
 	_complete_current_level()
 
 
-## Counts a forest wolf toward any hunting quest (Corwin's cull).
-func _record_wolf_kill() -> void:
-	if forest_quests != null:
-		QuestToast.show_updates(get_tree(), Quests.record_event("kill", "wolf"))
+## Counts a slain monster toward any hunting quest (Corwin's wolf cull, Samir's scorpions).
+func _record_kill(enemy: Wolf) -> void:
+	if level_quests != null:
+		QuestToast.show_updates(get_tree(), Quests.record_event("kill", LevelQuests.monster_kind(enemy)))
+
+
+## The quest sites and encounters of the campaign level being played, or null (random maps, other levels).
+func _create_level_quests() -> LevelQuests:
+	if is_endgame():
+		return null
+	if biome == 0 and level_id == 1:
+		return ForestQuests.new()
+	if biome == 1 and level_id == 2:
+		return DesertQuests.new()
+	return null
 
 
 ## Experience and loot for a monster that belongs to a quest rather than the level's tally.

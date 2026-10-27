@@ -85,6 +85,8 @@ void fragment() {
 
 var player: Player
 var camera: Camera2D
+var canvas_tint: CanvasModulate
+var haze_layer: CanvasLayer
 var haze_material: ShaderMaterial
 var sand: CPUParticles2D
 var tumbleweeds: Array[Node2D] = []
@@ -103,7 +105,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 
-	var canvas_tint := CanvasModulate.new()
+	canvas_tint = CanvasModulate.new()
 	canvas_tint.color = TINT
 	add_child(canvas_tint)
 	_build_haze_layer()
@@ -126,6 +128,19 @@ func _process(delta: float) -> void:
 	_keep_lizards_near(view_center, view_size)
 
 
+## Underground (in the Sunken Vault) there's no sky: a dim tint, and no haze, blowing sand, tumbleweeds,
+## vultures or lizards.
+func set_underground(underground: bool, tint := TINT) -> void:
+	canvas_tint.color = tint if underground else TINT
+	haze_layer.visible = not underground
+	sand.visible = not underground
+	for group: Array in [tumbleweeds, vultures, lizards]:
+		for drifter: CanvasItem in group:
+			drifter.visible = not underground
+			drifter.process_mode = Node.PROCESS_MODE_DISABLED if underground else Node.PROCESS_MODE_INHERIT
+	set_process(not underground)
+
+
 func _build_haze_layer() -> void:
 	var noise := FastNoiseLite.new()
 	noise.seed = 3
@@ -146,7 +161,7 @@ func _build_haze_layer() -> void:
 	haze_material.set_shader_parameter("aspect", Vector2(view_size.x / view_size.y, 1.0))
 
 	# Sits between the world and the HUD, so the HUD moves up a layer.
-	var haze_layer := CanvasLayer.new()
+	haze_layer = CanvasLayer.new()
 	haze_layer.layer = 1
 	var ui := get_parent().get_node_or_null("UI") as CanvasLayer
 	if ui != null and ui.layer <= haze_layer.layer:

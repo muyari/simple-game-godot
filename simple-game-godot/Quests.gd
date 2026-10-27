@@ -37,6 +37,26 @@ const PERRYS_HAT := "perrys_hat"
 ## The Forest Outskirts' transition quest: once the area is secured, ride Rashid's caravan to Saltwind Camp.
 const ROAD_TO_SALTWIND := "road_to_saltwind"
 
+## The Sunscorch Sands (see DesertQuests). The story: Malik, a caravan driver, dug into the vault beneath
+## the buried city of Qasr Anuhm for gold and cracked the Sunstone that kept the First Sting, mother of
+## every scorpion in the Sands, asleep. The main line runs from his wreck to her death:
+const LAST_CARAVAN := "last_caravan"
+const VOICE_IN_THE_DUNES := "voice_in_the_dunes"
+const CITY_THE_SAND_ATE := "city_the_sand_ate"
+const WORDS_IN_STONE := "words_in_stone"
+const SUNKEN_VAULT := "sunken_vault"
+const MOTHER_OF_STINGS := "mother_of_stings"
+## Saltwind Camp's side quests.
+const STONES_FOR_THE_LOST := "stones_for_the_lost"
+const SALVAGE_RIGHTS := "salvage_rights"
+const TAIL_FOR_SAMIR := "tail_for_samir"
+const EYES_ON_THE_DUNES := "eyes_on_the_dunes"
+const GLASSTAIL_BOUNTY := "glasstail_bounty"
+const SWEETWATER := "sweetwater"
+const SUNBLOOM_STEW := "sunbloom_stew"
+## The Sunscorch Sands' transition quest: once the First Sting is dead, ride north with Torsten to Rimehollow.
+const NORTH_TO_RIMEHOLLOW := "north_to_rimehollow"
+
 ## Areas shown as tabs in the quest menu, keyed by GameState level id.
 const AREAS := [
 	{"level_id": 1, "name": "Forest Outskirts"},
@@ -60,6 +80,18 @@ const NPCS := {
 	"forest_shrine": {"name": "Mossy Shrine", "idle": ["The shrine is quiet. Warmth lingers in the old stone."]},
 	"perry": {"name": "Perry", "idle": ["Green, with a feather. Did I mention the feather?"]},
 	"rashid": {"name": "Rashid the Camel-Driver", "idle": ["Sand in my boots, sand in my bread. You never get it all out."]},
+	"idris": {"name": "Caravan Master Idris", "idle": ["Water first, questions after. That's the rule of Saltwind."]},
+	"hamid": {"name": "Old Hamid", "idle": ["The wind remembers everything the sand forgets."]},
+	"leila": {"name": "Leila", "idle": ["We pile the stones high so the wind can't take them too."]},
+	"jamal": {"name": "Jamal", "idle": ["If it's not nailed down, the sand takes it. If it is nailed down, the sand takes the nails."]},
+	"samir": {"name": "Samir", "idle": ["I'm keeping watch. Tarek doesn't know yet."]},
+	"tarek": {"name": "Scout Tarek", "idle": ["If you see the sand move against the wind, run."]},
+	"saltwind_guard": {"name": "Camp Guard", "idle": ["Keep to the trail when you head out. The dunes shift."]},
+	"nadja": {"name": "Nadja", "idle": ["Drink, but don't waste it. Every cup is a day."]},
+	"farah": {"name": "Farah", "idle": ["Eat something. Out there you won't get the chance."]},
+	"yusuf": {"name": "Yusuf", "idle": ["I check the camels twice a night now. Just in case."]},
+	"imani": {"name": "Scholar Imani", "idle": ["Three hundred years under the sand, and the carvings are still crisp. They built to be read."]},
+	"torsten": {"name": "Torsten the Fur-Trader", "idle": ["Too hot. Everything here is too hot. Even the soup."]},
 }
 
 const DEFINITIONS := {
@@ -817,6 +849,888 @@ const DEFINITIONS := {
 			],
 		},
 	},
+	# --- The Sunscorch Sands: the main line ------------------------------------------------------------
+	LAST_CARAVAN: {
+		"title": "The Last Caravan",
+		"type": "Search",
+		"giver": "Idris",
+		"giver_id": "idris",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"summary": "Caravan Master Idris has lost three caravans to the Sunscorch Sands this season. The last, led by a driver named Malik, never reached the coast, and the scouts found its tracks leading east, away from the trade road. Idris wants to know why.",
+		"objectives": [
+			"Find the wreck of Malik's caravan in the eastern Sands",
+			"Search the wreckage for Malik's ledger",
+			"Bring the ledger to Idris in Saltwind Camp",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Search the eastern Sands for the wreck of Malik's caravan."},
+			"wreck_found": {"objectives_done": 1, "status": "You found the wreck. Search it for Malik's ledger."},
+			"ledger_found": {"objectives_done": 2, "status": "You have Malik's ledger. Bring it to Idris in Saltwind Camp."},
+			STATE_COMPLETED: {"objectives_done": 3, "status": "Completed. Malik wasn't trading. He was digging."},
+		},
+		"events": [
+			{"type": "find", "target": "malik_wreck", "requires_state": STATE_ACCEPTED, "sets_state": "wreck_found"},
+			{"type": "collect", "target": "caravan_ledger", "requires_state": "wreck_found", "sets_state": "ledger_found"},
+		],
+		"talks": [
+			{
+				"npc": "idris",
+				"requires_state": "ledger_found",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Malik's ledger. *Idris turns the pages slowly, his jaw tight.* Salt, dates, rope... and this. Forty shovels. Ten picks. Lamp oil, enough for a month underground.",
+					"He wasn't trading. He was digging. The fool hired diggers on my coin and took them off the road, east, toward the old ruins.",
+					"And the last page. His hand changes. 'The sand moves. Yusuf ran for the red rocks. If anyone reads this-' Nothing after.",
+					"Yusuf. Malik's camel boy. If he reached the rocks, he may still be alive. Take this for your trouble, and sit a while before you go back out there.",
+				],
+			},
+		],
+		"gold": 50,
+		"experience": 200,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"So you're the one Rashid brought down from the forest. He says you broke the wolf packs that had Oblath under siege. Good. I need someone who doesn't break easily.",
+				"Three caravans left Saltwind this season. The first came back empty, its drivers gone. The second we found picked clean by scorpions.",
+				"The third was Malik's. Forty camels, twelve drivers, and it never reached the coast. Malik knows the trade road like his own palm, yet the scouts found his tracks leading east, away from it.",
+				"Find what's left of his caravan. And find out why he left the road. Will you go?",
+			],
+			"accepted_reply": [
+				"The trail out of camp takes you into the Sands. Malik's tracks bent east, past the dunes. Look for broken wagons, and for vultures. They always find a wreck first.",
+			],
+			"declined_reply": [
+				"Rest, then. The Sands will keep. They always do.",
+			],
+			STATE_ACCEPTED: [
+				"East, past the dunes. Watch for the vultures.",
+			],
+			"wreck_found": [
+				"You found it? Then search it. Malik kept his ledger on him, always. If it's anywhere, it's in his wagon.",
+			],
+			STATE_COMPLETED: [
+				"Malik was a good driver once. Greed got into him like sand into a wound.",
+			],
+		},
+	},
+	VOICE_IN_THE_DUNES: {
+		"title": "A Voice in the Dunes",
+		"type": "Rescue",
+		"giver": "Idris",
+		"giver_id": "idris",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"requires": [LAST_CARAVAN],
+		"summary": "Malik's ledger ends with his camel boy, Yusuf, running for the red rocks in the south of the Sands. If he found shelter there he may still be alive, and he may be the only one who saw what Malik dug up.",
+		"objectives": [
+			"Search the red rocks in the southern Sands for Yusuf",
+			"Kill the snakes that have him cornered",
+			"Talk to Yusuf",
+			"Return to Idris in Saltwind Camp",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Search the red rocks in the south of the Sands for Yusuf."},
+			"yusuf_found": {"objectives_done": 1, "status": "Snakes have Yusuf cornered! Kill them."},
+			"yusuf_safe": {"objectives_done": 2, "status": "The snakes are dead. Talk to Yusuf."},
+			"yusuf_home": {"objectives_done": 3, "status": "Yusuf is making for Saltwind Camp. Return to Idris."},
+			STATE_COMPLETED: {"objectives_done": 4, "status": "Completed. Yusuf is safe in Saltwind, and you know what Malik found."},
+		},
+		"events": [
+			{"type": "find", "target": "yusuf", "requires_state": STATE_ACCEPTED, "sets_state": "yusuf_found"},
+			{"type": "rescue", "target": "yusuf", "requires_state": "yusuf_found", "sets_state": "yusuf_safe"},
+		],
+		"talks": [
+			{
+				"npc": "yusuf",
+				"requires_state": "yusuf_safe",
+				"sets_state": "yusuf_home",
+				"pages": [
+					"*A thin boy in a torn headscarf peers out from a crack in the red rock, clutching an empty waterskin.* Are they dead? The snakes? They've waited for me for days. Snakes are very patient.",
+					"I'm Yusuf. I tend Malik's camels. He said we were going to the coast, but at the dunes he turned us east, to the old city. Qasr Anuhm. He said there was gold under it.",
+					"There wasn't gold. There was a door. Malik broke it open, and something under there... breathed. Then the sand began to move, and the scorpions came out of it like water.",
+					"I ran. I didn't stop until I was here. *He looks at his hands.* I left them, all of them. Is Saltwind still there? Then I'll go. I know the way from here.",
+				],
+			},
+			{
+				"npc": "idris",
+				"requires_state": "yusuf_home",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Yusuf walked in an hour ago, half dead and talking about doors and breathing sand. Farah's feeding him. He'll live.",
+					"Qasr Anuhm. The city the sand ate. Every child in this camp grows up on stories of it, and every one is told never to dig there.",
+					"Malik broke something old. *Idris looks east, toward the dunes.* Talk to Old Hamid. He knows those stories better than anyone alive, and I'd stake my water he knows more than he tells.",
+					"Oh - and Yusuf asked me to give you this. He says it kept him alive in the rocks, and that you need it more now.\n\nYou received Yusuf's Lucky Knot.",
+				],
+			},
+		],
+		"npc_lines": {
+			"yusuf": {
+				"yusuf_found": ["Help! Please! They're all around me!"],
+			},
+		},
+		"reward": {
+			"name": "Yusuf's Lucky Knot",
+			"description": "A camel-hair cord tied in a knot nobody else in Saltwind can undo. Yusuf swears it kept him alive for eight days in the red rocks, and insisted you needed it more than he did.",
+		},
+		"gold": 60,
+		"experience": 250,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Malik's camel boy, Yusuf. Fourteen, maybe fifteen. Quick on his feet, quicker with his mouth.",
+				"If he reached the red rocks in the south, there's shade there, and a seep of water. A boy could last a week. Maybe.",
+				"It's been eight days. Will you look for him?",
+			],
+			"accepted_reply": [
+				"South, where the sand turns red. Bring him home if you can. If you can't... bring me his name, at least.",
+			],
+			"declined_reply": [
+				"Then I'll send Tarek. He's needed here, but a boy's life is a boy's life.",
+			],
+			STATE_ACCEPTED: [
+				"The red rocks, in the south. Hurry.",
+			],
+			"yusuf_found": [
+				"Then why are you standing here? Go!",
+			],
+			"yusuf_safe": [
+				"He's alive? Then get him moving before the next nest finds him.",
+			],
+			STATE_COMPLETED: [
+				"Yusuf's asking to ride with the next caravan. Brave or foolish. Same thing, at his age.",
+			],
+		},
+	},
+	CITY_THE_SAND_ATE: {
+		"title": "The City the Sand Ate",
+		"type": "Lore",
+		"giver": "Old Hamid",
+		"giver_id": "hamid",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"requires": [VOICE_IN_THE_DUNES],
+		"summary": "Old Hamid knows the stories of Qasr Anuhm, a city of sun-priests swallowed by the sand in a single season. A scholar from the coast, Imani, has been camped in its ruins for months. Hamid wants you to find her before Malik's mistake does.",
+		"objectives": [
+			"Travel to the ruins of Qasr Anuhm, north-east in the Sands",
+			"Find the scholar Imani's camp",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Travel to the ruins of Qasr Anuhm in the north-east of the Sands."},
+			"ruins_reached": {"objectives_done": 1, "status": "You've reached Qasr Anuhm. Find the scholar Imani's camp among the ruins."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Imani is alive, and she knows what Malik broke."},
+		},
+		"events": [
+			{"type": "find", "target": "qasr_anuhm", "requires_state": STATE_ACCEPTED, "sets_state": "ruins_reached"},
+		],
+		"talks": [
+			{
+				"npc": "imani",
+				"requires_state": "ruins_reached",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*A woman in ink-stained robes looks up from a slab of stone, a stick of charcoal behind each ear.* Oh! A person. With a weapon. If you're here to rob me, I own nothing but paper.",
+					"Hamid sent you? Then he finally believes me. I wrote him four letters. He answered none of them.",
+					"I'm Imani, of the Library at Qasim. I came to read the obelisks of Qasr Anuhm. Then, nine days ago, the ground shook and every scorpion in the Sands woke up angry.",
+					"Someone opened the vault under the city. I'm sure of it. And the obelisks say exactly what that means, if only I can read them before something eats me.",
+				],
+			},
+		],
+		"gold": 40,
+		"experience": 200,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*The old man doesn't look up from the fire.* Yusuf told you about the door. Sit, then. You'll want to be sitting.",
+				"Long ago, before Saltwind, before the trade road, there was a city east of here. Qasr Anuhm. Its priests wore gold and worshipped the sun, and they were afraid of something under the sand.",
+				"In one season the sand rose and swallowed the city whole. The stories say the priests did it themselves, to bury what they feared.",
+				"Your forest wolves - the great black one. It came north last spring, didn't it, when the ground first trembled? The beasts always know first.",
+				"A scholar from the coast, Imani, is camped in those ruins. Stubborn as a mule. Find her before whatever Malik woke finds her. Will you go?",
+			],
+			"accepted_reply": [
+				"North-east, where the pillars stick up out of the dunes like old teeth. She'll be the one arguing with a rock.",
+			],
+			"declined_reply": [
+				"Hm. The sand has waited three hundred years. It can wait an evening.",
+			],
+			STATE_ACCEPTED: [
+				"Qasr Anuhm. North-east. Go on.",
+			],
+			"ruins_reached": [
+				"You've seen the city, then. Did you find Imani?",
+			],
+			STATE_COMPLETED: [
+				"So she's alive. Good. She wrote me letters, you know. I couldn't bring myself to answer them.",
+			],
+		},
+	},
+	WORDS_IN_STONE: {
+		"title": "Words in Stone",
+		"type": "Exploration",
+		"giver": "Imani",
+		"giver_id": "imani",
+		"giver_location": "the ruins of Qasr Anuhm",
+		"area": 2,
+		"requires": [CITY_THE_SAND_ATE],
+		"summary": "Three obelisks still stand around Qasr Anuhm, each carved with part of the priests' last decree. Imani has never dared cross the scorpion nests to reach them, and needs their inscriptions copied.",
+		"objectives": [
+			"Copy the inscriptions of the 3 obelisks around Qasr Anuhm",
+			"Bring the rubbings to Imani",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Find the three obelisks around Qasr Anuhm and copy their inscriptions.", "counter": {"label": "Obelisks copied", "count": 3}},
+			"obelisks_read": {"objectives_done": 1, "status": "You've copied all three inscriptions. Bring them to Imani."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. The obelisks name what sleeps beneath the city: the First Sting."},
+		},
+		"events": [
+			{"type": "collect", "target": "obelisk", "requires_state": STATE_ACCEPTED, "sets_state": "obelisks_read", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "imani",
+				"requires_state": "obelisks_read",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Imani spreads the rubbings across her table and pins the corners with stones.* Here, the sun-disc. Here, the coiled tail. And here... oh. Oh, no.",
+					"'Beneath us sleeps the First Sting, mother of all that crawls. We have bound her with the Sunstone and buried our city as her tomb. Let none open the door, lest the stone crack and she wake.'",
+					"The Sunstone was the seal. If Malik broke the door, he may have broken the stone too. That's why the brood has gone mad. Their mother is stirring.",
+					"*She presses a slim cedar case into your hands.* Take this. My grandmother's brush-case. I've copied enough for three lifetimes, and you've earned it.\n\nYou received Imani's Brush-Case.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Imani's Brush-Case",
+			"description": "A slim cedar case holding three worn brushes and a stick of charcoal. Imani has copied the inscriptions of a dozen dead cities with them, and says they want to see more of the world.",
+		},
+		"gold": 50,
+		"experience": 250,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Now that you're here, I can finally finish my work. Will you help? You look like someone scorpions are afraid of.",
+				"Three obelisks still stand around the city - north, east and south of here. Each carries part of the priests' last decree.",
+				"I've only ever read them through a spyglass. The nests are too thick. Walk out to each one and copy its carving: hold the paper to the stone and rub the charcoal across it.",
+				"Will you read them for me?",
+			],
+			"accepted_reply": [
+				"Wonderful! Take paper. Take charcoal. Take care. In that order, academically speaking. In the opposite order, personally.",
+			],
+			"declined_reply": [
+				"Of course. I'll just keep squinting through the spyglass. For the fifth month.",
+			],
+			STATE_ACCEPTED: [
+				"Three obelisks: north, east and south of the city. The carvings face the sun.",
+			],
+			"obelisks_read": [
+				"You have all three? Give them here, quickly!",
+			],
+			STATE_COMPLETED: [
+				"The First Sting. Three hundred years asleep, and one greedy man with a shovel. History is mostly greedy men with shovels.",
+			],
+		},
+	},
+	SUNKEN_VAULT: {
+		"title": "The Sunken Vault",
+		"type": "Dungeon",
+		"giver": "Imani",
+		"giver_id": "imani",
+		"giver_location": "the ruins of Qasr Anuhm",
+		"area": 2,
+		"requires": [WORDS_IN_STONE],
+		"summary": "Malik broke open the vault beneath Qasr Anuhm and cracked the Sunstone that kept the First Sting asleep. Imani believes the pieces still lie inside - but something vast has coiled itself in the vault since the door was opened.",
+		"objectives": [
+			"Go down the broken stair into the vault beneath Qasr Anuhm",
+			"Defeat Venomcoil, the serpent of the vault",
+			"Gather the 3 shards of the Sunstone",
+			"Take the shards to Old Hamid in Saltwind Camp",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Find the broken stair in the heart of Qasr Anuhm and go down into the vault."},
+			"entered": {"objectives_done": 1, "status": "Something vast slides through the dark. Defeat Venomcoil."},
+			"serpent_slain": {"objectives_done": 2, "status": "Venomcoil is dead. Gather the shards of the Sunstone.", "counter": {"label": "Shards", "count": 3}},
+			"shards_found": {"objectives_done": 3, "status": "You hold all three shards of the Sunstone. Take them to Old Hamid in Saltwind Camp."},
+			STATE_COMPLETED: {"objectives_done": 4, "status": "Completed. Hamid has the Sunstone, and he's finally told you the truth."},
+		},
+		"events": [
+			{"type": "enter", "target": "sunken_vault", "requires_state": STATE_ACCEPTED, "sets_state": "entered"},
+			{"type": "kill", "target": "venomcoil", "requires_state": "entered", "sets_state": "serpent_slain"},
+			{"type": "collect", "target": "sunstone_shard", "requires_state": "serpent_slain", "sets_state": "shards_found", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "hamid",
+				"requires_state": "shards_found",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*Hamid holds the three shards in his open palm. In his hands they begin to glow, faint as embers, and he doesn't seem surprised.*",
+					"Imani sent you to me because she guessed. Clever girl. Yes. My family were Sunkeepers. When the city went under, one priest walked out of the sand to keep the old knowledge. I am the last of his line.",
+					"I could have warned Malik. I could have warned everyone. Instead I sat by this fire for forty years, telling stories as if they were only stories.",
+					"No more. I can mend the Sunstone. It will take until dawn. Come back to me when you're ready to finish what my family began.",
+				],
+			},
+		],
+		"npc_lines": {
+			"imani": {
+				"shards_found": ["You have them all? Then go! Take them to Hamid. He'll know what to do. I'm almost sure. Mostly sure."],
+			},
+		},
+		"reward": {
+			"name": "Venomcoil's Fang",
+			"description": "A hooked fang as long as your hand, still beaded with yellow venom that never quite dries. Pried from the serpent that coiled in the vault beneath Qasr Anuhm.",
+		},
+		"gold": 80,
+		"experience": 350,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"If the Sunstone cracked, its pieces must still be down there. Stone doesn't walk off. Usually.",
+				"The stair to the vault is in the heart of the ruins, beneath the fallen arch. I went down three steps once and heard something slide across the floor below. Something very long.",
+				"Bring the pieces out, all of them. Then take them to Hamid. Don't argue, just take them to him. I have a theory about Hamid.",
+				"Will you go down?",
+			],
+			"accepted_reply": [
+				"Thank you. And if the long sliding thing is what I think it is - aim for the head. That's general advice. It applies to most things.",
+			],
+			"declined_reply": [
+				"No, no. Very sensible. I wouldn't go down there either. I didn't, in fact.",
+			],
+			STATE_ACCEPTED: [
+				"The stair is beneath the fallen arch, in the heart of the ruins.",
+			],
+			"entered": [
+				"You went down? And came back up? That's the best possible order.",
+			],
+			"serpent_slain": [
+				"The serpent's dead? Then the shards! Find all three!",
+			],
+			STATE_COMPLETED: [
+				"Hamid, a Sunkeeper. I knew it. Four letters, and he never once said.",
+			],
+		},
+	},
+	MOTHER_OF_STINGS: {
+		"title": "The Mother of Stings",
+		"type": "Climax",
+		"giver": "Old Hamid",
+		"giver_id": "hamid",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"requires": [SUNKEN_VAULT],
+		"summary": "Hamid has mended the Sunstone. To seal the First Sting again it must be set in the dais at the heart of the vault - and the moment it is, she will wake fully and fight to stop it. If she dies, her brood loses its hold on the Sands.",
+		"objectives": [
+			"Return to the vault beneath Qasr Anuhm",
+			"Set the mended Sunstone in the seal",
+			"Destroy the First Sting",
+			"Return to Caravan Master Idris in Saltwind Camp",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Take the mended Sunstone back down into the vault beneath Qasr Anuhm."},
+			"in_the_deep": {"objectives_done": 1, "status": "The seal-dais waits at the heart of the vault. Set the Sunstone in it."},
+			"seal_set": {"objectives_done": 2, "status": "The First Sting has woken! Destroy her before she breaks the seal."},
+			"sting_slain": {"objectives_done": 3, "status": "The First Sting is dead and the seal holds. Return to Idris in Saltwind Camp."},
+			STATE_COMPLETED: {"objectives_done": 4, "status": "Completed. The First Sting is dead, the Sunstone holds, and the Sands are quiet."},
+		},
+		"events": [
+			{"type": "enter", "target": "sunken_vault", "requires_state": STATE_ACCEPTED, "sets_state": "in_the_deep"},
+			{"type": "collect", "target": "sun_seal", "requires_state": "in_the_deep", "sets_state": "seal_set"},
+			{"type": "kill", "target": "first_sting", "requires_state": "seal_set", "sets_state": "sting_slain"},
+		],
+		"talks": [
+			{
+				"npc": "idris",
+				"requires_state": "sting_slain",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"*The whole camp has gathered round the fire. When you walk in, nobody speaks. Then Samir starts cheering, and everyone follows.*",
+					"Hamid told us everything. The Sunkeepers, the seal, the First Sting. And then the ground stopped shaking, and the scorpions went back into the sand as if they'd been called home.",
+					"I've buried too many drivers this season. Tonight, for the first time, I think I won't have to bury any more.",
+					"Take this. It came down from the first caravan master ever to cross the Sands. I can't think of anyone who's earned it more.\n\nYou received Idris's Sun-Compass.",
+				],
+			},
+		],
+		"npc_lines": {
+			"hamid": {
+				"sting_slain": ["It's done? Then my family's watch is over. Go to Idris. Let the camp hear it from you."],
+			},
+			"imani": {
+				"in_the_deep": ["Hamid told me. Go down, set the stone. I'll be writing all of this down. Try to survive. It makes a better ending."],
+			},
+		},
+		"reward": {
+			"name": "Idris's Sun-Compass",
+			"description": "A brass sun-compass with a gnomon shaped like a camel's neck, handed down from the first caravan master to cross the Sunscorch Sands. Idris says it has never once pointed the wrong way home.",
+		},
+		"gold": 150,
+		"experience": 600,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*Hamid is still at the fire, burned down now to coals. In his lap lies a disc of pale stone, whole again and faintly warm.* It's done. The Sunstone is mended.",
+				"Listen to me. When the stone is set in the seal, she will feel it. She will wake fully, and she will come for the hand that set it.",
+				"My ancestors buried a city to keep her asleep. We don't have a city to spare. We have you.",
+				"Take the stone down into the vault and set it in the dais at its heart. Then kill her, while she's still weak from her long sleep. Will you do this?",
+			],
+			"accepted_reply": [
+				"*He places the warm stone in your hands.* The sun goes with you. Come back alive. I'm too old to tell this story without a happy ending.",
+			],
+			"declined_reply": [
+				"Then rest. But not for long. Every night she sleeps a little less.",
+			],
+			STATE_ACCEPTED: [
+				"The vault beneath Qasr Anuhm. Set the stone in the dais, and be ready.",
+			],
+			"seal_set": [
+				"She's awake. I felt it from here. Kill her!",
+			],
+			STATE_COMPLETED: [
+				"Forty years I sat at this fire, afraid of a story. Thank you for ending it.",
+			],
+		},
+	},
+	# --- The Sunscorch Sands: Saltwind Camp's side quests ---------------------------------------------
+	STONES_FOR_THE_LOST: {
+		"title": "Stones for the Lost",
+		"type": "Remembrance",
+		"giver": "Leila",
+		"giver_id": "leila",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"requires": [LAST_CARAVAN],
+		"summary": "Leila's brother Karim drove for Malik's caravan. The drivers who fell fleeing the wreck lie in the open sand, and in Saltwind the dead are covered with stone cairns so the wind can't carry them away.",
+		"objectives": [
+			"Raise cairns over 3 fallen drivers south of Malik's wreck",
+			"Return to Leila in Saltwind Camp",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Raise cairns over the fallen drivers along the trail south of Malik's wreck.", "counter": {"label": "Cairns raised", "count": 3}},
+			"cairns_raised": {"objectives_done": 1, "status": "The fallen are covered. Return to Leila in Saltwind Camp."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Karim and the others rest under stone."},
+		},
+		"events": [
+			{"type": "collect", "target": "cairn", "requires_state": STATE_ACCEPTED, "sets_state": "cairns_raised", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "leila",
+				"requires_state": "cairns_raised",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"You covered them? All of them? *Leila closes her eyes.* Then the wind won't have them. Thank you.",
+					"Was one of them wearing a blue scarf? Karim's scarf. I dyed it myself, the year he started driving.",
+					"*You nod. She is quiet for a long time.* Then he's home, in the only way the Sands allow. Here. He made this for luck. It didn't work for him. Maybe it will for you.\n\nYou received Karim's Blue Bead.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Karim's Blue Bead",
+			"description": "A glass bead the colour of deep water, threaded on a strand of camel hair. Karim made it for luck before his first crossing. Leila gave it to you after you raised his cairn.",
+		},
+		"gold": 40,
+		"experience": 200,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"You found Malik's wreck. Idris told me. *She twists a strand of blue thread round her finger.* My brother Karim rode with that caravan.",
+				"If he's out there, he's lying in the open. The Sands don't bury their dead. They uncover them, again and again, until there's nothing left.",
+				"Here we raise stones over the fallen, so the wind can't carry them off. Will you do that for them? For Karim, and the others who fell beside him?",
+			],
+			"accepted_reply": [
+				"The drivers who ran would have fallen along the trail south of the wreck. Stack the stones high. The wind is greedy.",
+			],
+			"declined_reply": [
+				"I understand. It's a sad errand. I'll ask Tarek, when he has a day.",
+			],
+			STATE_ACCEPTED: [
+				"Along the trail south of Malik's wreck. Stack the stones high.",
+			],
+			STATE_COMPLETED: [
+				"I walk to the edge of camp each evening and face south. It helps, a little.",
+			],
+		},
+	},
+	SALVAGE_RIGHTS: {
+		"title": "Salvage Rights",
+		"type": "Gathering",
+		"giver": "Jamal",
+		"giver_id": "jamal",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"requires": [LAST_CARAVAN],
+		"summary": "Malik's cargo was scattered across the Sands when the scorpions struck. Jamal means to recover the spice crates before the dunes swallow them - Saltwind can't afford to lose a whole season's trade.",
+		"objectives": [
+			"Salvage 4 spice crates scattered across the Sands",
+			"Bring word to Jamal in Saltwind Camp",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Search the Sands for Malik's scattered spice crates.", "counter": {"label": "Crates salvaged", "count": 4}},
+			"crates_salvaged": {"objectives_done": 1, "status": "You've salvaged four crates of spice. Bring word to Jamal."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Saltwind's winter is paid for."},
+		},
+		"events": [
+			{"type": "collect", "target": "spice_crate", "requires_state": STATE_ACCEPTED, "sets_state": "crates_salvaged", "count": 4},
+		],
+		"talks": [
+			{
+				"npc": "jamal",
+				"requires_state": "crates_salvaged",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Four crates! Saffron, cumin... and is that black pepper? *Jamal sniffs a lid and sighs happily.* That's the camp's winter paid for, right there.",
+					"Malik sold the best of our goods for digging money. Serves him right that the scorpions got his camels and you got his spice.",
+					"Here, your cut. Salvage rights - the finder keeps a share. That's the law of the Sands. Well, it's my law. Same thing, out here.",
+				],
+			},
+		],
+		"gold": 90,
+		"experience": 220,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"See that brute on its back? It tipped a wagon with one claw. And one wagon is nothing next to Malik's whole caravan.",
+				"When they hit him, the cargo went everywhere. Spice crates scattered over half the Sands. Saffron, cumin, pepper - a season's trade, lying out there in the sun.",
+				"I can't leave camp; Idris needs every hand. But you're going out there anyway. Bring back what you find and I'll pay you a finder's share.",
+				"Four crates should see the camp through winter. Deal?",
+			],
+			"accepted_reply": [
+				"Look for dunes with something square poking out of them. Crates are the only square things in the Sands.",
+			],
+			"declined_reply": [
+				"Hm. Then the sand gets it. The sand always gets it in the end.",
+			],
+			STATE_ACCEPTED: [
+				"Four crates. Square things in the dunes. You can't miss them. You can, but you shouldn't.",
+			],
+			STATE_COMPLETED: [
+				"The spice merchants on the coast are going to weep when they see what I'm charging.",
+			],
+		},
+	},
+	TAIL_FOR_SAMIR: {
+		"title": "A Tail for Samir",
+		"type": "Hunt",
+		"giver": "Samir",
+		"giver_id": "samir",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"summary": "Samir, the youngest in Saltwind, wants a scorpion's stinger to prove he's brave enough to keep watch. Tarek says he's too small. Samir intends to prove him wrong, with your help.",
+		"objectives": [
+			"Slay 6 scorpions in the Sunscorch Sands",
+			"Bring Samir the best stinger",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Slay scorpions in the Sunscorch Sands.", "counter": {"label": "Scorpions slain", "count": 6}},
+			"tail_taken": {"objectives_done": 1, "status": "You cut a perfect stinger from the last one. Bring it to Samir."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Samir is on watch. Half on watch, anyway."},
+		},
+		"events": [
+			{"type": "kill", "target": "scorpion", "requires_state": STATE_ACCEPTED, "sets_state": "tail_taken", "count": 6},
+		],
+		"talks": [
+			{
+				"npc": "samir",
+				"requires_state": "tail_taken",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Is that- that's a real one! It's bigger than my arm! *Samir holds the stinger up like a sword.* Tarek! TAREK! Look!",
+					"Now he has to let me keep watch. That's the rule. I made the rule just now, but it's still a rule.",
+					"You can have my lucky stone. I found it at the oasis. It looks like a camel if you squint. Don't squint too hard, though.\n\nYou received Samir's Camel Stone.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Samir's Camel Stone",
+			"description": "A smooth pebble from the oasis that looks a little like a camel, if you squint. Samir traded it to you for a scorpion stinger, which he now carries everywhere.",
+		},
+		"gold": 30,
+		"experience": 180,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Are you going into the Sands? Bring me back a scorpion tail! A big one!",
+				"Tarek says I'm too small to keep watch. But if I have a stinger, a real one, everyone will know I've seen scorpions and I'm not scared.",
+				"You don't have to kill lots of them. Just... six? Six is a good number. Then bring me the best tail. Please?",
+			],
+			"accepted_reply": [
+				"YES! The pointy end goes away from you, remember. Tarek told me that.",
+			],
+			"declined_reply": [
+				"Oh. Okay. I'll ask the next hero. There's usually another one.",
+			],
+			STATE_ACCEPTED: [
+				"Six scorpions, then the best tail! I've been practising my watching face.",
+			],
+			STATE_COMPLETED: [
+				"I'm on watch! Well, I'm on watch with Tarek. He says that counts as half.",
+			],
+		},
+	},
+	EYES_ON_THE_DUNES: {
+		"title": "Eyes on the Dunes",
+		"type": "Exploration",
+		"giver": "Scout Tarek",
+		"giver_id": "tarek",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"summary": "Scout Tarek can't watch the whole of the Sands from one lookout. He wants signal flags raised on three high rocks at the far edges of the desert, so Saltwind's watch can see trouble coming from any direction.",
+		"objectives": [
+			"Raise signal flags on 3 lookout rocks at the edges of the Sands",
+			"Report back to Tarek",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Raise signal flags on the lookout rocks in the far north-west, south-west and south-east of the Sands.", "counter": {"label": "Flags raised", "count": 3}},
+			"flags_raised": {"objectives_done": 1, "status": "All three flags are flying. Report back to Tarek."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Saltwind's watch can see the whole of the Sands."},
+		},
+		"events": [
+			{"type": "collect", "target": "signal_flag", "requires_state": STATE_ACCEPTED, "sets_state": "flags_raised", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "tarek",
+				"requires_state": "flags_raised",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"I saw them from the lookout this morning - three red flags at the very edge of sight. Thought my eyes were lying to me.",
+					"Now when a nest stirs out there, someone raises the flag and we know a day before it reaches us. A day is the difference between packing up and being buried.",
+					"You've walked more of the Sands than any scout I've trained. Here, my old spyglass. My eyes are better than it is, but yours may not be.\n\nYou received Tarek's Spyglass.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Tarek's Spyglass",
+			"description": "A dented brass spyglass whose cracked lens splits every distant dune in two. Tarek says the trick is to look through the good half.",
+		},
+		"gold": 50,
+		"experience": 260,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Scorpions the size of carts out past those dunes. They bury themselves and wait. By the time I see them from here, it's too late to warn anyone.",
+				"There are three tall rocks at the very edges of the Sands: far north-west, far south-west and far south-east. Old scouts' lookouts. Nobody's climbed them in years.",
+				"Raise a signal flag on each, and the watch can see the whole desert from camp. Will you do it?",
+			],
+			"accepted_reply": [
+				"Take these flags. Red for the Sands, the way it's always been. Climb high and plant them deep - the wind will try to take them.",
+			],
+			"declined_reply": [
+				"Then we keep doing it the old way. Squinting, and hoping.",
+			],
+			STATE_ACCEPTED: [
+				"Far north-west, far south-west, far south-east. The tallest rocks you can find.",
+			],
+			STATE_COMPLETED: [
+				"Three flags, all still flying. You plant them well.",
+			],
+		},
+	},
+	GLASSTAIL_BOUNTY: {
+		"title": "Bounty: Old Glasstail",
+		"type": "Bounty",
+		"giver": "the Camp Guard",
+		"giver_id": "saltwind_guard",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"summary": "A scorpion with a tail like clouded glass has hunted the western salt flats for twenty years. Since the ground began to shake it has turned killer, and two outriders are dead. Idris has put up a purse for its tail.",
+		"objectives": [
+			"Hunt down Old Glasstail on the salt flats in the far west of the Sands",
+			"Claim the bounty from the Camp Guard",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Track Old Glasstail on the salt flats in the far west of the Sands."},
+			"glasstail_slain": {"objectives_done": 1, "status": "Old Glasstail is dead. Claim the bounty from the Camp Guard in Saltwind."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. The western flats are safe to ride again."},
+		},
+		"events": [
+			{"type": "kill", "target": "glasstail", "requires_state": STATE_ACCEPTED, "sets_state": "glasstail_slain"},
+		],
+		"talks": [
+			{
+				"npc": "saltwind_guard",
+				"requires_state": "glasstail_slain",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"That tail... that's Glasstail's, all right. Look at it - you can see the sun through it. *He whistles.*",
+					"Twenty years that thing hunted the flats. My father lost a camel to it. My uncle lost a leg. I mostly lost my nerve.",
+					"Here's the purse, every coin of it. And when they sing about the flats being safe again, I'll make sure they get your name right.",
+				],
+			},
+		],
+		"gold": 120,
+		"experience": 300,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"You look like you can handle yourself. Ever hunted something older than you are?",
+				"Out on the western salt flats there's a scorpion with a tail like clouded glass. Old Glasstail. It's been out there twenty years, and since the ground shook it's turned killer.",
+				"Two outriders last week. Neither came back in one piece. Idris has put up a purse - 120 gold for the beast's tail.",
+				"Will you take the bounty?",
+			],
+			"accepted_reply": [
+				"Far west, where the sand turns white with salt. Watch the tail. It's faster than it looks, and it already looks fast.",
+			],
+			"declined_reply": [
+				"No shame in it. Glasstail's killed better... well. It's killed people.",
+			],
+			STATE_ACCEPTED: [
+				"The western salt flats. Bring me that tail.",
+			],
+			STATE_COMPLETED: [
+				"Quiet out on the flats. Haven't been able to say that in twenty years.",
+			],
+		},
+	},
+	SWEETWATER: {
+		"title": "Sweetwater",
+		"type": "Exploration",
+		"giver": "Nadja",
+		"giver_id": "nadja",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"summary": "Saltwind's oasis sinks lower every week. Nadja's grandmother said it was fed from below by the old wells of Qasr Anuhm, scattered through the Sands - and Nadja fears the shaking has choked them with sand.",
+		"objectives": [
+			"Clear the sand from 3 old wells out in the Sands",
+			"Return to Nadja at the oasis",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Find the old stone wells out in the Sands and dig them clear.", "counter": {"label": "Wells cleared", "count": 3}},
+			"wells_cleared": {"objectives_done": 1, "status": "All three wells are flowing again. Return to Nadja at the oasis."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. The oasis is rising again."},
+		},
+		"events": [
+			{"type": "collect", "target": "old_well", "requires_state": STATE_ACCEPTED, "sets_state": "wells_cleared", "count": 3},
+		],
+		"talks": [
+			{
+				"npc": "nadja",
+				"requires_state": "wells_cleared",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Look! Look at the water line! *Nadja points to a wet stripe on the stones, a hand higher than yesterday.* It's rising. It's actually rising.",
+					"My grandmother said the oasis had roots, deep under the sand, reaching for the old city's wells. Everyone laughed at her. Now I get to laugh at all of them.",
+					"This came up in the water this morning. It's older than Saltwind, older than anything. I think it wants to go with you.\n\nYou received a Sunkeeper's Coin.",
+				],
+			},
+		],
+		"reward": {
+			"name": "Sunkeeper's Coin",
+			"description": "A worn gold coin stamped with a sun-disc, washed up in the oasis when the old wells began to flow again. It's three hundred years old and still faintly warm, as if it remembers the sun over Qasr Anuhm.",
+		},
+		"gold": 45,
+		"experience": 240,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"The oasis is all that keeps this camp alive. And it's sinking - a finger lower every week, ever since the ground started shaking.",
+				"My grandmother said it's fed from below, by wells the old city dug. Rings of carved stone, all over the desert. If the shaking choked them...",
+				"Find three of them and dig them clear. Please. Without the oasis, there is no Saltwind.",
+			],
+			"accepted_reply": [
+				"Look for rings of carved stone half buried in the dunes. Dig them out and listen. You'll hear the water when it moves.",
+			],
+			"declined_reply": [
+				"Then I'll keep drawing what water there is. A little less each day.",
+			],
+			STATE_ACCEPTED: [
+				"Three wells. Rings of old stone. Dig them clear and listen for the water.",
+			],
+			STATE_COMPLETED: [
+				"The water's still rising. Come and drink, any time. You've earned more than a sip.",
+			],
+		},
+	},
+	SUNBLOOM_STEW: {
+		"title": "Sunbloom Stew",
+		"type": "Gathering",
+		"giver": "Farah",
+		"giver_id": "farah",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"summary": "Farah keeps Saltwind's cookpot going from dawn to dusk. With no caravans coming in she's out of sunbloom, the sweet red fruit of the flowering cacti that makes her stew famous.",
+		"objectives": [
+			"Pick 5 sunbloom fruits from flowering cacti in the Sands",
+			"Bring them to Farah",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 0, "status": "Pick sunbloom fruit from the flowering cacti scattered across the Sands.", "counter": {"label": "Sunblooms picked", "count": 5}},
+			"blooms_picked": {"objectives_done": 1, "status": "Your pack is sticky with sunbloom. Bring them to Farah."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. Saltwind eats well tonight."},
+		},
+		"events": [
+			{"type": "collect", "target": "sunbloom", "requires_state": STATE_ACCEPTED, "sets_state": "blooms_picked", "count": 5},
+		],
+		"talks": [
+			{
+				"npc": "farah",
+				"requires_state": "blooms_picked",
+				"sets_state": STATE_COMPLETED,
+				"pages": [
+					"Sunblooms! And ripe ones - see how the skin splits? *Farah is already peeling them over the pot.* Mind the spines. Everyone forgets the spines.",
+					"My mother's stew. Sunbloom, lentils and a pinch of Jamal's 'salvaged' cumin. The drivers say it tastes like coming home.",
+					"*She ladles you a bowl so full it spills.* Eat. All of it. Then have another. You're too thin for someone who fights giant scorpions.",
+				],
+			},
+		],
+		"gold": 30,
+		"experience": 200,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"Eat something. Out there you won't get the chance. Though... I'm running out of things worth eating.",
+				"My sunbloom stew is the only reason half these drivers come back to Saltwind. Sunblooms grow on the flowering cacti out in the Sands - fat red fruit, sweet as honey.",
+				"But no caravans means no gatherers. Would you pick some for me? Five will do. Six, if you're hungry.",
+			],
+			"accepted_reply": [
+				"Look for cacti with red fruit on top. Twist, don't pull - and mind the spines!",
+			],
+			"declined_reply": [
+				"Then it's plain lentils again. The drivers will riot. Quietly. They're too hungry to riot loudly.",
+			],
+			STATE_ACCEPTED: [
+				"Five sunblooms. Red fruit on the flowering cacti. Mind the spines.",
+			],
+			STATE_COMPLETED: [
+				"The pot's never been so full. Neither have the drivers.",
+			],
+		},
+	},
+	# --- The Sunscorch Sands: on to the Ice Caves -----------------------------------------------------
+	NORTH_TO_RIMEHOLLOW: {
+		"title": "North to Rimehollow",
+		"type": "Journey",
+		"giver": "Torsten",
+		"giver_id": "torsten",
+		"giver_location": "Saltwind Camp",
+		"area": 2,
+		"requires": [MOTHER_OF_STINGS],
+		"requires_level": 2,
+		"summary": "Torsten, a fur-trader from Rimehollow in the frozen north, has heard how the First Sting fell. Rimehollow has a terror of its own: a cryohydra frozen in the ice the town was built around - and the ice is thinning.",
+		"objectives": [
+			"Join Torsten's sledge-caravan in Saltwind Camp",
+			"Reach Rimehollow, above the Ice Caves",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 1, "status": "Torsten's caravan is ready to leave. Talk to him in Saltwind Camp to set out for Rimehollow."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. You reached Rimehollow. The Ice Caves lie below."},
+		},
+		# Talking to Torsten in this state (as accepting does) sets out for the hub of level 3.
+		"travel": {"hub": 3, "requires_state": STATE_ACCEPTED},
+		"events": [
+			{"type": "arrive", "target": "hub_3", "requires_state": STATE_ACCEPTED, "sets_state": STATE_COMPLETED},
+		],
+		"reward": {
+			"name": "Torsten's Spare Mittens",
+			"description": "A pair of enormous fur mittens, each big enough to hide a loaf of bread in. Torsten insisted you take them for the road north. They smell faintly of salt and very strongly of bear.",
+		},
+		"gold": 50,
+		"experience": 250,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*A huge man in a sweat-soaked bearskin waves you over, fanning himself with a mitten.* You! The scorpion-killer! They say you went under the sand and came back up with a dead god. Is it true?",
+				"Good. Then you're the one I need. I am Torsten. I trade furs for salt, and I come from Rimehollow, far to the north, where the cold never leaves.",
+				"Our town is built around a cryohydra frozen in the ice. We call it the Sleeper. Our grandmothers found it there. Now Elder Sigrun says the ice is thinning, and some nights it breathes.",
+				"I know that look. You've only just finished with one sleeping monster. But my sledges leave for the north today. Will you come with me to Rimehollow?",
+			],
+			"accepted_reply": [
+				"Ha! Wonderful! You'll want furs. No, you'll want MORE furs than that.",
+				"The road north is long and the cold comes on fast. Sleep in the sledge if you can. When you wake, your breath will be smoke.",
+			],
+			"declined_reply": [
+				"Not yet? I understand. The heat makes everyone slow. I'll wait. I'll melt, but I'll wait.",
+			],
+			STATE_ACCEPTED: [
+				"The sledges are loaded! Climb in, before I melt entirely.",
+			],
+			STATE_COMPLETED: [
+				"Ah, the cold! Breathe it in! That's what air is supposed to feel like. Go and see Elder Sigrun by the Sleeper. She's expecting you.",
+			],
+		},
+	},
 }
 
 
@@ -855,7 +1769,8 @@ static func is_unlocked(quest_id: String) -> bool:
 static func get_open_transition(level_id: int) -> String:
 	for quest_id in DEFINITIONS:
 		var quest: Dictionary = DEFINITIONS[quest_id]
-		if quest.has("travel") and int(quest.get("requires_level", 0)) == level_id and not is_completed(quest_id):
+		if quest.has("travel") and int(quest.get("requires_level", 0)) == level_id and not is_completed(quest_id) \
+				and is_unlocked(quest_id):
 			return quest_id
 	return ""
 
