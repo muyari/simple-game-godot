@@ -8,6 +8,8 @@ signal accepted
 signal declined
 signal opened
 signal closed
+## A level transition quest's conversation has ended and the player sets out for this hub (by level id).
+signal travel_requested(hub_level_id: int)
 
 const GROUP := "quest_dialogue"
 
@@ -22,6 +24,8 @@ var secondary_button: Button
 ## The quest being offered by the current conversation, while it waits on Accept / Decline.
 var offered_quest_id := ""
 var speaker_id := ""
+## The quest the current conversation is about ("" for small talk).
+var conversation_quest_id := ""
 
 
 func _ready() -> void:
@@ -104,6 +108,7 @@ func talk_to(npc_id: String) -> void:
 	speaker_id = npc_id
 	var conversation := Quests.get_conversation(npc_id)
 	var quest_id: String = conversation["quest_id"]
+	conversation_quest_id = quest_id
 	var dialogue_pages: Array[String] = []
 	dialogue_pages.assign(conversation["pages"])
 	var payout := Quests.apply_talk(quest_id, conversation["talk"])
@@ -174,6 +179,11 @@ func _close() -> void:
 	offered_quest_id = ""
 	hide()
 	closed.emit()
+	# Accepting a level transition quest, or talking to its giver again later, ends by setting out.
+	var hub_level_id := Quests.get_departure(conversation_quest_id, speaker_id)
+	conversation_quest_id = ""
+	if hub_level_id > 0:
+		travel_requested.emit(hub_level_id)
 
 
 func _is_choice_page() -> bool:

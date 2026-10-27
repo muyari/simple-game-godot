@@ -75,6 +75,9 @@ func _ready() -> void:
 	waystone.connect("level_selection_requested", _open_waystone)
 	_build_shop()
 	_build_dialogue()
+	add_child(QuestToast.new())
+	# Reaching this hub completes a level transition quest that was headed here (see Quests).
+	QuestToast.show_updates(get_tree(), Quests.record_event("arrive", "hub_%d" % hub_level_id))
 	_build_quest_dialogue()
 	_build_quest_menu()
 	_build_waystone_menu()
@@ -476,6 +479,7 @@ func _build_quest_dialogue() -> void:
 	quest_dialogue = QuestDialogue.new()
 	quest_dialogue.opened.connect(_set_quest_dialogue_open.bind(true))
 	quest_dialogue.closed.connect(_set_quest_dialogue_open.bind(false))
+	quest_dialogue.travel_requested.connect(_travel_to_hub)
 	add_child(quest_dialogue)
 
 

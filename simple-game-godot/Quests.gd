@@ -9,6 +9,12 @@ class_name Quests
 ## - "talks": conversations with an NPC (the giver or anyone else) that advance or complete the quest.
 ## - "quest_item": an item found in the forest boss's chest (Rendel's coat).
 ## Completing a quest pays out its gold and experience and files its keepsake under Quest Rewards.
+##
+## A quest is offered once every quest in "requires" is done and, if it has one, its "requires_level" has
+## been cleared. Level transition quests (see get_departure) carry the player on to the next region: they
+## have a "travel" to a hub and an "arrive" event at that hub (target "hub_<level id>", recorded by every
+## hub's HUD on arrival) that completes them. Another region's transition is one more definition like
+## ROAD_TO_SALTWIND plus a giver standing in the previous hub.
 
 const STATE_AVAILABLE := ""
 const STATE_ACCEPTED := "accepted"
@@ -28,6 +34,8 @@ const SCAR_EAR_BOUNTY := "scar_ear_bounty"
 const WAYFIRES := "wayfires"
 ## The starting zone's quest (see StartingZone): walk Perry to Oblath for a new hat. He doesn't make it.
 const PERRYS_HAT := "perrys_hat"
+## The Forest Outskirts' transition quest: once the area is secured, ride Rashid's caravan to Saltwind Camp.
+const ROAD_TO_SALTWIND := "road_to_saltwind"
 
 ## Areas shown as tabs in the quest menu, keyed by GameState level id.
 const AREAS := [
@@ -51,6 +59,7 @@ const NPCS := {
 	"pip": {"name": "Pip", "idle": ["I'm not scared. I'm just... sitting very still."]},
 	"forest_shrine": {"name": "Mossy Shrine", "idle": ["The shrine is quiet. Warmth lingers in the old stone."]},
 	"perry": {"name": "Perry", "idle": ["Green, with a feather. Did I mention the feather?"]},
+	"rashid": {"name": "Rashid the Camel-Driver", "idle": ["Sand in my boots, sand in my bread. You never get it all out."]},
 }
 
 const DEFINITIONS := {
@@ -758,6 +767,56 @@ const DEFINITIONS := {
 			],
 		},
 	},
+	ROAD_TO_SALTWIND: {
+		"title": "The Road to Saltwind",
+		"type": "Journey",
+		"giver": "Rashid",
+		"giver_id": "rashid",
+		"giver_location": "Oblath",
+		"area": 1,
+		"requires_level": 1,
+		"summary": "With the Forest Outskirts secured, a camel-driver named Rashid has come north to Oblath with word from Saltwind Camp. The caravans that cross the Sunscorch Sands are vanishing, and Caravan Master Idris is asking for whoever broke the wolf packs.",
+		"objectives": [
+			"Join Rashid's caravan in Oblath",
+			"Reach Saltwind Camp, at the edge of the Sunscorch Sands",
+		],
+		"stages": {
+			STATE_ACCEPTED: {"objectives_done": 1, "status": "Rashid's caravan is ready to leave. Talk to him in Oblath to set out for Saltwind Camp."},
+			STATE_COMPLETED: {"objectives_done": 2, "status": "Completed. You reached Saltwind Camp. The Sunscorch Sands lie east."},
+		},
+		# Talking to Rashid in this state (as accepting does) sets out for the hub of level 2.
+		"travel": {"hub": 2, "requires_state": STATE_ACCEPTED},
+		"events": [
+			{"type": "arrive", "target": "hub_2", "requires_state": STATE_ACCEPTED, "sets_state": STATE_COMPLETED},
+		],
+		"reward": {
+			"name": "Caravan Bell",
+			"description": "A dented brass bell from the neck of Rashid's lead camel. Saltwind drivers hang one on every beast so the caravan can find itself in a sandstorm. Rashid says it rang the whole way south, and he'd rather you kept it.",
+		},
+		"gold": 40,
+		"experience": 150,
+		"dialogue": {
+			STATE_AVAILABLE: [
+				"*A sunburnt man in a dusty turban looks up from his camel's harness.* You. The one they say cleared the wolves from the forest road? Then the stars are kind to me at last.",
+				"I am Rashid. I drive for Caravan Master Idris, out of Saltwind Camp, far to the south where the forest gives way to sand.",
+				"Three caravans left Saltwind this season. One came back, empty. Scorpions the size of carts, the drivers say, and the sand moving against the wind. Something old is waking under the Sunscorch Sands.",
+				"Idris sent me north to find someone who can fight what we cannot. My camels are rested and the water is loaded. Will you ride south with me to Saltwind Camp?",
+			],
+			"accepted_reply": [
+				"Ha! I knew it. Climb up beside me, and mind the grey one, she bites.",
+				"It is a long road, but the camels know it better than I do. When you wake, you will taste salt on the wind. Hold on!",
+			],
+			"declined_reply": [
+				"Not yet? I understand. A road like that wants a ready traveller. I'll be here with the camels when you are.",
+			],
+			STATE_ACCEPTED: [
+				"There you are! The camels are loaded and the grey one is in a mood. Climb up, we leave now.",
+			],
+			STATE_COMPLETED: [
+				"Saltwind! Smell that? Salt, smoke and camel. Home. Go and see Idris by the fire. And drink before you go east - the Sands take water from you like a thief.",
+			],
+		},
+	},
 }
 
 
@@ -781,12 +840,36 @@ static func is_completed(quest_id: String) -> bool:
 	return GameState.get_quest_state(quest_id) == STATE_COMPLETED
 
 
-## Whether every quest this one requires has been completed.
+## Whether every quest this one requires has been completed, and the level it requires cleared.
 static func is_unlocked(quest_id: String) -> bool:
-	for required_id in get_definition(quest_id).get("requires", []):
+	var quest := get_definition(quest_id)
+	for required_id in quest.get("requires", []):
 		if not is_completed(required_id):
 			return false
+	if quest.has("requires_level") and not GameState.get_completed_levels().has(int(quest["requires_level"])):
+		return false
 	return true
+
+
+## The level transition quest that clearing this level opens, while it hasn't been completed, or "".
+static func get_open_transition(level_id: int) -> String:
+	for quest_id in DEFINITIONS:
+		var quest: Dictionary = DEFINITIONS[quest_id]
+		if quest.has("travel") and int(quest.get("requires_level", 0)) == level_id and not is_completed(quest_id):
+			return quest_id
+	return ""
+
+
+## The hub (by level id) a conversation about this quest should end by travelling to, or 0: a level
+## transition quest that is waiting to set out, talked over with its giver.
+static func get_departure(quest_id: String, npc_id: String) -> int:
+	var quest := get_definition(quest_id)
+	if not quest.has("travel") or quest.get("giver_id", "") != npc_id:
+		return 0
+	var travel: Dictionary = quest["travel"]
+	if GameState.get_quest_state(quest_id) != travel["requires_state"]:
+		return 0
+	return int(travel["hub"])
 
 
 ## Ids of the active character's quests in the given area that have been accepted (active or completed).
@@ -952,7 +1035,8 @@ static func _pay_out(quest_id: String) -> String:
 # --- World events ----------------------------------------------------------------------------------------
 
 ## Something happened in the world: a monster slain ("kill", "wolf"), an object used ("collect", "apple",
-## "forest_apple_3"), a place found ("find" / "enter"), someone saved ("rescue"). Advances every active
+## "forest_apple_3"), a place found ("find" / "enter"), someone saved ("rescue"), a hub reached ("arrive",
+## "hub_2"). Advances every active
 ## quest waiting on it; collectables count once per object_id, and an event that finishes a quest pays it
 ## out. Returns one {quest_id, text} per quest that moved, where text is the new tally, status line or payout.
 static func record_event(event_type: String, target: String, object_id := "") -> Array[Dictionary]:
