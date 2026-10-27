@@ -180,6 +180,14 @@ func _soldier(base: Vector2, settings: Dictionary) -> HubFolk:
 
 
 func _build_folk() -> void:
+	# Rider Bryn, back from Rimehollow with the player (Quests.ROAD_TO_ASHGATE). She rides in with them, so
+	# she's here as soon as the quest is under way: arriving completes it (TownUI).
+	if GameState.get_quest_state(Quests.ROAD_TO_ASHGATE) != Quests.STATE_AVAILABLE:
+		var bryn := _soldier(HEARTH + Vector2(150, 70), {
+			"display_name": "Rider Bryn", "held": HubFolk.Held.TORCH, "skin": SKINS[1], "rest_facing": -1.0,
+			"lines": ["Home. Such as it is.", "Captain Aldric's at the breach. Follow the shouting."],
+		})
+		QuestTalker.attach(bryn, "bryn", 74.0)
 	_soldier(BREACH + Vector2(0, 250), {
 		"display_name": "Captain Aldric", "held": HubFolk.Held.SWORD, "beard": true, "hair": Color("#5a4630"), "rest_facing": 1.0,
 		"lines": [

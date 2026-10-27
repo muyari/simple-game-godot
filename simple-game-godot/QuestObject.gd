@@ -4,8 +4,11 @@ class_name QuestObject
 ## moonpetal to gather, a wayfire to light, Rendel's axe to pull from its stump, Ilsa's journal, Perry's hat,
 ## the Gloomhollow's mouth or the gate of Oblath. In the Sands: Malik's strongbox, a fallen driver to raise a
 ## cairn over, a spice crate, an obelisk to copy, a lookout rock to flag, an old well to dig out, a sunbloom
-## cactus, the stair down into the Sunken Vault and its way out, the Sunstone's shards and its seal. Drawn
-## smooth and softly lit like the hub props, standing on its node origin so it y-sorts.
+## cactus, the stair down into the Sunken Vault and its way out, the Sunstone's shards and its seal. In the
+## Ice Caves: the ice-cutters' sledge, a frosted runestone, the Rimekey on its altar, a frostpine deadfall, a
+## vein of rime-ice, a rime-beacon, the ward-gate down into the Heartfrost Deep and its way out, a melt-rift
+## and the Heartfrost itself. Drawn smooth and softly lit like the hub props, standing on its node origin so
+## it y-sorts.
 ## Using it records a Quests event (see Quests.record_event); it is only usable while a quest wants it.
 
 signal used(quest_object: QuestObject)
@@ -13,7 +16,8 @@ signal used(quest_object: QuestObject)
 enum Kind {
 	APPLES, MOONPETAL, WAYFIRE, AXE_STUMP, JOURNAL, CAVE_MOUTH, CAVE_EXIT, SHRINE, PERRYS_HAT, TOWN_GATE,
 	STRONGBOX, GRAVE, SPICE_CRATE, OBELISK, SIGNAL_ROCK, OLD_WELL, SUNBLOOM, VAULT_STAIRS, VAULT_EXIT,
-	SUN_SHARD, SUN_SEAL,
+	SUN_SHARD, SUN_SEAL, CUTTERS_SLEDGE, RUNESTONE, RIMEKEY, KINDLING, RIME_VEIN, RIME_BEACON, WARD_GATE,
+	DEEP_EXIT, MELT_RIFT, HEARTFROST,
 }
 
 const OUTLINE := Color(0.13, 0.08, 0.05)
@@ -53,10 +57,20 @@ const USES := {
 	Kind.VAULT_EXIT: {"event": "", "target": "", "action": "Climb out of the vault"},
 	Kind.SUN_SHARD: {"event": "collect", "target": "sunstone_shard", "action": "Take the shard", "item": "Sunstone Shard"},
 	Kind.SUN_SEAL: {"event": "collect", "target": "sun_seal", "action": "Set the Sunstone"},
+	Kind.CUTTERS_SLEDGE: {"event": "collect", "target": "cutters_tally", "action": "Search the sledge", "item": "Cutters' Tally-Book"},
+	Kind.RUNESTONE: {"event": "collect", "target": "runestone", "action": "Clear the frost"},
+	Kind.RIMEKEY: {"event": "collect", "target": "rimekey", "action": "Take the Rimekey", "item": "Wardens' Rimekey"},
+	Kind.KINDLING: {"event": "collect", "target": "kindling", "action": "Gather kindling", "item": "Frostpine Kindling"},
+	Kind.RIME_VEIN: {"event": "collect", "target": "rime_vein", "action": "Cut the rime-ice", "item": "Rime-Ice"},
+	Kind.RIME_BEACON: {"event": "collect", "target": "rime_beacon", "action": "Light the beacon"},
+	Kind.WARD_GATE: {"event": "", "target": "", "action": "Open the ward-gate"},
+	Kind.DEEP_EXIT: {"event": "", "target": "", "action": "Climb out of the Deep"},
+	Kind.MELT_RIFT: {"event": "collect", "target": "melt_rift", "action": "Seal the rift"},
+	Kind.HEARTFROST: {"event": "collect", "target": "heartfrost", "action": "Set the Rimeward"},
 }
-const DOORS: Array[Kind] = [Kind.CAVE_MOUTH, Kind.CAVE_EXIT, Kind.TOWN_GATE, Kind.VAULT_STAIRS, Kind.VAULT_EXIT]
+const DOORS: Array[Kind] = [Kind.CAVE_MOUTH, Kind.CAVE_EXIT, Kind.TOWN_GATE, Kind.VAULT_STAIRS, Kind.VAULT_EXIT, Kind.WARD_GATE, Kind.DEEP_EXIT]
 ## Kinds that vanish once their quest has used them (picked up and carried off).
-const TAKEN: Array[Kind] = [Kind.JOURNAL, Kind.PERRYS_HAT, Kind.SPICE_CRATE, Kind.SUN_SHARD]
+const TAKEN: Array[Kind] = [Kind.JOURNAL, Kind.PERRYS_HAT, Kind.SPICE_CRATE, Kind.SUN_SHARD, Kind.RIMEKEY]
 const SANDSTONE := Color("#d7b07a")
 const SANDSTONE_DARK := Color("#a37a4c")
 const SAND := Color("#e2c48e")
@@ -68,6 +82,14 @@ const FLAG := Color("#c23b2b")
 const FELT := Color("#6b5a44")
 const IRON := Color("#3d3936")
 const LAMPLIGHT := Color("#ffd28a")
+const ICE := Color("#bfe3f4")
+const ICE_DEEP := Color("#5d97c4")
+const RIME_GLOW := Color("#7fd0ff")
+const SNOW := Color("#eef4f8")
+const FROST_STONE := Color("#7d8a96")
+const FROST_STONE_DARK := Color("#525d69")
+const FROSTPINE := Color("#6e5a48")
+const RIFT_FIRE := Color("#ff5a1f")
 
 var kind := Kind.MOONPETAL
 ## Stable id for per-object quest flags, e.g. "moonpetal_2".
@@ -90,7 +112,7 @@ func _ready() -> void:
 	phase = randf() * TAU
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
-	circle.radius = 72.0 if kind == Kind.TOWN_GATE else 56.0 if kind in [Kind.CAVE_MOUTH, Kind.APPLES, Kind.OBELISK, Kind.SIGNAL_ROCK, Kind.VAULT_STAIRS, Kind.SUN_SEAL] else 34.0
+	circle.radius = 72.0 if kind == Kind.TOWN_GATE else 56.0 if kind in [Kind.CAVE_MOUTH, Kind.APPLES, Kind.OBELISK, Kind.SIGNAL_ROCK, Kind.VAULT_STAIRS, Kind.SUN_SEAL, Kind.RUNESTONE, Kind.WARD_GATE, Kind.HEARTFROST] else 34.0
 	shape.shape = circle
 	shape.position = Vector2(0, -10)
 	add_child(shape)
@@ -130,6 +152,14 @@ func _ready() -> void:
 		FireGlow.attach(self, Vector2(0, -10), 80.0, SUN_GOLD, 0.45)
 	elif kind == Kind.SUN_SEAL:
 		FireGlow.attach(self, Vector2(0, -30), 220.0, SUN_GOLD, 0.6).visible = false
+	elif kind == Kind.RIME_BEACON:
+		FireGlow.attach(self, Vector2(0, -40), 120.0, RIME_GLOW, 0.5).visible = false
+	elif kind == Kind.HEARTFROST:
+		FireGlow.attach(self, Vector2(0, -40), 240.0, RIME_GLOW, 0.6).visible = false
+	elif kind == Kind.MELT_RIFT:
+		FireGlow.attach(self, Vector2(0, -6), 110.0, RIFT_FIRE, 0.5)
+	elif kind == Kind.RIMEKEY:
+		FireGlow.attach(self, Vector2(0, -24), 80.0, RIME_GLOW, 0.4)
 	add_to_group("interactables")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -176,13 +206,14 @@ func interact(_player: Player) -> void:
 
 func _refresh() -> void:
 	var wanted := is_wanted()
-	sparkle.mode = QuestMarker.Mode.AVAILABLE if wanted and kind not in [Kind.CAVE_EXIT, Kind.VAULT_EXIT, Kind.SHRINE] else QuestMarker.Mode.HIDDEN
+	sparkle.mode = QuestMarker.Mode.AVAILABLE if wanted and kind not in [Kind.CAVE_EXIT, Kind.VAULT_EXIT, Kind.DEEP_EXIT, Kind.SHRINE] else QuestMarker.Mode.HIDDEN
 	prompt.visible = player_nearby and wanted
-	# A lit wayfire and a set Sunstone give off light.
-	if kind in [Kind.WAYFIRE, Kind.SUN_SEAL]:
+	# A lit wayfire or rime-beacon, a set Sunstone and a mended Heartfrost give off light; a sealed melt-rift
+	# stops glowing.
+	if kind in [Kind.WAYFIRE, Kind.SUN_SEAL, Kind.RIME_BEACON, Kind.HEARTFROST, Kind.MELT_RIFT]:
 		for child in get_children():
 			if child is FireGlow:
-				child.visible = is_spent()
+				child.visible = is_spent() != (kind == Kind.MELT_RIFT)
 	if kind in TAKEN:
 		visible = not is_spent()
 	queue_redraw()
@@ -202,6 +233,10 @@ func _burst_color() -> Color:
 			return WATER
 		Kind.GRAVE:
 			return SANDSTONE
+		Kind.KINDLING, Kind.CUTTERS_SLEDGE:
+			return WOOD_LIGHT
+		Kind.RUNESTONE, Kind.RIMEKEY, Kind.RIME_VEIN, Kind.RIME_BEACON, Kind.MELT_RIFT, Kind.HEARTFROST:
+			return RIME_GLOW
 	return Color("#ffd34d")
 
 
@@ -235,6 +270,22 @@ func _height() -> float:
 			return 104.0
 		Kind.OBELISK:
 			return 132.0
+		Kind.CUTTERS_SLEDGE, Kind.KINDLING, Kind.MELT_RIFT:
+			return 34.0
+		Kind.RIMEKEY:
+			return 52.0
+		Kind.RIME_VEIN:
+			return 60.0
+		Kind.RIME_BEACON:
+			return 64.0
+		Kind.DEEP_EXIT:
+			return 70.0
+		Kind.HEARTFROST:
+			return 80.0
+		Kind.RUNESTONE:
+			return 96.0
+		Kind.WARD_GATE:
+			return 110.0
 	return 24.0
 
 
@@ -292,6 +343,26 @@ func _draw() -> void:
 			_draw_sun_shard()
 		Kind.SUN_SEAL:
 			_draw_sun_seal()
+		Kind.CUTTERS_SLEDGE:
+			_draw_cutters_sledge()
+		Kind.RUNESTONE:
+			_draw_runestone()
+		Kind.RIMEKEY:
+			_draw_rimekey()
+		Kind.KINDLING:
+			_draw_kindling()
+		Kind.RIME_VEIN:
+			_draw_rime_vein()
+		Kind.RIME_BEACON:
+			_draw_rime_beacon()
+		Kind.WARD_GATE:
+			_draw_ward_gate()
+		Kind.DEEP_EXIT:
+			_draw_cave_exit()
+		Kind.MELT_RIFT:
+			_draw_melt_rift()
+		Kind.HEARTFROST:
+			_draw_heartfrost()
 
 
 func _draw_moonpetal() -> void:
@@ -632,3 +703,182 @@ func _draw_sun_seal() -> void:
 	draw_circle(Vector2(0, -42), 10.0, OUTLINE, true, -1.0, true)
 	draw_circle(Vector2(0, -42), 8.5, Color(0.12, 0.08, 0.05), true, -1.0, true)
 	draw_polyline(PackedVector2Array([Vector2(-36, -6), Vector2(-20, -12), Vector2(-12, -6), Vector2(4, -14)]), OUTLINE, 1.5, true)
+
+
+# --- The Ice Caves ---------------------------------------------------------------------------------------
+
+## The ice-cutters' sledge, left loaded with blue blocks, a saw across them and the tally-book under a strap.
+func _draw_cutters_sledge() -> void:
+	SmoothDraw.shadow(self, Vector2(-2, 1), Vector2(64, 12))
+	for runner_y: float in [-2.0, 4.0]:
+		draw_polyline(PackedVector2Array([Vector2(-30, runner_y), Vector2(24, runner_y), Vector2(31, runner_y - 6)]), WOOD_DARK, 2.0, true)
+	SmoothDraw.box(self, Rect2(-28, -10, 52, 8), WOOD, 2.0)
+	for block: Rect2 in [Rect2(-24, -24, 15, 14), Rect2(-8, -24, 15, 14), Rect2(8, -22, 13, 12), Rect2(-16, -36, 15, 12)]:
+		SmoothDraw.box(self, block, ICE, 2.0, Color(ICE_DEEP, 0.9))
+		draw_line(block.position + Vector2(3, 3), block.position + Vector2(7, 3), Color(1, 1, 1, 0.7), 1.0, true)
+	# The two-man saw lying across the load.
+	draw_line(Vector2(-30, -27), Vector2(22, -33), STEEL, 2.5, true)
+	for handle: Vector2 in [Vector2(-32, -27), Vector2(24, -33)]:
+		SmoothDraw.flat(self, Rect2(handle - Vector2(2, 4), Vector2(4, 8)), WOOD_DARK, 1.0)
+	if not is_spent():
+		SmoothDraw.box(self, Rect2(4, -9, 12, 7), LEATHER, 1.0)
+		draw_line(Vector2(10, -11), Vector2(10, -1), Color(OUTLINE, 0.8), 1.0, true)
+
+
+## A Rimewarden runestone, crusted over with fresh frost until cleared, then its runes glowing blue.
+func _draw_runestone() -> void:
+	SmoothDraw.shadow(self, Vector2(-4, 2), Vector2(60, 13))
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-20, 0), Vector2(-22, -50), Vector2(-14, -82), Vector2(4, -90), Vector2(18, -76), Vector2(22, -40), Vector2(20, 0),
+	]), FROST_STONE, OUTLINE, 1.5)
+	draw_line(Vector2(12, -80), Vector2(16, -6), Color(FROST_STONE_DARK, 0.6), 3.0, true)
+	if not is_spent():
+		# Thick rime over the face, and icicles hanging from its shoulder.
+		SmoothDraw.polygon(self, PackedVector2Array([
+			Vector2(-21, -12), Vector2(-22, -52), Vector2(-14, -80), Vector2(4, -88), Vector2(17, -74), Vector2(20, -34), Vector2(16, -8),
+		]), Color(SNOW, 0.92), Color(ICE_DEEP, 0.5), 1.0)
+		for icicle: float in [-14.0, -4.0, 8.0]:
+			draw_colored_polygon(PackedVector2Array([Vector2(icicle - 3, -10), Vector2(icicle + 3, -10), Vector2(icicle, 2)]), ICE)
+		return
+	var glow := Color(RIME_GLOW, 0.65 + 0.3 * sin(time * 2.0 + phase))
+	for row in 4:
+		var y := -74.0 + row * 16.0
+		draw_line(Vector2(-6, y), Vector2(-6, y + 10), glow, 2.0, true)
+		draw_line(Vector2(-6, y + 2), Vector2(2, y + 6), glow, 2.0, true)
+		draw_line(Vector2(6, y), Vector2(10, y + 8), glow, 2.0, true)
+
+
+## The Wardens' Rimekey, a rod of clear ice that never melts, lying on a little altar at the foot of the falls.
+func _draw_rimekey() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(40, 10))
+	SmoothDraw.box(self, Rect2(-16, -16, 32, 16), FROST_STONE_DARK, 3.0)
+	SmoothDraw.box(self, Rect2(-19, -20, 38, 6), FROST_STONE, 2.0)
+	var pulse := 0.6 + 0.4 * sin(time * 2.6 + phase)
+	draw_circle(Vector2(0, -26), 16.0, Color(RIME_GLOW, 0.12 * pulse), true, -1.0, true)
+	draw_line(Vector2(-12, -23), Vector2(12, -29), OUTLINE, 5.0, true)
+	draw_line(Vector2(-12, -23), Vector2(12, -29), ICE.lightened(0.2), 3.0, true)
+	draw_line(Vector2(-6, -25), Vector2(6, -28), Color(RIME_GLOW, pulse), 1.0, true)
+	for tooth: float in [8.0, 12.0]:
+		draw_line(Vector2(tooth, -28), Vector2(tooth + 1, -22), ICE, 2.0, true)
+
+
+## A fallen frostpine, its trunk crusted with ice; broken-off and bare once its kindling is gathered.
+func _draw_kindling() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(70, 11))
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-34, -4), Vector2(-30, -14), Vector2(32, -10), Vector2(34, -1), Vector2(-30, 2)]), FROSTPINE, OUTLINE, 1.2)
+	draw_set_transform(Vector2(-32, -6), 0.0, Vector2(0.45, 1.0))
+	draw_circle(Vector2.ZERO, 9.0, WOOD_LIGHT, true, -1.0, true)
+	draw_arc(Vector2.ZERO, 5.0, 0.0, TAU, 16, Color(WOOD, 0.8), 1.0, true)
+	draw_set_transform(Vector2.ZERO)
+	# Snow along the top of the trunk.
+	draw_polyline(PackedVector2Array([Vector2(-28, -14), Vector2(-10, -15), Vector2(10, -13), Vector2(30, -11)]), SNOW, 3.0, true)
+	if is_spent():
+		return
+	for branch: Array in [[Vector2(-14, -13), Vector2(-20, -30)], [Vector2(2, -13), Vector2(8, -32)], [Vector2(18, -11), Vector2(14, -26)]]:
+		draw_line(branch[0], branch[1], OUTLINE, 3.5, true)
+		draw_line(branch[0], branch[1], FROSTPINE.lightened(0.15), 2.0, true)
+		draw_circle(branch[1], 2.5, SNOW, true, -1.0, true)
+
+
+## A shoulder of cave rock with a seam of hard blue rime-ice running through it; chipped out once cut.
+func _draw_rime_vein() -> void:
+	SmoothDraw.shadow(self, Vector2(-3, 2), Vector2(64, 13))
+	SmoothDraw.polygon(self, PackedVector2Array([
+		Vector2(-30, 0), Vector2(-28, -32), Vector2(-14, -54), Vector2(8, -58), Vector2(26, -40), Vector2(30, 0),
+	]), FROST_STONE_DARK, OUTLINE, 1.5)
+	draw_line(Vector2(-18, -48), Vector2(4, -54), Color(FROST_STONE, 0.7), 3.0, true)
+	var seam := PackedVector2Array([Vector2(-24, -8), Vector2(-10, -22), Vector2(2, -18), Vector2(14, -34), Vector2(24, -30)])
+	if is_spent():
+		draw_polyline(seam, Color(0.1, 0.12, 0.16), 6.0, true)
+		return
+	draw_polyline(seam, OUTLINE, 8.0, true)
+	draw_polyline(seam, ICE_DEEP, 6.0, true)
+	draw_polyline(seam, Color(RIME_GLOW, 0.5 + 0.3 * sin(time * 2.2 + phase)), 2.0, true)
+
+
+## An old watchers' beacon: a cairn of frosted stone under an iron bowl, burning cold blue once lit.
+func _draw_rime_beacon() -> void:
+	SmoothDraw.shadow(self, Vector2(-2, 1), Vector2(46, 11))
+	for stone: Vector3 in [Vector3(-11, -6, 9), Vector3(10, -6, 9), Vector3(0, -8, 10), Vector3(-6, -20, 8), Vector3(6, -20, 8), Vector3(0, -30, 7)]:
+		SmoothDraw.dome(self, Vector2(stone.x, stone.y), stone.z, FROST_STONE.darkened(absf(stone.x) * 0.01))
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-14, -42), Vector2(14, -42), Vector2(9, -35), Vector2(-9, -35)]), IRON, OUTLINE, 1.5)
+	if not is_spent():
+		draw_polyline(PackedVector2Array([Vector2(-12, -42), Vector2(0, -44), Vector2(12, -42)]), SNOW, 2.0, true)
+		return
+	var flicker := sin(time * 9.0 + phase) * 1.5
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-10, -42), Vector2(-4, -55 - flicker), Vector2(0, -49), Vector2(4, -61 + flicker), Vector2(10, -42)]), RIME_GLOW, Color(ICE_DEEP, 0.8), 1.0)
+	draw_colored_polygon(PackedVector2Array([Vector2(-4, -42), Vector2(0, -52 - flicker * 0.5), Vector2(4, -42)]), Color.WHITE.lerp(RIME_GLOW, 0.3))
+
+
+## The ward-gate in the heart of the Wardhall: two ice pillars under a rune-cut lintel, sealed with a sheet
+## of frost that clears while the Rimekey can open it.
+func _draw_ward_gate() -> void:
+	SmoothDraw.shadow(self, Vector2(-4, 2), Vector2(130, 18), 0.3)
+	draw_rect(Rect2(-40, -70, 80, 70), Color(0.04, 0.07, 0.1))
+	for step in 4:
+		var inset := step * 4.0
+		SmoothDraw.flat(self, Rect2(-38 + inset, -10.0 - step * 12.0, 76 - inset * 2.0, 5), ICE_DEEP.darkened(0.3 + step * 0.12), 1.0)
+	var open := is_wanted()
+	if not open:
+		draw_rect(Rect2(-40, -70, 80, 70), Color(ICE, 0.45))
+	for side: float in [-1.0, 1.0]:
+		SmoothDraw.box(self, Rect2(side * 50.0 - 10.0, -96, 20, 96), ICE, 2.0, Color(ICE_DEEP, 0.9))
+		draw_line(Vector2(side * 50.0 - 4.0, -92), Vector2(side * 50.0 - 4.0, -4), Color(1, 1, 1, 0.45), 2.0, true)
+	SmoothDraw.polygon(self, PackedVector2Array([Vector2(-66, -94), Vector2(66, -98), Vector2(64, -110), Vector2(-64, -106)]), FROST_STONE, OUTLINE, 1.5)
+	var rune := Color(RIME_GLOW, 0.5 + 0.4 * sin(time * 1.8 + phase)) if open else FROST_STONE_DARK
+	for mark: float in [-36.0, -12.0, 12.0, 36.0]:
+		draw_line(Vector2(mark, -107), Vector2(mark, -98), rune, 1.5, true)
+		draw_line(Vector2(mark, -105), Vector2(mark + 5, -101), rune, 1.5, true)
+	if open:
+		draw_rect(Rect2(-36, -66, 72, 62), Color(RIME_GLOW, 0.06 + 0.05 * sin(time * 1.5 + phase)))
+
+
+## A crack in the floor of the Deep, glowing with the Underworld's heat and breathing steam; frozen white
+## once sealed.
+func _draw_melt_rift() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 1), Vector2(70, 14))
+	var crack := PackedVector2Array([Vector2(-32, 2), Vector2(-18, -6), Vector2(-6, -1), Vector2(6, -8), Vector2(20, -3), Vector2(32, -9)])
+	draw_polyline(crack, OUTLINE, 9.0, true)
+	if is_spent():
+		draw_polyline(crack, ICE, 6.0, true)
+		draw_polyline(crack, Color(1, 1, 1, 0.6), 2.0, true)
+		return
+	var heat := 0.75 + 0.25 * sin(time * 4.0 + phase)
+	draw_polyline(crack, RIFT_FIRE.darkened(0.2), 6.0, true)
+	draw_polyline(crack, FLAME_CORE.lerp(RIFT_FIRE, 1.0 - heat), 2.5, true)
+	# Steam curling up off it.
+	for puff in 3:
+		var rise := fmod(time * 0.5 + phase + puff * 0.33, 1.0)
+		draw_circle(Vector2(-16 + puff * 16 + sin(rise * 6.0) * 3.0, -8 - rise * 40.0), 4.0 + rise * 6.0, Color(1, 1, 1, 0.22 * (1.0 - rise)), true, -1.0, true)
+
+
+## The Heartfrost: a frozen spring welling up from the floor of the Deep as great crystals of blue ice,
+## cracked through and dim until the Rimeward is set at its heart and it blazes whole.
+func _draw_heartfrost() -> void:
+	SmoothDraw.shadow(self, Vector2(0, 2), Vector2(130, 24), 0.3)
+	draw_set_transform(Vector2(0, -6), 0.0, Vector2(1.0, 0.38))
+	draw_circle(Vector2.ZERO, 62.0, OUTLINE, true, -1.0, true)
+	draw_circle(Vector2.ZERO, 61.0, ICE_DEEP, true, -1.0, true)
+	draw_circle(Vector2.ZERO, 48.0, ICE, true, -1.0, true)
+	draw_set_transform(Vector2.ZERO)
+	var whole := is_spent()
+	var crystal := ICE.lightened(0.15) if whole else ICE.darkened(0.12)
+	for shard: Array in [[Vector2(-24, -8), 14.0, 54.0], [Vector2(22, -8), 12.0, 46.0], [Vector2(0, -10), 18.0, 78.0]]:
+		var base: Vector2 = shard[0]
+		var half: float = shard[1]
+		var height: float = shard[2]
+		SmoothDraw.polygon(self, PackedVector2Array([
+			base + Vector2(-half, 0), base + Vector2(-half * 0.7, -height * 0.8), base + Vector2(0, -height),
+			base + Vector2(half * 0.7, -height * 0.8), base + Vector2(half, 0),
+		]), crystal, Color(ICE_DEEP.darkened(0.3), 0.9), 1.5)
+		draw_line(base + Vector2(-half * 0.3, -4), base + Vector2(-half * 0.2, -height * 0.75), Color(1, 1, 1, 0.5), 1.5, true)
+	if whole:
+		var blaze := 0.75 + 0.25 * sin(time * 2.2 + phase)
+		draw_circle(Vector2(0, -44), 24.0, Color(RIME_GLOW, 0.25 * blaze), true, -1.0, true)
+		draw_circle(Vector2(0, -44), 9.0, Color.WHITE.lerp(RIME_GLOW, 0.4 * blaze), true, -1.0, true)
+		return
+	# The cracks Hrimgar left, and the empty hollow where the Rimeward belongs.
+	draw_polyline(PackedVector2Array([Vector2(-6, -82), Vector2(2, -64), Vector2(-4, -50), Vector2(6, -30), Vector2(0, -12)]), OUTLINE, 1.5, true)
+	draw_polyline(PackedVector2Array([Vector2(-30, -50), Vector2(-22, -36), Vector2(-26, -20)]), OUTLINE, 1.2, true)
+	draw_circle(Vector2(0, -44), 8.0, OUTLINE, true, -1.0, true)
+	draw_circle(Vector2(0, -44), 6.5, Color(0.05, 0.08, 0.12), true, -1.0, true)

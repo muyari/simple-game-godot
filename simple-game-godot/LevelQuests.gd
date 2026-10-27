@@ -1,11 +1,11 @@
 extends Node
 class_name LevelQuests
 ## The quest sites and encounters of one campaign level: ForestQuests for the Forest Outskirts, DesertQuests
-## for the Sunscorch Sands. A level is endless and rebuilt region by region, so each site belongs to a fixed
-## region (relative to the start) and is built when the LevelController generates that region. This base
-## holds what the levels share: building sites, quest monsters, trips into and out of an underground area
-## built far from the map (the Gloomhollow, the Sunken Vault), and telling the HUD's QuestTracker where the
-## nearest objective is.
+## for the Sunscorch Sands, IceQuests for the Ice Caves. A level is endless and rebuilt region by region, so
+## each site belongs to a fixed region (relative to the start) and is built when the LevelController generates
+## that region. This base holds what the levels share: building sites, quest monsters, trips into and out of
+## an underground area built far from the map (the Gloomhollow, the Sunken Vault, the Heartfrost Deep), and
+## telling the HUD's QuestTracker where the nearest objective is.
 
 ## Quest monsters fight outside the level's tally: they are not saved with the level, never called in as
 ## stragglers, and come back while their quest still needs them.
