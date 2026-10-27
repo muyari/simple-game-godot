@@ -70,6 +70,8 @@ void fragment() {
 
 var player: Player
 var camera: Camera2D
+var canvas_tint: CanvasModulate
+var fog_layer: CanvasLayer
 var fog_material: ShaderMaterial
 var snowfall: CPUParticles2D
 var near_snow: CPUParticles2D
@@ -86,7 +88,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 
-	var canvas_tint := CanvasModulate.new()
+	canvas_tint = CanvasModulate.new()
 	canvas_tint.color = TINT
 	add_child(canvas_tint)
 	_build_fog_layer()
@@ -116,6 +118,15 @@ func _process(delta: float) -> void:
 	fog_material.set_shader_parameter("world_offset", (view_center - view_size * 0.5) / view_size)
 
 
+## Underground (in the Heartfrost Deep) there's no sky: a dim tint, and no fog, falling snow, gusts or glints.
+func set_underground(underground: bool, tint := TINT) -> void:
+	canvas_tint.color = tint if underground else TINT
+	fog_layer.visible = not underground
+	for particles: CPUParticles2D in [snowfall, near_snow, gusts, glints]:
+		particles.visible = not underground
+	set_process(not underground)
+
+
 func _make_noise_texture(seed_value: int, frequency: float, octaves: int) -> NoiseTexture2D:
 	var noise := FastNoiseLite.new()
 	noise.seed = seed_value
@@ -139,7 +150,7 @@ func _build_fog_layer() -> void:
 	fog_material.set_shader_parameter("aspect", Vector2(view_size.x / view_size.y, 1.0))
 
 	# Sits between the world and the HUD, so the HUD moves up a layer.
-	var fog_layer := CanvasLayer.new()
+	fog_layer = CanvasLayer.new()
 	fog_layer.layer = 1
 	var ui := get_parent().get_node_or_null("UI") as CanvasLayer
 	if ui != null and ui.layer <= fog_layer.layer:

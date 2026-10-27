@@ -53,6 +53,12 @@ const SLEEPER := Vector2(620, 150)
 const TUNNEL := Vector2(1235, 470)
 const SKINS := [Color("#e8c4a8"), Color("#c99a6e"), Color("#d6a985"), Color("#f0d2bc")]
 const FURS := [Color("#6b4f3a"), Color("#8c6a4a"), Color("#4a5a6a"), Color("#5e4a3e")]
+## Residents with quests to give or take (see Quests), by display name, and their quest npc ids.
+const TALKERS := {
+	"Elder Sigrun": "sigrun", "Hearthkeeper Ingrid": "ingrid", "Headman Ulf": "ulf", "Old Bodvar": "bodvar",
+	"Orm the Hunter": "orm", "Halvard": "halvard", "Watcher Ylva": "ylva", "Sven": "sven", "Torsten": "torsten",
+	"Rider Bryn": "bryn",
+}
 
 
 func build() -> void:
@@ -196,17 +202,41 @@ func _build_tunnel() -> void:
 	prop(HubProp.Kind.TOTEM, TUNNEL + Vector2(-110, -70), {"scale": 1.2}, 7.0)
 
 
+## A resident (see HubDecor.folk), who can be talked to about quests if TALKERS names them.
+func folk(base: Vector2, settings := {}, parent: Node = null) -> HubFolk:
+	var person := super(base, settings, parent)
+	var npc_id: String = TALKERS.get(settings.get("display_name", ""), "")
+	if not npc_id.is_empty():
+		var head := 74.0 * person.body_scale / 1.15 * (0.75 if person.pose == HubFolk.Pose.SIT else 1.0)
+		QuestTalker.attach(person, npc_id, head)
+	return person
+
+
 func _build_folk() -> void:
 	# Torsten, home from Saltwind with the player (Quests.NORTH_TO_RIMEHOLLOW). He rides in with them, so
 	# he's here as soon as the quest is under way: arriving completes it (TownUI).
 	if GameState.get_quest_state(Quests.NORTH_TO_RIMEHOLLOW) != Quests.STATE_AVAILABLE:
-		var torsten := folk(HEARTH + Vector2(160, 96), {
+		folk(HEARTH + Vector2(160, 96), {
 			"display_name": "Torsten", "headwear": HubFolk.Headwear.FUR_HOOD, "beard": true, "body_scale": 1.25,
 			"clothes": Color("#7a5a3e"), "trim": Color("#e8e0d0"), "hair": Color("#d0a060"), "skin": SKINS[3],
 			"rest_facing": -1.0,
 			"lines": ["Ahh. Cold at last.", "Warm your hands at the hearth. Then go and see Elder Sigrun."],
 		})
-		QuestTalker.attach(torsten, "torsten", 80.0)
+	# Sven, home at the quarry once he's limped back from the blue crevasse (Quests.FROZEN_IN_PLACE).
+	if GameState.get_quest_state(Quests.FROZEN_IN_PLACE) in ["sven_home", Quests.STATE_COMPLETED]:
+		folk(Vector2(930, 770), {
+			"display_name": "Sven", "headwear": HubFolk.Headwear.FUR_HOOD, "bandaged": true, "held": HubFolk.Held.HAMMER,
+			"clothes": FURS[2], "trim": Color("#9fd3ee"), "skin": SKINS[0], "rest_facing": 1.0,
+			"lines": ["Da says I'm holding the hammer wrong.", "I still hear the wraiths, some nights. Then I hear Da snoring, and it's all right."],
+		})
+	# Rider Bryn from Ashgate, from the Rime Mother's fall until she's taken the player south.
+	if Quests.is_unlocked(Quests.ROAD_TO_ASHGATE) and not Quests.is_completed(Quests.ROAD_TO_ASHGATE):
+		folk(HEARTH + Vector2(-170, 100), {
+			"display_name": "Rider Bryn", "armored": true, "headwear": HubFolk.Headwear.HELMET, "held": HubFolk.Held.TORCH,
+			"clothes": Color("#6e2424"), "trim": Color("#d9a441"), "pants": Color("#4a4a52"), "skin": SKINS[1],
+			"rest_facing": 1.0,
+			"lines": ["Four days through the snow. I can't feel my nose.", "Ashgate is holding. For now."],
+		})
 	folk(SLEEPER + Vector2(0, 80), {
 		"display_name": "Elder Sigrun", "headwear": HubFolk.Headwear.FUR_HOOD, "robe": true, "held": HubFolk.Held.STAFF,
 		"clothes": FURS[2], "trim": Color("#9fd3ee"), "skin": SKINS[3],
