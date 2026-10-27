@@ -73,7 +73,7 @@ func _draw_notice_board() -> void:
 		for line in int(paper.size.y / 4.0) - 1:
 			var y := paper.position.y + 3.5 + line * 3.5
 			draw_line(Vector2(paper.position.x + 2, y), Vector2(paper.end.x - 2.5, y), Color(OUTLINE, 0.35), 1.0, true)
-		draw_circle(Vector2(paper.get_center().x, paper.position.y + 1.5), 1.3, CLOTH, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(paper.get_center().x, paper.position.y + 1.5), 1.3, CLOTH)
 
 
 func _draw_lamp() -> void:
@@ -87,7 +87,7 @@ func _draw_lamp() -> void:
 	SmoothDraw.box(self, lantern, IRON, 2.0)
 	var flicker := 0.85 + 0.15 * sin(time * 11.0 + phase)
 	SmoothDraw.flat(self, lantern.grow(-1.8), GLASS * Color(1, 1, 1, flicker), 1.5)
-	draw_circle(lantern.get_center(), 2.0, Color(1.0, 0.97, 0.85, flicker), true, -1.0, true)
+	SmoothDraw.disc(self, lantern.get_center(), 2.0, Color(1.0, 0.97, 0.85, flicker))
 	draw_colored_polygon(PackedVector2Array([lantern.position + Vector2(-1, 0), Vector2(lantern.get_center().x, lantern.position.y - 4.0), Vector2(lantern.end.x + 1, lantern.position.y)]), IRON)
 
 
@@ -113,10 +113,10 @@ func _draw_well() -> void:
 		draw_line(Vector2(column + offset, -24), Vector2(column + offset, -16), Color(STONE.darkened(0.3), 0.6), 1.0, true)
 	# The rim and dark water seen from above.
 	draw_set_transform(Vector2(0, -24), 0.0, Vector2(1.0, 0.36))
-	draw_circle(Vector2.ZERO, 25.0, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 23.5, STONE_LIGHT, true, -1.0, true)
-	draw_circle(Vector2.ZERO, 17.0, WATER.darkened(0.45), true, -1.0, true)
-	draw_circle(Vector2(-5, -4), 6.0, Color(WATER.lightened(0.3), 0.35), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 25.0, OUTLINE)
+	SmoothDraw.disc(self, Vector2.ZERO, 23.5, STONE_LIGHT)
+	SmoothDraw.disc(self, Vector2.ZERO, 17.0, WATER.darkened(0.45))
+	SmoothDraw.disc(self, Vector2(-5, -4), 6.0, Color(WATER.lightened(0.3), 0.35))
 	draw_set_transform(Vector2.ZERO)
 	# Posts, roof and bucket on its rope.
 	for post_x in [-22.0, 18.0]:
@@ -152,13 +152,13 @@ func _draw_scarecrow() -> void:
 	SmoothDraw.box(self, Rect2(-1.5, -50, 3, 50), WOOD.darkened(0.2), 1.5)
 	SmoothDraw.box(self, Rect2(-23 + sway * 0.3, -41, 46, 3), WOOD.darkened(0.2), 1.5)
 	for side in [-1.0, 1.0]:
-		draw_circle(Vector2(side * 23.0 + sway * 0.3, -39.5), 3.5, STRAW, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(side * 23.0 + sway * 0.3, -39.5), 3.5, STRAW)
 	SmoothDraw.box(self, Rect2(-9 + sway * 0.4, -43, 18, 21), CLOTH, 3.0)
 	draw_line(Vector2(-9 + sway * 0.4, -30), Vector2(9 + sway * 0.4, -30), CLOTH.darkened(0.35), 2.0, true)
-	draw_circle(Vector2(sway * 0.5, -19), 3.0, STRAW, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(sway * 0.5, -19), 3.0, STRAW)
 	SmoothDraw.dome(self, Vector2(sway * 0.5, -48), 6.5, SACK)
-	draw_circle(Vector2(-2.5 + sway * 0.5, -48), 1.1, OUTLINE, true, -1.0, true)
-	draw_circle(Vector2(2.5 + sway * 0.5, -48), 1.1, OUTLINE, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(-2.5 + sway * 0.5, -48), 1.1, OUTLINE)
+	SmoothDraw.disc(self, Vector2(2.5 + sway * 0.5, -48), 1.1, OUTLINE)
 	SmoothDraw.box(self, Rect2(-10 + sway * 0.5, -55, 20, 3), HAT, 1.5)
 	SmoothDraw.box(self, Rect2(-5 + sway * 0.5, -62, 10, 8), HAT, 2.5)
 

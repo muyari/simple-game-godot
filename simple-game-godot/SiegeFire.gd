@@ -86,8 +86,8 @@ func _draw() -> void:
 		var at: Vector2 = scorch["at"]
 		var size: float = scorch["size"]
 		draw_set_transform(at, 0.0, Vector2(1.0, 0.45))
-		draw_circle(Vector2.ZERO, size, Color(0.05, 0.02, 0.02, 0.55 * fade), true, -1.0, true)
-		draw_circle(Vector2.ZERO, size * 0.45, Color(1.0, 0.4, 0.08, 0.6 * fade * fade), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, size, Color(0.05, 0.02, 0.02, 0.55 * fade))
+		SmoothDraw.disc(self, Vector2.ZERO, size * 0.45, Color(1.0, 0.4, 0.08, 0.6 * fade * fade))
 		draw_set_transform(Vector2.ZERO)
 	for shot in shots:
 		var t: float = shot["t"]
@@ -98,5 +98,5 @@ func _draw() -> void:
 		var tail := from.lerp(to, maxf(t - 0.12, 0.0)) + Vector2(0.0, -sin(maxf(t - 0.12, 0.0) * PI) * 60.0)
 		draw_line(tail, point, Color(1.0, 0.45, 0.1, 0.35), 7.0, true)
 		draw_line(tail.lerp(point, 0.5), point, Color(1.0, 0.75, 0.3, 0.6), 4.0, true)
-		draw_circle(point, 6.0, Color("#ff6a1f"), true, -1.0, true)
-		draw_circle(point, 3.5, Color("#fff1a8"), true, -1.0, true)
+		SmoothDraw.disc(self, point, 6.0, Color("#ff6a1f"))
+		SmoothDraw.disc(self, point, 3.5, Color("#fff1a8"))

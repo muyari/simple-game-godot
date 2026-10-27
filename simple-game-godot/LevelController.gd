@@ -462,6 +462,8 @@ var level_is_complete := false
 var spawned_enemy_regions: Dictionary = {}
 var generated_scenery_regions: Dictionary = {}
 var scenery_placements_by_region: Dictionary = {}
+## Region -> the Node2D holding that region's props (see _add_scenery()).
+var scenery_layers: Dictionary = {}
 var active_scenery_region := Vector2i.ZERO
 var item_pool: Array[ItemData] = []
 var loot_random := RandomNumberGenerator.new()
@@ -1001,6 +1003,32 @@ func _generate_nearby_scenery(center_region: Vector2i) -> void:
 	for x_offset in range(-SCENERY_PRELOAD_RADIUS, SCENERY_PRELOAD_RADIUS + 1):
 		for y_offset in range(-SCENERY_PRELOAD_RADIUS, SCENERY_PRELOAD_RADIUS + 1):
 			_generate_scenery_for_region(center_region + Vector2i(x_offset, y_offset))
+	_show_nearby_scenery(center_region)
+
+
+## Only the regions round the camera are drawn and processed. A region is a screen in size, so the
+## hidden ones are always at least half a screen out of view; without this every region the player had
+## walked through stayed live, and a fully explored map ran several times slower.
+func _show_nearby_scenery(center_region: Vector2i) -> void:
+	for region: Vector2i in scenery_layers:
+		var offset := region - center_region
+		var nearby := absi(offset.x) <= SCENERY_PRELOAD_RADIUS and absi(offset.y) <= SCENERY_PRELOAD_RADIUS
+		var layer: Node2D = scenery_layers[region]
+		layer.visible = nearby
+		layer.process_mode = Node.PROCESS_MODE_INHERIT if nearby else Node.PROCESS_MODE_DISABLED
+
+
+## Adds a prop to the region being generated. Each region's props share a y-sorted layer, which sorts
+## them together with the level's other children, so they can be hidden a region at a time.
+func _add_scenery(node: Node2D) -> void:
+	var layer: Node2D = scenery_layers.get(active_scenery_region)
+	if layer == null:
+		layer = Node2D.new()
+		layer.name = "Scenery_%d_%d" % [active_scenery_region.x, active_scenery_region.y]
+		layer.y_sort_enabled = true
+		scenery_layers[active_scenery_region] = layer
+		get_parent().add_child.call_deferred(layer)
+	layer.add_child.call_deferred(node)
 
 
 func _create_item_pool() -> void:
@@ -1117,7 +1145,7 @@ func _generate_border_scenery(random: RandomNumberGenerator, region_center: Vect
 			floor_detail.half_extents = region_size * 0.5
 			floor_detail.position = region_center
 			floor_detail.z_index = -8
-			get_parent().call_deferred("add_child", floor_detail)
+			_add_scenery(floor_detail)
 	var spacing: Vector2 = BORDER_SPACING[clampi(biome, 0, BORDER_SPACING.size() - 1)]
 	var columns := ceili(region_size.x / spacing.x)
 	var rows := ceili(region_size.y / spacing.y)
@@ -1130,7 +1158,7 @@ func _generate_border_scenery(random: RandomNumberGenerator, region_center: Vect
 			var sprite := _make_standing_sprite(prop["texture"], _random_scale(random, prop))
 			sprite.flip_h = random.randf() < 0.5
 			sprite.position = spot
-			get_parent().call_deferred("add_child", sprite)
+			_add_scenery(sprite)
 
 
 func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, region_center: Vector2) -> void:
@@ -1141,7 +1169,7 @@ func _generate_forest_scenery(random: RandomNumberGenerator, region: Vector2i, r
 	floor_detail.half_extents = region_size * 0.5
 	floor_detail.position = region_center
 	floor_detail.z_index = -8
-	get_parent().call_deferred("add_child", floor_detail)
+	_add_scenery(floor_detail)
 
 	# Quest sites first, so the region's trees grow round them.
 	if level_quests != null:
@@ -1192,7 +1220,7 @@ func _add_forest_apple_tree(random: RandomNumberGenerator, apple_index: int, reg
 		apple_tree.get_node("Sprite2D").scale = Vector2.ONE * FOREST_APPLE_TREE_SCALE
 		if level_quests is ForestQuests:
 			(level_quests as ForestQuests).decorate_apple_tree(apple_tree)
-		get_parent().call_deferred("add_child", apple_tree)
+		_add_scenery(apple_tree)
 		return
 	push_warning("No room for forest apple tree %d." % apple_index)
 
@@ -1221,7 +1249,7 @@ func _try_add_prop(
 			_add_prop_shadow(sprite)
 		if collision_radius <= 0.0:
 			sprite.position = base_position
-			get_parent().call_deferred("add_child", sprite)
+			_add_scenery(sprite)
 			return
 		var obstacle := StaticBody2D.new()
 		obstacle.collision_mask = 0
@@ -1234,7 +1262,7 @@ func _try_add_prop(
 		collision.position = Vector2(0.0, -shape.radius * 0.6)
 		obstacle.add_child(collision)
 		obstacle.add_child(sprite)
-		get_parent().call_deferred("add_child", obstacle)
+		_add_scenery(obstacle)
 		return
 
 
@@ -1243,7 +1271,7 @@ func _add_flat_sprite(texture: Texture2D, world_position: Vector2, uniform_scale
 	var sprite := _make_standing_sprite(texture, uniform_scale)
 	sprite.position = world_position
 	sprite.z_index = z
-	get_parent().call_deferred("add_child", sprite)
+	_add_scenery(sprite)
 
 
 ## A sprite whose node origin is the bottom of the art, so y-sorting treats it as standing on the ground.
@@ -1279,7 +1307,7 @@ func _generate_desert_scenery(random: RandomNumberGenerator, region: Vector2i, r
 	floor_detail.half_extents = region_size * 0.5
 	floor_detail.position = region_center
 	floor_detail.z_index = -8
-	get_parent().call_deferred("add_child", floor_detail)
+	_add_scenery(floor_detail)
 
 	# Quest sites first, so the region's rocks and cacti stand round them.
 	if level_quests != null:
@@ -1292,7 +1320,7 @@ func _generate_desert_scenery(random: RandomNumberGenerator, region: Vector2i, r
 		sprite.position = region_center + _random_region_offset(random, spread)
 		sprite.flip_h = random.randf() < 0.5
 		sprite.z_index = -6
-		get_parent().call_deferred("add_child", sprite)
+		_add_scenery(sprite)
 
 	if random.randf() < 0.55:
 		var landmark: Dictionary = DESERT_LANDMARKS[random.randi() % DESERT_LANDMARKS.size()]
@@ -1449,7 +1477,7 @@ func _try_add_cluster(
 				collision.shape = shape
 				collision.position = sprite.position + Vector2(0.0, -shape.radius * 0.6)
 				cluster.add_child(collision)
-		get_parent().call_deferred("add_child", cluster)
+		_add_scenery(cluster)
 		return
 
 
@@ -1472,7 +1500,7 @@ func _generate_ice_scenery(random: RandomNumberGenerator, region: Vector2i, regi
 	floor_detail.half_extents = region_size * 0.5
 	floor_detail.position = region_center
 	floor_detail.z_index = -8
-	get_parent().call_deferred("add_child", floor_detail)
+	_add_scenery(floor_detail)
 
 	# Quest sites first, so the region's rocks and spires stand round them.
 	if level_quests != null:
@@ -1484,7 +1512,7 @@ func _generate_ice_scenery(random: RandomNumberGenerator, region: Vector2i, regi
 		sprite.position = region_center + _random_region_offset(random, spread)
 		sprite.flip_h = random.randf() < 0.5
 		sprite.z_index = -6
-		get_parent().call_deferred("add_child", sprite)
+		_add_scenery(sprite)
 
 	for _drift_index in random.randi_range(1, 2):
 		var drift: Dictionary = ICE_DRIFTS[random.randi() % ICE_DRIFTS.size()]
@@ -1492,7 +1520,7 @@ func _generate_ice_scenery(random: RandomNumberGenerator, region: Vector2i, regi
 		drift_sprite.position = region_center + _random_region_offset(random, spread)
 		drift_sprite.flip_h = random.randf() < 0.5
 		drift_sprite.z_index = -4
-		get_parent().call_deferred("add_child", drift_sprite)
+		_add_scenery(drift_sprite)
 
 	var landmark_roll := random.randf()
 	if landmark_roll < 0.3:
@@ -1627,7 +1655,7 @@ func _generate_underworld_scenery(random: RandomNumberGenerator, region: Vector2
 	floor_detail.half_extents = region_size * 0.5
 	floor_detail.position = region_center
 	floor_detail.z_index = -8
-	get_parent().call_deferred("add_child", floor_detail)
+	_add_scenery(floor_detail)
 
 	# Quest sites first, so the region's crags and ruins stand round them.
 	if level_quests != null:
@@ -1639,7 +1667,7 @@ func _generate_underworld_scenery(random: RandomNumberGenerator, region: Vector2
 		sprite.position = region_center + _random_region_offset(random, spread)
 		sprite.flip_h = random.randf() < 0.5
 		sprite.z_index = -6
-		get_parent().call_deferred("add_child", sprite)
+		_add_scenery(sprite)
 
 	for _pool_index in random.randi_range(0, 2):
 		_try_add_lava_pool(random, region_center, spread * 0.85)
@@ -1689,7 +1717,7 @@ func _try_add_lava_pool(random: RandomNumberGenerator, region_center: Vector2, s
 		pool.half_size = half_size
 		pool.position = center
 		pool.z_index = -5
-		get_parent().call_deferred("add_child", pool)
+		_add_scenery(pool)
 		return
 
 

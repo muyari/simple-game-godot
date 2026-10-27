@@ -76,9 +76,9 @@ func _draw_mushrooms() -> void:
 	for cap: Vector3 in [Vector3(-8, -10, 6), Vector3(3, -15, 7.5), Vector3(11, -7, 5)]:
 		draw_line(Vector2(cap.x, 0), Vector2(cap.x, cap.y + 2.0), STALK, 2.5, true)
 		var center := Vector2(cap.x, cap.y)
-		draw_circle(center, cap.z * 1.9, Color(MUSHROOM, 0.12 * glow), true, -1.0, true)
+		SmoothDraw.disc(self, center, cap.z * 1.9, Color(MUSHROOM, 0.12 * glow))
 		SmoothDraw.polygon(self, PackedVector2Array([center + Vector2(-cap.z, 2), center + Vector2(-cap.z * 0.6, -cap.z * 0.6), center + Vector2(0, -cap.z * 0.8), center + Vector2(cap.z * 0.6, -cap.z * 0.6), center + Vector2(cap.z, 2)]), MUSHROOM.lerp(Color.WHITE, 0.2 * glow), OUTLINE, 1.0)
-		draw_circle(center + Vector2(-cap.z * 0.3, -cap.z * 0.3), 1.2, Color(1, 1, 1, 0.8), true, -1.0, true)
+		SmoothDraw.disc(self, center + Vector2(-cap.z * 0.3, -cap.z * 0.3), 1.2, Color(1, 1, 1, 0.8))
 
 
 func _draw_bones() -> void:
@@ -88,8 +88,8 @@ func _draw_bones() -> void:
 	draw_line(Vector2(-16 * flip, -2), Vector2(12 * flip, -6), OUTLINE, 5.0, true)
 	draw_line(Vector2(-16 * flip, -2), Vector2(12 * flip, -6), BONE, 3.0, true)
 	for end: Vector2 in [Vector2(-16 * flip, -2), Vector2(12 * flip, -6)]:
-		draw_circle(end, 3.0, BONE, true, -1.0, true)
+		SmoothDraw.disc(self, end, 3.0, BONE)
 	for rib in 2:
 		draw_arc(Vector2(4 * flip + rib * 6.0, 2), 6.0, PI, TAU, 10, BONE, 1.8, true)
 	SmoothDraw.dome(self, Vector2(-20 * flip, 2), 4.5, BONE, OUTLINE)
-	draw_circle(Vector2(-21.5 * flip, 1.5), 1.1, OUTLINE, true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(-21.5 * flip, 1.5), 1.1, OUTLINE)

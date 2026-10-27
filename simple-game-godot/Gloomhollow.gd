@@ -147,7 +147,7 @@ func _draw() -> void:
 	# Damp, lighter patches on the floor.
 	for patch: Vector3 in [Vector3(-200, -60, 150), Vector3(230, 40, 170), Vector3(-30, 180, 120), Vector3(320, -200, 110), Vector3(-380, 80, 120)]:
 		draw_set_transform(Vector2(patch.x, patch.y), 0.0, Vector2(1.0, 0.55))
-		draw_circle(Vector2.ZERO, patch.z, Color(FLOOR_LIGHT, 0.55), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, patch.z, Color(FLOOR_LIGHT, 0.55))
 		draw_set_transform(Vector2.ZERO)
 	# Boulders heaped round the edge make the walls.
 	var boulders := RandomNumberGenerator.new()
@@ -160,14 +160,14 @@ func _draw() -> void:
 	pebbles.seed = 77
 	for _index in 70:
 		var spot := Vector2(pebbles.randf_range(-0.85, 0.85) * HALF_SIZE.x, pebbles.randf_range(-0.8, 0.8) * HALF_SIZE.y)
-		draw_circle(spot, pebbles.randf_range(1.5, 3.5), Color(ROCK_EDGE, 0.55), true, -1.0, true)
+		SmoothDraw.disc(self, spot, pebbles.randf_range(1.5, 3.5), Color(ROCK_EDGE, 0.55))
 	# Daylight spilling in at the mouth, and the glow round the journal's resting stone.
 	var mouth := Vector2(0, HALF_SIZE.y - 60.0)
 	for ring in 4:
 		draw_set_transform(mouth, 0.0, Vector2(1.0, 0.5))
-		draw_circle(Vector2.ZERO, 150.0 - ring * 30.0, Color(1.0, 0.95, 0.8, 0.05), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 150.0 - ring * 30.0, Color(1.0, 0.95, 0.8, 0.05))
 		draw_set_transform(Vector2.ZERO)
 	var pulse := 0.5 + 0.5 * sin(time * 1.6)
 	draw_set_transform(Vector2(40, -HALF_SIZE.y + 110.0), 0.0, Vector2(1.0, 0.5))
-	draw_circle(Vector2.ZERO, 90.0, Color(CRYSTAL, 0.05 + 0.03 * pulse), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2.ZERO, 90.0, Color(CRYSTAL, 0.05 + 0.03 * pulse))
 	draw_set_transform(Vector2.ZERO)

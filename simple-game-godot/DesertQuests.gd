@@ -326,8 +326,8 @@ class SaltFlats extends Node2D:
 			var spot := Vector2(random.randf_range(-420, 420), random.randf_range(-220, 220))
 			var radius := random.randf_range(90.0, 190.0)
 			draw_set_transform(spot, 0.0, Vector2(1.0, 0.45))
-			draw_circle(Vector2.ZERO, radius, Color(0.97, 0.95, 0.9, 0.35), true, -1.0, true)
-			draw_circle(Vector2.ZERO, radius * 0.6, Color(1.0, 1.0, 0.98, 0.25), true, -1.0, true)
+			SmoothDraw.disc(self, Vector2.ZERO, radius, Color(0.97, 0.95, 0.9, 0.35))
+			SmoothDraw.disc(self, Vector2.ZERO, radius * 0.6, Color(1.0, 1.0, 0.98, 0.25))
 			draw_set_transform(Vector2.ZERO)
 		for _crack in 24:
 			var start := Vector2(random.randf_range(-380, 380), random.randf_range(-190, 190))

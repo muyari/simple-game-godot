@@ -74,7 +74,7 @@ func _draw() -> void:
 	var side := forward.orthogonal()
 	var tip := arrow_position + forward * 14.0 * pulse
 	var points := PackedVector2Array([tip, arrow_position - forward * 8.0 + side * 11.0, arrow_position - forward * 3.0, arrow_position - forward * 8.0 - side * 11.0])
-	draw_circle(arrow_position, 20.0, Color(GOLD, 0.16), true, -1.0, true)
+	SmoothDraw.disc(self, arrow_position, 20.0, Color(GOLD, 0.16))
 	draw_colored_polygon(points, GOLD)
 	var closed := points.duplicate()
 	closed.append(points[0])

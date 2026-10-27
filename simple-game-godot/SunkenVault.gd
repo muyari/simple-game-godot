@@ -204,7 +204,7 @@ func _draw() -> void:
 	# Sand drifted in down the stair and heaped in the corners.
 	for drift: Vector3 in [Vector3(0, HALF_SIZE.y - 80, 150), Vector3(-560, -250, 120), Vector3(560, 260, 110), Vector3(420, -300, 90), Vector3(-450, 280, 100)]:
 		draw_set_transform(Vector2(drift.x, drift.y), 0.0, Vector2(1.0, 0.45))
-		draw_circle(Vector2.ZERO, drift.z, Color(SAND, 0.5), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, drift.z, Color(SAND, 0.5))
 		draw_set_transform(Vector2.ZERO)
 	# A sun-disc inlaid round the dais, and light falling down the stair.
 	draw_set_transform(SEAL_SPOT, 0.0, Vector2(1.0, 0.45))
@@ -214,12 +214,12 @@ func _draw() -> void:
 	var stair := Vector2(0, HALF_SIZE.y - 50.0)
 	for ring in 4:
 		draw_set_transform(stair, 0.0, Vector2(1.0, 0.5))
-		draw_circle(Vector2.ZERO, 150.0 - ring * 30.0, Color(1.0, 0.92, 0.7, 0.05), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 150.0 - ring * 30.0, Color(1.0, 0.92, 0.7, 0.05))
 		draw_set_transform(Vector2.ZERO)
 	var pulse := 0.5 + 0.5 * sin(time * 1.4)
 	for index in SHARD_SPOTS.size():
 		if Quests.is_object_used(Quests.SUNKEN_VAULT, "sunstone_shard_%d" % index):
 			continue
 		draw_set_transform(SHARD_SPOTS[index], 0.0, Vector2(1.0, 0.5))
-		draw_circle(Vector2.ZERO, 60.0, Color(SUN_GOLD, 0.03 + 0.03 * pulse), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 60.0, Color(SUN_GOLD, 0.03 + 0.03 * pulse))
 		draw_set_transform(Vector2.ZERO)

@@ -199,7 +199,7 @@ func _draw() -> void:
 	# Pale sheets of clearer ice, and the cracks that run through all of it.
 	for sheet: Vector3 in [Vector3(-300, -120, 170), Vector3(320, 80, 190), Vector3(0, 120, 140), Vector3(-480, 200, 110)]:
 		draw_set_transform(Vector2(sheet.x, sheet.y), 0.0, Vector2(1.0, 0.45))
-		draw_circle(Vector2.ZERO, sheet.z, Color(FLOOR_LIGHT, 0.6), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, sheet.z, Color(FLOOR_LIGHT, 0.6))
 		draw_set_transform(Vector2.ZERO)
 	var random := RandomNumberGenerator.new()
 	random.seed = 6113
@@ -215,7 +215,7 @@ func _draw() -> void:
 	var stair := Vector2(0, HALF_SIZE.y - 50.0)
 	for ring in 4:
 		draw_set_transform(stair, 0.0, Vector2(1.0, 0.5))
-		draw_circle(Vector2.ZERO, 150.0 - ring * 30.0, Color(0.85, 0.95, 1.0, 0.05), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 150.0 - ring * 30.0, Color(0.85, 0.95, 1.0, 0.05))
 		draw_set_transform(Vector2.ZERO)
 	# Heat haze round each open melt-rift.
 	var pulse := 0.5 + 0.5 * sin(time * 2.0)
@@ -223,5 +223,5 @@ func _draw() -> void:
 		if Quests.is_object_used(Quests.HEARTFROST_DEEP, "melt_rift_%d" % index):
 			continue
 		draw_set_transform(RIFT_SPOTS[index], 0.0, Vector2(1.0, 0.5))
-		draw_circle(Vector2.ZERO, 90.0, Color(RIFT_FIRE, 0.05 + 0.04 * pulse), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2.ZERO, 90.0, Color(RIFT_FIRE, 0.05 + 0.04 * pulse))
 		draw_set_transform(Vector2.ZERO)

@@ -114,7 +114,7 @@ func _draw_post(base: Vector2, width: float, height: float, seed_value: int) -> 
 	SmoothDraw.shadow(self, base + Vector2(-2.0, 1.0), Vector2(width * 2.2, 6.0), 0.5)
 	SmoothDraw.box(self, Rect2(base.x - width * 0.5, base.y - post_height, width, post_height), WOOD * tint, 2.5)
 	# A rounded cap.
-	draw_circle(Vector2(base.x, base.y - post_height + 1.0), width * 0.5, (WOOD * tint).lightened(0.2), true, -1.0, true)
+	SmoothDraw.disc(self, Vector2(base.x, base.y - post_height + 1.0), width * 0.5, (WOOD * tint).lightened(0.2))
 
 
 func _draw_rail(rect: Rect2) -> void:

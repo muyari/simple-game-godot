@@ -119,7 +119,13 @@ func _physics_process(delta: float) -> void:
 		if pause_left <= 0.0 and area.has_area() and pose == Pose.STAND:
 			_start_walk()
 	_update_bubble(near and _speaker == self, delta)
-	queue_redraw()
+
+
+## Redraws once a frame, not once a physics tick: queued redraws run after every physics step, and a
+## slow frame runs several steps, so redrawing here made a slow frame slower still.
+func _process(_delta: float) -> void:
+	if SmoothDraw.is_on_screen(self):
+		queue_redraw()
 
 
 func _start_walk() -> void:
@@ -267,7 +273,7 @@ func _draw_body(top: float, lift: float) -> void:
 		draw_line(Vector2(0.0, top + 2.0), Vector2(0.0, top + 11.0), Color(STEEL.darkened(0.35), 0.7), 1.0, true)
 	if bandaged:
 		draw_line(Vector2(-7.5, top + 4.0), Vector2(7.5, top + 9.0), Color("#efe6d2"), 3.0, true)
-		draw_circle(Vector2(2.0, top + 6.5), 1.6, Color("#a83226"), true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(2.0, top + 6.5), 1.6, Color("#a83226"))
 
 
 func _draw_arms(top: float, step: float) -> void:
@@ -278,22 +284,22 @@ func _draw_arms(top: float, step: float) -> void:
 		SmoothDraw.box(self, arm, STEEL if armored else sleeve, 2.0)
 		if armored:
 			SmoothDraw.dome(self, Vector2(side * 8.5, top + 1.5), 3.5, STEEL)
-		draw_circle(Vector2(side * 9.5, arm.end.y + 0.5), 2.3, skin, true, -1.0, true)
+		SmoothDraw.disc(self, Vector2(side * 9.5, arm.end.y + 0.5), 2.3, skin)
 
 
 func _draw_head(center: Vector2) -> void:
 	var r := 6.5
 	if headwear in [Headwear.HOOD, Headwear.FUR_HOOD]:
 		var hood := clothes.darkened(0.1) if headwear == Headwear.HOOD else Color("#8c6a4a")
-		draw_circle(center + Vector2(0.0, 0.5), r + 2.5, OUTLINE, true, -1.0, true)
-		draw_circle(center + Vector2(0.0, 0.5), r + 1.8, hood, true, -1.0, true)
+		SmoothDraw.disc(self, center + Vector2(0.0, 0.5), r + 2.5, OUTLINE)
+		SmoothDraw.disc(self, center + Vector2(0.0, 0.5), r + 1.8, hood)
 	draw_rect(Rect2(center.x - 2.0, center.y + 4.0, 4.0, 4.0), skin.darkened(0.15))
 	SmoothDraw.dome(self, center, r, skin)
 	if bandaged and headwear == Headwear.BALD:
 		draw_line(center + Vector2(-6.5, -2.5), center + Vector2(6.5, -3.5), Color("#efe6d2"), 2.5, true)
 	# Eyes, glancing the way they face.
 	for side: float in [-1.0, 1.0]:
-		draw_circle(center + Vector2(side * 2.3 + 0.8, 0.3), 0.9, OUTLINE, true, -1.0, true)
+		SmoothDraw.disc(self, center + Vector2(side * 2.3 + 0.8, 0.3), 0.9, OUTLINE)
 	if beard:
 		SmoothDraw.polygon(self, PackedVector2Array([
 			center + Vector2(-5.5, 1.5), center + Vector2(5.5, 1.5), center + Vector2(3.5, 7.0),
@@ -312,7 +318,7 @@ func _draw_head(center: Vector2) -> void:
 			_draw_cap(center, r + 1.6, Color("#8c6a4a"), 0.15)
 			for index in 9:
 				var angle := PI + PI * index / 8.0
-				draw_circle(center + Vector2(cos(angle), sin(angle) * 1.05) * (r + 1.2), 2.2, Color("#ece6dc"), true, -1.0, true)
+				SmoothDraw.disc(self, center + Vector2(cos(angle), sin(angle) * 1.05) * (r + 1.2), 2.2, Color("#ece6dc"))
 		Headwear.TURBAN:
 			SmoothDraw.box(self, Rect2(center.x - 7.5, center.y - 9.5, 15.0, 7.5), trim, 3.5)
 			draw_line(center + Vector2(-6.5, -6.0), center + Vector2(6.0, -8.5), Color(trim.darkened(0.25), 0.8), 1.0, true)
@@ -330,7 +336,7 @@ func _draw_head(center: Vector2) -> void:
 				center + Vector2(12.5, -1.5), center + Vector2(11.0, 0.5), center + Vector2(-10.5, 1.0),
 			]), hat.darkened(0.12), OUTLINE, 1.0)
 			SmoothDraw.flat(self, Rect2(center.x - 4.8, center.y - 8.6, 3.4, 3.0), trim, 0.8)
-			draw_circle(center + Vector2(3.0, -9.6), 1.5, OUTLINE, true, -1.0, true)
+			SmoothDraw.disc(self, center + Vector2(3.0, -9.6), 1.5, OUTLINE)
 			draw_line(center + Vector2(3.0, -9.8), center + Vector2(4.2, -12.6), hair, 1.2, true)
 		Headwear.HELMET:
 			_draw_cap(center, r + 1.0, STEEL, 0.2)
@@ -346,7 +352,7 @@ func _draw_cap(center: Vector2, radius: float, color: Color, depth: float) -> vo
 		var angle := PI - depth + (PI + depth * 2.0) * index / steps
 		points.append(center + Vector2(cos(angle), sin(angle)) * radius + Vector2(0.0, -0.5))
 	SmoothDraw.polygon(self, points, color, OUTLINE, 1.0)
-	draw_circle(center + Vector2(-radius * 0.35, -radius * 0.55), radius * 0.25, Color(color.lightened(0.35), 0.6), true, -1.0, true)
+	SmoothDraw.disc(self, center + Vector2(-radius * 0.35, -radius * 0.55), radius * 0.25, Color(color.lightened(0.35), 0.6))
 
 
 ## Long things held upright at the side: spears, staffs and torches.
